@@ -23,6 +23,7 @@ en.LABEL_WIDTH =Width
 en.LABEL_HEIGHT =Height
 
 en.BUTTON_REFRESH =Refresh
+en.BUTTON_API_KEY =Set API key
 en.BUTTON_PLAY_VOICE =Play Voice
 en.BUTTON_RETRIEVE_STATUS =Retrieve status
 en.BUTTON_GENERATE =Generate

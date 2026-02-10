@@ -14,6 +14,7 @@ public:
     ~ApiKeyDialog();
 
     std::wstring key() const;
+    void setKey(const std::wstring&);
 
 private:
     Ui::ApiKeyDialog *ui;

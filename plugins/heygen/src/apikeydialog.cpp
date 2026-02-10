@@ -33,3 +33,8 @@ std::wstring ApiKeyDialog::key() const
 {
     return ui->editKey->text();
 }
+
+void ApiKeyDialog::setKey(const std::wstring& key)
+{
+    ui->editKey->setText(key);
+}
