@@ -1,0 +1,156 @@
+{
+    "en-US": {
+        "Save": "Save",
+        "Cancel": "Cancel",
+        "Delete API-key": "Delete API-key",
+        "Model": "Model",
+        "Orientation": "Orientation",
+        "Size": "Size",
+        "Duration": "Duration",
+        "Settings": "Settings",
+        "Generate": "Generate"
+    },
+    "cs-CZ": {
+        "Save": "Uložit",
+        "Cancel": "Zrušit",
+        "Delete API-key": "Smazat API klíč",
+        "Model": "Model",
+        "Orientation": "Orientace",
+        "Size": "Velikost",
+        "Duration": "Trvání",
+        "Settings": "Nastavení",
+        "Generate": "Generovat"
+    },
+    "de-DE": {
+        "Save": "Speichern",
+        "Cancel": "Abbrechen",
+        "Delete API-key": "API-Schlüssel löschen",
+        "Model": "Modell",
+        "Orientation": "Ausrichtung",
+        "Size": "Größe",
+        "Duration": "Dauer",
+        "Settings": "Einstellungen",
+        "Generate": "Generieren"
+    },
+    "es-ES": {
+        "Save": "Guardar",
+        "Cancel": "Cancelar",
+        "Delete API-key": "Eliminar clave API",
+        "Model": "Modelo",
+        "Orientation": "Orientación",
+        "Size": "Tamaño",
+        "Duration": "Duración",
+        "Settings": "Configuración",
+        "Generate": "Generar"
+    },
+    "fr-FR": {
+        "Save": "Enregistrer",
+        "Cancel": "Annuler",
+        "Delete API-key": "Supprimer la clé API",
+        "Model": "Modèle",
+        "Orientation": "Orientation",
+        "Size": "Taille",
+        "Duration": "Durée",
+        "Settings": "Paramètres",
+        "Generate": "Générer"
+    },
+    "ru-RU": {
+        "Save": "Сохранить",
+        "Cancel": "Отмена",
+        "Delete API-key": "Удалить API-ключ",
+        "Model": "Модель",
+        "Orientation": "Ориентация",
+        "Size": "Размер",
+        "Duration": "Длительность",
+        "Settings": "Настройки",
+        "Generate": "Генерировать"
+    },
+    "zh-CN": {
+        "Save": "保存",
+        "Cancel": "取消",
+        "Delete API-key": "删除API密钥",
+        "Model": "模型",
+        "Orientation": "方向",
+        "Size": "大小",
+        "Duration": "时长",
+        "Settings": "设置",
+        "Generate": "生成"
+    },
+    "pt-BR": {
+        "Save": "Salvar",
+        "Cancel": "Cancelar",
+        "Delete API-key": "Excluir chave API",
+        "Model": "Modelo",
+        "Orientation": "Orientação",
+        "Size": "Tamanho",
+        "Duration": "Duração",
+        "Settings": "Configurações",
+        "Generate": "Gerar"
+    },
+    "sr-Cyrl-RS": {
+        "Save": "Сачувај",
+        "Cancel": "Откажи",
+        "Delete API-key": "Обриши API кључ",
+        "Model": "Модел",
+        "Orientation": "Оријентација",
+        "Size": "Величина",
+        "Duration": "Трајање",
+        "Settings": "Подешавања",
+        "Generate": "Генериши"
+    },
+    "sr-Latn-RS": {
+        "Save": "Sačuvaj",
+        "Cancel": "Otkaži",
+        "Delete API-key": "Obriši API ključ",
+        "Model": "Model",
+        "Orientation": "Orijentacija",
+        "Size": "Veličina",
+        "Duration": "Trajanje",
+        "Settings": "Podešavanja",
+        "Generate": "Generiši"
+    },
+    "ja-JP": {
+        "Save": "保存",
+        "Cancel": "キャンセル",
+        "Delete API-key": "APIキーを削除",
+        "Model": "モデル",
+        "Orientation": "向き",
+        "Size": "サイズ",
+        "Duration": "期間",
+        "Settings": "設定",
+        "Generate": "生成"
+    },
+    "sq-AL": {
+        "Save": "Ruaj",
+        "Cancel": "Anulo",
+        "Delete API-key": "Fshi çelësin API",
+        "Model": "Modeli",
+        "Orientation": "Orientimi",
+        "Size": "Madhësia",
+        "Duration": "Kohëzgjatja",
+        "Settings": "Cilësimet",
+        "Generate": "Gjenero"
+    },
+    "it-IT": {
+        "Save": "Salva",
+        "Cancel": "Annulla",
+        "Delete API-key": "Elimina chiave API",
+        "Model": "Modello",
+        "Orientation": "Orientamento",
+        "Size": "Dimensione",
+        "Duration": "Durata",
+        "Settings": "Impostazioni",
+        "Generate": "Genera"
+    },
+    "ar-SA": {
+        "Save": "حفظ",
+        "Cancel": "إلغاء",
+        "Delete API-key": "حذف مفتاح API",
+        "Model": "النموذج",
+        "Orientation": "الاتجاه",
+        "Size": "الحجم",
+        "Duration": "المدة",
+        "Settings": "الإعدادات",
+        "Generate": "توليد"
+    }
+}
