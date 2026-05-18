@@ -12,10 +12,17 @@
 #define VEO3_SETTINGS_WINDOW_CLASS	L "Veo3SettingsWindowClass"
 #define VEO3_MAIN_WINDOW_CLASS		L "Veo3MainWindowClass"
 
+// Models Names
 #define VEO_3_1			L"Veo 3.1"
 #define VEO_3_1_FAST	L"Veo 3.1 Fast"
 #define VEO_3_1_LITE	L"Veo 3.1 Lite"
 
+// Models Codes
+#define VEO_3_1_PREVIEW			L"veo-3.1-generate-preview"
+#define VEO_3_1_FAST_PREVIEW	L"veo-3.1-fast-generate-preview"
+#define VEO_3_1_LITE_PREVIEW			L"veo-3.1-lite-generate-preview"
+
+// Video Resolution
 #define RES_HD		L"720p"
 #define RES_FULLHD	L"1080p"
 #define RES_4K		L"4k"
@@ -441,6 +448,8 @@ namespace NSUI
 					break;
 				}
 
+				// Prepare Input Data
+				// PROMPT
 				std::wstring promptValue = L"";
 
 				int promptLen = GetWindowTextLength(hMainEdit);
@@ -450,7 +459,7 @@ namespace NSUI
 					GetWindowText(hMainEdit, &prompt[0], promptLen + 1);
 					promptValue = std::move(prompt);
 				}
-
+				// API KEY
 				std::wstring keyValue = NSSystemUtils::ReadWStringFromUtf8File(plugin->m_workDirectory + L"\\app.key");
 				if (keyValue.empty())
 				{
@@ -463,40 +472,65 @@ namespace NSUI
 					plugin->m_engine.m_key = keyValue;
 				}
 
+				// ASPECT + RESOLUTION + DURATION
+				plugin->m_engine.m_aspectRatio = AVS::ComboBox_GetCurrentText(hOrientation);
+				plugin->m_engine.m_resolution = AVS::ComboBox_GetCurrentText(hSize);;
+				plugin->m_engine.m_durationSeconds = AVS::ComboBox_GetCurrentText(hDuration);
+
+				// MODEL
+				int model = AVS::ComboBox_GetCurrent(hModel);
+				if (model == 1) // VEO_3_1
+					plugin->m_engine.m_model = VEO_3_1_PREVIEW;
+				else if (model == 2) // VEO_3_1_FAST
+					plugin->m_engine.m_model = VEO_3_1_FAST_PREVIEW;
+				else // VEO_3_1_LITE
+					plugin->m_engine.m_model = VEO_3_1_LITE_PREVIEW;
+
+				// GENERATION TYPE + INPUT FILES
+
+				switch (activeNow)
+				{
+				case static_cast<int>(WmMainWindowCommands::ButtonImageToVideo):
+				{
+					// 1-3 Images
+					auto file1 = AVS::Label_GetText(hPathFile1);
+					auto file2 = AVS::Label_GetText(hPathFile2);
+					auto file3 = AVS::Label_GetText(hPathFile3);
+
+					if (!file1.empty()) plugin->m_engine.m_additional_files_paths.push_back(file1);
+					if (!file2.empty()) plugin->m_engine.m_additional_files_paths.push_back(file2);
+					if (!file2.empty()) plugin->m_engine.m_additional_files_paths.push_back(file3);
+					
+					break;
+				}
+				case static_cast<int>(WmMainWindowCommands::ButtonFirstAndLastFrame):
+				{
+					// 2 Images
+					auto file1 = AVS::Label_GetText(hFile1);
+					auto file2 = AVS::Label_GetText(hFile2);
+
+					if (!file1.empty()) plugin->m_engine.m_additional_files_paths.push_back(file1);
+					if (!file2.empty()) plugin->m_engine.m_additional_files_paths.push_back(file2);
+					break;
+				}
+				case static_cast<int>(WmMainWindowCommands::ButtonExtendVideo):
+				{
+					// 1 Video
+					auto file1 = AVS::Label_GetText(hFile1);
+
+					if (!file1.empty()) plugin->m_engine.m_additional_files_paths.push_back(file1);
+					break;
+				}
+				default:
+					break;
+				}
+
+				// UI
 				AVS::Button_SetSettings(hGenerate, AVS::ButtonSettings::Create(AVS::Buttons::Default),
 					CTranslate::GetInstance().GetManager()->Translate(L"Cancel"));
 
 				AVS::Label_SetText(hStatus, L"");
 				ShowWindow(hProgress, SW_SHOW);
-
-				auto swapResolution = [](const std::wstring& resolution) -> std::wstring
-				{
-					size_t pos = resolution.find(L'x');
-					if (pos == std::wstring::npos)
-						return resolution;
-
-					std::wstring width = resolution.substr(0, pos);
-					std::wstring height = resolution.substr(pos + 1);
-
-					return height + L"x" + width;
-				};
-
-				std::wstring size = AVS::ComboBox_GetCurrentText(hSize);
-				std::wstring orientation = AVS::ComboBox_GetCurrentText(hOrientation);
-				if (orientation == L"9:16")
-					size = swapResolution(size);
-
-				plugin->m_engine.m_resolution = size;
-				plugin->m_engine.m_seconds = AVS::ComboBox_GetCurrentText(hDuration);
-
-				int model = AVS::ComboBox_GetCurrent(hModel);
-				
-				if (model == 1)
-					plugin->m_engine.m_model = VEO_3_1;
-				else if (model == 2)
-					plugin->m_engine.m_model = VEO_3_1_FAST;
-				else
-					plugin->m_engine.m_model = VEO_3_1_LITE;
 
 				plugin->m_engine.Process(plugin, plugin->m_workDirectory);
 				break;
@@ -649,8 +683,7 @@ namespace NSUI
 
 				if (GetOpenFileNameW(&ofn))
 				{
-					std::wstring fullPath = path;
-					AVS::Label_SetText(*hFilePath, fullPath);
+					AVS::Label_SetText(*hFilePath, path);
 				}
 				break;
 			}

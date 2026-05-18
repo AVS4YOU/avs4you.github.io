@@ -45,7 +45,7 @@ void CVeo3::Process(NSProcesses::CProcessRunnerCallback* callback, const std::ws
 
 	std::wstring sCommand = SCRIPT;
 	NSStringUtils::replace(sCommand, L"${PARAM_KEY}", m_key);
-	NSStringUtils::replace(sCommand, L"${PARAM_SECONDS}", m_seconds);
+	NSStringUtils::replace(sCommand, L"${PARAM_SECONDS}", m_durationSeconds);
 	NSStringUtils::replace(sCommand, L"${PARAM_RESOLUTION}", m_resolution);
 	NSStringUtils::replace(sCommand, L"${PARAM_MODEL_NAME}", m_model);
 
@@ -58,8 +58,8 @@ void CVeo3::Process(NSProcesses::CProcessRunnerCallback* callback, const std::ws
 		sWorkDirectory = CreateWorkDirectory();
 
 	std::wstring sWorkScript = sWorkDirectory + L"\\" + L"script.ps1";
+	
 	NSSystemUtils::WriteWStringToUtf8File(sCommand, sWorkScript);
-
 	NSSystemUtils::WriteWStringToUtf8File(m_prompt, sWorkDirectory + L"\\" + L"script.prompt", false);
 
 	m_file = sPath;
@@ -82,7 +82,7 @@ int CVeo3::GetFakeProgress()
 	double count_video_seconds_in_realseconds = 0.075;
 
 	// 10% => 90%
-	double duration = (double)(std::stoi(m_seconds) * 1000);
+	double duration = (double)(std::stoi(m_durationSeconds) * 1000);
 	double current_duration = current_progress * count_video_seconds_in_realseconds;
 
 	int current_progress_int = (int)(80 * current_duration / duration);
