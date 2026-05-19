@@ -65,8 +65,13 @@ void CVeo3::Process(NSProcesses::CProcessRunnerCallback* callback, const std::ws
 		break;
 	}
 	case NSGenerationMode::FirstAndLastFrame:
+	{
 		sCommand = SCRIPT_FIRST_AND_LAST_FRAME;
+		std::vector<std::wstring> fields = { L"${PARAM_IMAGE_1}", L"${PARAM_IMAGE_2}" };
+		for (size_t i = 0; i < m_additional_files_paths.size(); i++)
+			NSStringUtils::replace(sCommand, fields[i], m_additional_files_paths[i]);
 		break;
+	}
 	case NSGenerationMode::ExtendVideo:
 		sCommand = SCRIPT_EXTEND_VIDEO;
 		break;

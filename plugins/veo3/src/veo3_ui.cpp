@@ -31,6 +31,9 @@
 #define FIRST_IMAGE		L"First Image"
 #define SECOND_IMAGE	L"Second Image"
 #define THIRD_IMAGE		L"Third Image"
+#define FIRST_FRAME		L"First Frame"
+#define LAST_FRAME		L"Last Frame"
+#define PREV_VIDEO		L"Video from a previous generation"
 
 
 namespace NSUI
@@ -514,20 +517,20 @@ namespace NSUI
 				case static_cast<int>(WmMainWindowCommands::ButtonFirstAndLastFrame):
 				{
 					// 2 Images
-					auto file1 = AVS::Label_GetText(hFile1);
-					auto file2 = AVS::Label_GetText(hFile2);
+					auto file1 = AVS::Label_GetText(hPathFile1);
+					auto file2 = AVS::Label_GetText(hPathFile2);
 
-					if (!file1.empty()) plugin->m_engine.m_additional_files_paths.push_back(file1);
-					if (!file2.empty()) plugin->m_engine.m_additional_files_paths.push_back(file2);
+					if (file1 != FIRST_FRAME) plugin->m_engine.m_additional_files_paths.push_back(file1);
+					if (file2 != LAST_FRAME) plugin->m_engine.m_additional_files_paths.push_back(file2);
 					plugin->m_engine.m_generation_mode = NSGenerationMode::FirstAndLastFrame;
 					break;
 				}
 				case static_cast<int>(WmMainWindowCommands::ButtonExtendVideo):
 				{
 					// 1 Video
-					auto file1 = AVS::Label_GetText(hFile1);
+					auto file1 = AVS::Label_GetText(hPathFile1);
 
-					if (!file1.empty()) plugin->m_engine.m_additional_files_paths.push_back(file1);
+					if (file1 != PREV_VIDEO) plugin->m_engine.m_additional_files_paths.push_back(file1);
 					
 					plugin->m_engine.m_generation_mode = NSGenerationMode::ExtendVideo;
 					break;
@@ -642,7 +645,7 @@ namespace NSUI
 				ShowWindow(hPathFile3, SW_HIDE);
 
 				AVS::ComboBox_SetItems(hSize, { RES_HD, RES_FULLHD, RES_4K }, 0);
-				AVS::ComboBox_SetItems(hDuration, { L"4", L"6", L"8" }, 0);
+				AVS::ComboBox_SetItems(hDuration, { L"8" }, 0);
 
 				activeNow = static_cast<int>(LOWORD(wParam));
 				break;
