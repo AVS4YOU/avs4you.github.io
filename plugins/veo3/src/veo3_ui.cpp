@@ -20,12 +20,18 @@
 // Models Codes
 #define VEO_3_1_PREVIEW			L"veo-3.1-generate-preview"
 #define VEO_3_1_FAST_PREVIEW	L"veo-3.1-fast-generate-preview"
-#define VEO_3_1_LITE_PREVIEW			L"veo-3.1-lite-generate-preview"
+#define VEO_3_1_LITE_PREVIEW	L"veo-3.1-lite-generate-preview"
 
 // Video Resolution
 #define RES_HD		L"720p"
 #define RES_FULLHD	L"1080p"
 #define RES_4K		L"4k"
+
+// Text 
+#define FIRST_IMAGE		L"First Image"
+#define SECOND_IMAGE	L"Second Image"
+#define THIRD_IMAGE		L"Third Image"
+
 
 namespace NSUI
 {
@@ -479,15 +485,16 @@ namespace NSUI
 
 				// MODEL
 				int model = AVS::ComboBox_GetCurrent(hModel);
-				if (model == 1) // VEO_3_1
+				if (model == 0) // VEO_3_1
 					plugin->m_engine.m_model = VEO_3_1_PREVIEW;
-				else if (model == 2) // VEO_3_1_FAST
+				else if (model == 1) // VEO_3_1_FAST
 					plugin->m_engine.m_model = VEO_3_1_FAST_PREVIEW;
 				else // VEO_3_1_LITE
 					plugin->m_engine.m_model = VEO_3_1_LITE_PREVIEW;
 
 				// GENERATION TYPE + INPUT FILES
-
+				plugin->m_engine.m_generation_mode = NSGenerationMode::TextToVideo;
+				plugin->m_engine.m_additional_files_paths.clear();
 				switch (activeNow)
 				{
 				case static_cast<int>(WmMainWindowCommands::ButtonImageToVideo):
@@ -497,10 +504,11 @@ namespace NSUI
 					auto file2 = AVS::Label_GetText(hPathFile2);
 					auto file3 = AVS::Label_GetText(hPathFile3);
 
-					if (!file1.empty()) plugin->m_engine.m_additional_files_paths.push_back(file1);
-					if (!file2.empty()) plugin->m_engine.m_additional_files_paths.push_back(file2);
-					if (!file2.empty()) plugin->m_engine.m_additional_files_paths.push_back(file3);
+					if (file1 != FIRST_IMAGE)	plugin->m_engine.m_additional_files_paths.push_back(file1);
+					if (file2 != SECOND_IMAGE)	plugin->m_engine.m_additional_files_paths.push_back(file2);
+					if (file3 != THIRD_IMAGE)	plugin->m_engine.m_additional_files_paths.push_back(file3);
 					
+					plugin->m_engine.m_generation_mode = NSGenerationMode::ImageToVideo;
 					break;
 				}
 				case static_cast<int>(WmMainWindowCommands::ButtonFirstAndLastFrame):
@@ -511,6 +519,7 @@ namespace NSUI
 
 					if (!file1.empty()) plugin->m_engine.m_additional_files_paths.push_back(file1);
 					if (!file2.empty()) plugin->m_engine.m_additional_files_paths.push_back(file2);
+					plugin->m_engine.m_generation_mode = NSGenerationMode::FirstAndLastFrame;
 					break;
 				}
 				case static_cast<int>(WmMainWindowCommands::ButtonExtendVideo):
@@ -519,6 +528,8 @@ namespace NSUI
 					auto file1 = AVS::Label_GetText(hFile1);
 
 					if (!file1.empty()) plugin->m_engine.m_additional_files_paths.push_back(file1);
+					
+					plugin->m_engine.m_generation_mode = NSGenerationMode::ExtendVideo;
 					break;
 				}
 				default:
@@ -562,8 +573,10 @@ namespace NSUI
 				ShowWindow(hPathFile1, SW_HIDE);
 				ShowWindow(hPathFile2, SW_HIDE);
 				ShowWindow(hPathFile3, SW_HIDE);
+				
 
 				AVS::ComboBox_SetItems(hSize, { RES_HD, RES_FULLHD, RES_4K}, 0);
+				AVS::ComboBox_SetItems(hDuration, { L"4", L"6", L"8" }, 0);
 
 				activeNow = static_cast<int>(LOWORD(wParam));
 				break;
@@ -587,15 +600,16 @@ namespace NSUI
 				ShowWindow(hFile2, SW_SHOW);
 				ShowWindow(hFile3, SW_SHOW);
 
-				AVS::Label_SetText(hPathFile1, L"First Image");
-				AVS::Label_SetText(hPathFile2, L"Second Image");
-				AVS::Label_SetText(hPathFile3, L"Third Image");
+				AVS::Label_SetText(hPathFile1, FIRST_IMAGE);
+				AVS::Label_SetText(hPathFile2, SECOND_IMAGE);
+				AVS::Label_SetText(hPathFile3, THIRD_IMAGE);
 
 				ShowWindow(hPathFile1, SW_SHOW);
 				ShowWindow(hPathFile2, SW_SHOW);
 				ShowWindow(hPathFile3, SW_SHOW);
 
 				AVS::ComboBox_SetItems(hSize, { RES_HD, RES_FULLHD, RES_4K }, 0);
+				AVS::ComboBox_SetItems(hDuration, { L"8" }, 0);
 
 				activeNow = static_cast<int>(LOWORD(wParam));
 				break;
@@ -628,6 +642,7 @@ namespace NSUI
 				ShowWindow(hPathFile3, SW_HIDE);
 
 				AVS::ComboBox_SetItems(hSize, { RES_HD, RES_FULLHD, RES_4K }, 0);
+				AVS::ComboBox_SetItems(hDuration, { L"4", L"6", L"8" }, 0);
 
 				activeNow = static_cast<int>(LOWORD(wParam));
 				break;
@@ -658,6 +673,7 @@ namespace NSUI
 				ShowWindow(hPathFile3, SW_HIDE);
 
 				AVS::ComboBox_SetItems(hSize, { RES_HD }, 0);
+				AVS::ComboBox_SetItems(hDuration, { L"4", L"6", L"8" }, 0);
 
 				activeNow = static_cast<int>(LOWORD(wParam));
 				break;
@@ -673,7 +689,17 @@ namespace NSUI
 				ofn.hwndOwner = hwnd;
 				ofn.lpstrFile = path;
 				ofn.nMaxFile = MAX_PATH;
-				ofn.lpstrFilter = L"Images\0*.png;*.jpg;*.jpeg\0";
+				ofn.lpstrFilter =
+					L"Image files (*.png;*.jpg;*.jpeg;*.webp)\0"
+					L"*.png;*.jpg;*.jpeg;*.webp\0"
+					L"PNG (*.png)\0"
+					L"*.png\0"
+					L"JPEG (*.jpg;*.jpeg)\0"
+					L"*.jpg;*.jpeg\0"
+					L"WebP (*.webp)\0"
+					L"*.webp\0"
+					L"All files (*.*)\0"
+					L"*.*\0";
 				ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
 
 				int iqwe = static_cast<int>(LOWORD(wParam));

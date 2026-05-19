@@ -1,4 +1,5 @@
 #include "veo3.h"
+#include "scripts_bodys.h"
 #include "../../../sdk/common/utils.h"
 
 CVeo3::~CVeo3()
@@ -41,24 +42,48 @@ void CVeo3::Process(NSProcesses::CProcessRunnerCallback* callback, const std::ws
 		delete m_manager;
 	}
 
+	std::wstring sCommand;
+	std::wstring sPath = L"Veo3_" + GetCurrentDateTime() + L".mp4";
+	std::wstring sWorkDirectory = workDirectory;
+	if (sWorkDirectory.empty()) 
+		sWorkDirectory = CreateWorkDirectory();
+	std::wstring sWorkScript = sWorkDirectory + L"\\" + L"script.ps1";
+
 	m_manager = new NSProcesses::CProcessManager(callback);
 
-	std::wstring sCommand = SCRIPT;
+	switch (m_generation_mode)
+	{
+	case NSGenerationMode::TextToVideo:
+		sCommand = SCRIPT_TEXT_TO_VIDEO;
+		break;
+	case NSGenerationMode::ImageToVideo:
+	{
+		sCommand = SCRIPT_IMAGE_TO_VIDEO;
+		std::vector<std::wstring> fields = { L"${PARAM_IMAGE_1}", L"${PARAM_IMAGE_2}", L"${PARAM_IMAGE_3}" };
+		for (size_t i = 0; i < m_additional_files_paths.size(); i++)
+			NSStringUtils::replace(sCommand, fields[i], m_additional_files_paths[i]);
+		break;
+	}
+	case NSGenerationMode::FirstAndLastFrame:
+		sCommand = SCRIPT_FIRST_AND_LAST_FRAME;
+		break;
+	case NSGenerationMode::ExtendVideo:
+		sCommand = SCRIPT_EXTEND_VIDEO;
+		break;
+	default:
+		sCommand = SCRIPT_TEXT_TO_VIDEO;
+		break;
+	}
+
 	NSStringUtils::replace(sCommand, L"${PARAM_KEY}", m_key);
 	NSStringUtils::replace(sCommand, L"${PARAM_SECONDS}", m_durationSeconds);
 	NSStringUtils::replace(sCommand, L"${PARAM_RESOLUTION}", m_resolution);
 	NSStringUtils::replace(sCommand, L"${PARAM_MODEL_NAME}", m_model);
+	NSStringUtils::replace(sCommand, L"${PARAM_ASPECT_RATIO}", m_aspectRatio);
 
-	std::wstring sPath = L"Veo3_" + GetCurrentDateTime() + L".mp4";
 	NSStringUtils::replace(sCommand, L"${PARAM_VIDEO_NAME}", sPath);
 	NSStringUtils::replace(sCommand, L"${PARAM_VIDEO_LOG_FILE}", L".Veo3.log");
 
-	std::wstring sWorkDirectory = workDirectory;
-	if (sWorkDirectory.empty())
-		sWorkDirectory = CreateWorkDirectory();
-
-	std::wstring sWorkScript = sWorkDirectory + L"\\" + L"script.ps1";
-	
 	NSSystemUtils::WriteWStringToUtf8File(sCommand, sWorkScript);
 	NSSystemUtils::WriteWStringToUtf8File(m_prompt, sWorkDirectory + L"\\" + L"script.prompt", false);
 

@@ -145,6 +145,78 @@ namespace NSStringUtils
 	}
 } // namespace NSStringUtils
 
+namespace NSFileCoding
+{
+	std::vector<char> EncodeFileToBase64(const std::wstring& filePath)
+	{
+		static constexpr char BASE64_TABLE[] =
+			"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+			"abcdefghijklmnopqrstuvwxyz"
+			"0123456789+/";
+
+		std::ifstream file(filePath, std::ios::binary);
+		if (!file)
+			throw std::runtime_error("Failed to open file");
+
+		file.seekg(0, std::ios::end);
+		std::streamsize fileSize = file.tellg();
+		file.seekg(0, std::ios::beg);
+
+		std::vector<uint8_t> input(static_cast<size_t>(fileSize));
+
+		if (fileSize > 0)
+		{
+			if (!file.read(reinterpret_cast<char*>(input.data()), fileSize))
+				throw std::runtime_error("Failed to read file");
+		}
+
+		std::vector<char> output;
+		output.reserve(((input.size() + 2) / 3) * 4);
+
+		size_t i = 0;
+
+		while (i + 2 < input.size())
+		{
+			uint32_t value =
+				(static_cast<uint32_t>(input[i]) << 16) |
+				(static_cast<uint32_t>(input[i + 1]) << 8) |
+				(static_cast<uint32_t>(input[i + 2]));
+
+			output.push_back(BASE64_TABLE[(value >> 18) & 0x3F]);
+			output.push_back(BASE64_TABLE[(value >> 12) & 0x3F]);
+			output.push_back(BASE64_TABLE[(value >> 6) & 0x3F]);
+			output.push_back(BASE64_TABLE[value & 0x3F]);
+
+			i += 3;
+		}
+
+		size_t remain = input.size() - i;
+
+		if (remain == 1)
+		{
+			uint32_t value = static_cast<uint32_t>(input[i]) << 16;
+
+			output.push_back(BASE64_TABLE[(value >> 18) & 0x3F]);
+			output.push_back(BASE64_TABLE[(value >> 12) & 0x3F]);
+			output.push_back('=');
+			output.push_back('=');
+		}
+		else if (remain == 2)
+		{
+			uint32_t value =
+				(static_cast<uint32_t>(input[i]) << 16) |
+				(static_cast<uint32_t>(input[i + 1]) << 8);
+
+			output.push_back(BASE64_TABLE[(value >> 18) & 0x3F]);
+			output.push_back(BASE64_TABLE[(value >> 12) & 0x3F]);
+			output.push_back(BASE64_TABLE[(value >> 6) & 0x3F]);
+			output.push_back('=');
+		}
+
+		return output;
+	}
+}
+
 namespace NSCriticalSection
 {
 	void CCriticalSectionNative::Enter()

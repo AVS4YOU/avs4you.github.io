@@ -4,11 +4,24 @@
 #include <functional>
 #include <map>
 #include <sstream>
+#include <fstream>
 #include <stdexcept>
 #include <string>
 #include <thread>
 #include <vector>
 #include <windows.h>
+
+namespace NSGenerationMode
+{
+	enum GenerationMode
+	{
+		TextToVideo,
+		ImageToVideo,
+		FirstAndLastFrame,
+		ExtendVideo
+	};
+
+} // namespace NSGenerationMode
 
 namespace NSSystemUtils
 {
@@ -27,6 +40,11 @@ namespace NSStringUtils
 {
 	void correctJsonPS(std::string& text);
 } // namespace NSStringUtils
+
+namespace NSFileCoding
+{
+	std::vector<char> EncodeFileToBase64(const std::wstring& filePath);
+} // namespace NSFileCoding
 
 namespace NSCriticalSection
 {
