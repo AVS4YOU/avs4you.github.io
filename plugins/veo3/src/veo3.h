@@ -37,7 +37,7 @@ public:
     void FakeStart();
     int GetFakeProgress();
 
+    std::wstring GetCurrentDateTime();
 protected:
     std::wstring CreateWorkDirectory();
-    std::wstring GetCurrentDateTime();
 };

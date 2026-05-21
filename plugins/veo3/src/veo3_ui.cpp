@@ -1,6 +1,7 @@
 ﻿#include "veo3_ui.h"
 #include "export_utils.h"
 #include "exports.h"
+#include "sha256.h"
 
 #include <commctrl.h>
 #pragma comment(lib, "comctl32.lib")
@@ -35,6 +36,16 @@
 #define LAST_FRAME		L"Last Frame"
 #define PREV_VIDEO		L"Video from a previous generation"
 
+static bool ParseCacheDateTime(const std::string& text, std::time_t& outTime)
+{
+	std::tm tm = {};
+	std::istringstream ss(text);
+	ss >> std::get_time(&tm, "%d.%m.%Y_%H.%M.%S");
+	if (ss.fail()) return false;
+	tm.tm_isdst = -1;
+	outTime = std::mktime(&tm);
+	return outTime != (std::time_t)-1;
+}
 
 namespace NSUI
 {
@@ -242,7 +253,8 @@ namespace NSUI
 
 		RECT rcMain;
 		GetWindowRect(hwnd, &rcMain);
-		
+
+		int fakeProgress = 0;
 		std::vector<HWND*> vFile =
 		{
 			&hFile1,
@@ -528,9 +540,141 @@ namespace NSUI
 				case static_cast<int>(WmMainWindowCommands::ButtonExtendVideo):
 				{
 					// 1 Video
+					/* Each extension adds 7 seconds to the video
+					Can chain up to 20 times (max ~148 seconds total)
+					Videos stored on server for 2 days - must extend within this window
+					aspectRatio and resolution must match the original video */
 					auto file1 = AVS::Label_GetText(hPathFile1);
+					if (file1 != PREV_VIDEO)
+					{
+						std::string hash;
+						try
+						{
+							hash = CalcFileSHA256(file1);
+						}
+						catch (const std::exception& e)
+						{
+							std::string msg = std::string("[CalcFileSHA256] ") + e.what() + "\n";
+							OutputDebugStringA(msg.c_str());
+						}
 
-					if (file1 != PREV_VIDEO) plugin->m_engine.m_additional_files_paths.push_back(file1);
+						std::wstring json_path = plugin->m_workDirectory + L"\\cache.json";
+						std::wstring date_time;
+						std::string video_hash;
+						std::string uri;
+
+						bool found = false;
+						bool valid_48h = false;
+
+						DWORD attr = GetFileAttributesW(json_path.c_str());
+
+						if (attr == INVALID_FILE_ATTRIBUTES || (attr & FILE_ATTRIBUTE_DIRECTORY))
+						{
+							// TODO: cache.json не найден.
+							// Заглушка: тут допишешь свою логику.
+							OutputDebugStringA("[cache.json] File not found\n");
+						}
+						else
+						{
+							nlohmann::json cacheJson;
+
+							try
+							{
+								std::ifstream in(json_path);
+
+								if (!in.is_open())
+								{
+									OutputDebugStringA("[cache.json] Cannot open file\n");
+								}
+
+								in >> cacheJson;
+
+								if (!cacheJson.is_array())
+								{
+									OutputDebugStringA("[cache.json] Root is not array\n");
+								}
+
+								for (const auto& item : cacheJson)
+								{
+									if (!item.is_object())
+										continue;
+
+									if (!item.contains("video_hash") || !item["video_hash"].is_string())
+										continue;
+
+									std::string item_hash = item["video_hash"].get<std::string>();
+
+									if (item_hash != hash)
+										continue;
+
+									found = true;
+									video_hash = item_hash;
+
+									if (!item.contains("date_time") || !item["date_time"].is_string())
+									{
+										OutputDebugStringA("[cache.json] Found hash, but date_time is missing\n");
+										break;
+									}
+
+									if (!item.contains("uri") || !item["uri"].is_string())
+									{
+										OutputDebugStringA("[cache.json] Found hash, but uri is missing\n");
+										break;
+									}
+
+									std::string date_time_utf8 = item["date_time"].get<std::string>();
+									uri = item["uri"].get<std::string>();
+
+									std::time_t cacheTime = 0;
+
+									if (!ParseCacheDateTime(date_time_utf8, cacheTime))
+									{
+										OutputDebugStringA("[cache.json] Cannot parse date_time\n");
+										break;
+									}
+
+									std::time_t now = std::time(nullptr);
+									double diffSeconds = std::difftime(now, cacheTime);
+
+									if (diffSeconds >= 0 && diffSeconds <= 48.0 * 60.0 * 60.0)
+									{
+										valid_48h = true;
+										date_time = NSStringUtils::utf8_to_wstring(date_time_utf8);
+
+										// Всё ок: hash найден, дата валидна, uri прочитан.
+										// uri лежит в переменной uri.
+									}
+									else
+									{
+										OutputDebugStringA("[cache.json] URI expired: more than 48 hours passed\n");
+									}
+
+									break;
+								}
+							}
+							catch (const nlohmann::json::exception& e)
+							{
+								std::string msg = std::string("[cache.json JSON error] ") + e.what() + "\n";
+								OutputDebugStringA(msg.c_str());
+							}
+							catch (const std::exception& e)
+							{
+								std::string msg = std::string("[cache.json error] ") + e.what() + "\n";
+								OutputDebugStringA(msg.c_str());
+							}
+							catch (...)
+							{
+								OutputDebugStringA("[cache.json] Unknown exception\n");
+							}
+						}
+
+						if (found && valid_48h)
+						{
+							std::string msg = std::string("[cache.json] Found valid uri: ") + uri + "\n";
+							OutputDebugStringA(msg.c_str());
+							plugin->m_engine.m_additional_files_paths.push_back(NSStringUtils::utf8_to_wstring(uri));
+						}
+					};
 					
 					plugin->m_engine.m_generation_mode = NSGenerationMode::ExtendVideo;
 					break;
@@ -705,6 +849,15 @@ namespace NSUI
 					L"*.*\0";
 				ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
 
+				if (activeNow == static_cast<int>(WmMainWindowCommands::ButtonExtendVideo))
+				{
+					ofn.lpstrFilter =
+						L"Video files (*.mp4;)\0"
+						L"*.mp4;\0"
+						L"All files (*.*)\0"
+						L"*.*\0";
+				}
+
 				int iqwe = static_cast<int>(LOWORD(wParam));
 				int iaqwe = static_cast<int>(WmMainWindowCommands::ButtonFile1);
 				auto hFile = vFile[static_cast<int>(LOWORD(wParam)) - static_cast<int>(WmMainWindowCommands::ButtonFile1)];
@@ -823,27 +976,75 @@ namespace NSUI
 
 						if (!isError)
 						{
-							if (response.contains("status") && response["status"].is_string() &&
-								response.contains("id") && response["id"].is_string())
+							if (response.value("done", false) && response.contains("response"))
 							{
-								std::string status = response["status"];
-								std::string id = response["id"];
+								std::string file_url =
+									response["response"]
+									["generateVideoResponse"]
+									["generatedSamples"][0]
+									["video"]
+									["uri"]
+									.get<std::string>();
 
-								int progress = 0;
-								if (response.contains("progress") && response["progress"].is_number())
-									progress = (int)response["progress"];
+								std::wstring path = plugin->m_workDirectory + L"\\" + plugin->m_engine.m_file;
+								DWORD attr = GetFileAttributesW(path.c_str());
 
-								if (progress == 10)
+								//if (attr != INVALID_FILE_ATTRIBUTES && !(attr & FILE_ATTRIBUTE_DIRECTORY))
 								{
-									plugin->m_engine.FakeStart();
-									AVS::ProgressBar_SetPos(hProgress, (int)plugin->m_engine.GetFakeProgress());
-								}
-								else
-								{
-									AVS::ProgressBar_SetPos(hProgress, progress);
-								}
+									std::wstring date_time = plugin->m_engine.GetCurrentDateTime();
+									std::wstring cachePath = plugin->m_workDirectory + L"\\cache.json";
+									std::string video_hash = "";
+									try
+									{
+										video_hash = CalcFileSHA256(path);
+									}
+									catch (const std::exception& e)
+									{
+										std::string msg = std::string("CalcFileSHA256 exception: ") + e.what() + "\n";
+										OutputDebugStringA(msg.c_str());
+										throw std::runtime_error("SHA256 failed");
+									}
 
-								AVS::Label_SetTextAndColor(hStatus, NSStringUtils::utf8_to_wstring("ID: " + id), colorText);
+									nlohmann::json cacheJson = nlohmann::json::array();
+									{
+										std::ifstream in(cachePath);
+										if (in.is_open())
+										{
+											try
+											{
+												in >> cacheJson;
+												if (!cacheJson.is_array())
+													cacheJson = nlohmann::json::array();
+											}
+											catch (...)
+											{
+												cacheJson = nlohmann::json::array();
+											}
+										}
+									}
+
+									nlohmann::json item;
+
+									item["video_hash"] = video_hash;
+									item["uri"] = file_url;
+									item["date_time"] = NSStringUtils::wstring_to_utf8(date_time);
+									//item["aspectRation"]
+									//item["resolution"]
+
+									cacheJson.push_back(item);
+									{
+										std::ofstream out(cachePath, std::ios::trunc);
+										if (!out.is_open())
+											throw std::runtime_error("Cannot open cache.json for writing");
+										out << cacheJson.dump(4);
+									}
+								}
+							}
+							else if (response.contains("name"))
+							{
+								if (fakeProgress < 90)
+									fakeProgress += 10;
+								AVS::ProgressBar_SetPos(hProgress, fakeProgress);
 							}
 						}
 					}

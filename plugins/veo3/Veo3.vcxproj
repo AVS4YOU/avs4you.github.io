@@ -163,6 +163,7 @@
     <ClInclude Include="src\plugin.h" />
     <ClInclude Include="src\resource.h" />
     <ClInclude Include="src\scripts_bodys.h" />
+    <ClInclude Include="src\sha256.h" />
     <ClInclude Include="src\veo3.h" />
     <ClInclude Include="src\veo3_ui.h" />
     <ClInclude Include="src\veo3_utils.h" />

@@ -74,6 +74,7 @@ void CVeo3::Process(NSProcesses::CProcessRunnerCallback* callback, const std::ws
 	}
 	case NSGenerationMode::ExtendVideo:
 		sCommand = SCRIPT_EXTEND_VIDEO;
+		NSStringUtils::replace(sCommand, L"${PARAM_INPUT_VIDEO}", m_additional_files_paths[0]);
 		break;
 	default:
 		sCommand = SCRIPT_TEXT_TO_VIDEO;
