@@ -254,6 +254,7 @@ namespace NSUI
 		RECT rcMain;
 		GetWindowRect(hwnd, &rcMain);
 
+		bool run = true;
 		int fakeProgress = 0;
 		std::vector<HWND*> vFile =
 		{
@@ -544,19 +545,12 @@ namespace NSUI
 					Can chain up to 20 times (max ~148 seconds total)
 					Videos stored on server for 2 days - must extend within this window
 					aspectRatio and resolution must match the original video */
+					run = false;
 					auto file1 = AVS::Label_GetText(hPathFile1);
 					if (file1 != PREV_VIDEO)
 					{
 						std::string hash;
-						try
-						{
-							hash = CalcFileSHA256(file1);
-						}
-						catch (const std::exception& e)
-						{
-							std::string msg = std::string("[CalcFileSHA256] ") + e.what() + "\n";
-							OutputDebugStringA(msg.c_str());
-						}
+						hash = CalcFileSHA256(file1);
 
 						std::wstring json_path = plugin->m_workDirectory + L"\\cache.json";
 						std::wstring date_time;
@@ -570,9 +564,8 @@ namespace NSUI
 
 						if (attr == INVALID_FILE_ATTRIBUTES || (attr & FILE_ATTRIBUTE_DIRECTORY))
 						{
-							// TODO: cache.json не найден.
-							// Заглушка: тут допишешь свою логику.
-							OutputDebugStringA("[cache.json] File not found\n");
+							AVS::Label_SetTextAndColor(hStatus, NSStringUtils::utf8_to_wstring("Unable to open file cache.json"), AVS::Color::MakeRGBA(255, 0, 0));
+							break;
 						}
 						else
 						{
@@ -581,25 +574,18 @@ namespace NSUI
 							try
 							{
 								std::ifstream in(json_path);
-
 								if (!in.is_open())
-								{
-									OutputDebugStringA("[cache.json] Cannot open file\n");
-								}
+									throw std::runtime_error("Fail opent cache.json");
 
 								in >> cacheJson;
-
-								if (!cacheJson.is_array())
-								{
-									OutputDebugStringA("[cache.json] Root is not array\n");
-								}
-
 								for (const auto& item : cacheJson)
 								{
-									if (!item.is_object())
-										continue;
-
-									if (!item.contains("video_hash") || !item["video_hash"].is_string())
+								
+									if (!item.contains("video_hash") || !item["video_hash"].is_string() ||
+										!item.contains("date_time") || !item["date_time"].is_string()	||
+										!item.contains("uri") || !item["uri"].is_string() || 
+										!item.contains("aspectRatio") || !item["aspectRatio"].is_string() ||
+										!item.contains("resolution") || !item["resolution"].is_string())
 										continue;
 
 									std::string item_hash = item["video_hash"].get<std::string>();
@@ -607,31 +593,17 @@ namespace NSUI
 									if (item_hash != hash)
 										continue;
 
+									if (item["aspectRatio"] != plugin->m_engine.m_aspectRatio || 
+										item["resolution"] != plugin->m_engine.m_resolution)
+										throw std::runtime_error("aspectRatio and resolution must match the original video");
+
 									found = true;
-									video_hash = item_hash;
-
-									if (!item.contains("date_time") || !item["date_time"].is_string())
-									{
-										OutputDebugStringA("[cache.json] Found hash, but date_time is missing\n");
-										break;
-									}
-
-									if (!item.contains("uri") || !item["uri"].is_string())
-									{
-										OutputDebugStringA("[cache.json] Found hash, but uri is missing\n");
-										break;
-									}
 
 									std::string date_time_utf8 = item["date_time"].get<std::string>();
 									uri = item["uri"].get<std::string>();
 
 									std::time_t cacheTime = 0;
-
-									if (!ParseCacheDateTime(date_time_utf8, cacheTime))
-									{
-										OutputDebugStringA("[cache.json] Cannot parse date_time\n");
-										break;
-									}
+									ParseCacheDateTime(date_time_utf8, cacheTime);
 
 									std::time_t now = std::time(nullptr);
 									double diffSeconds = std::difftime(now, cacheTime);
@@ -640,31 +612,20 @@ namespace NSUI
 									{
 										valid_48h = true;
 										date_time = NSStringUtils::utf8_to_wstring(date_time_utf8);
-
-										// Всё ок: hash найден, дата валидна, uri прочитан.
-										// uri лежит в переменной uri.
 									}
-									else
-									{
-										OutputDebugStringA("[cache.json] URI expired: more than 48 hours passed\n");
-									}
-
 									break;
 								}
 							}
-							catch (const nlohmann::json::exception& e)
-							{
-								std::string msg = std::string("[cache.json JSON error] ") + e.what() + "\n";
-								OutputDebugStringA(msg.c_str());
-							}
 							catch (const std::exception& e)
 							{
-								std::string msg = std::string("[cache.json error] ") + e.what() + "\n";
-								OutputDebugStringA(msg.c_str());
+								std::string msg = e.what();
+								AVS::Label_SetTextAndColor(hStatus, NSStringUtils::utf8_to_wstring(msg), AVS::Color::MakeRGBA(255, 0, 0));
+								break;
 							}
 							catch (...)
 							{
-								OutputDebugStringA("[cache.json] Unknown exception\n");
+								AVS::Label_SetTextAndColor(hStatus, NSStringUtils::utf8_to_wstring("[cache.json] Unknown exception"), AVS::Color::MakeRGBA(255, 0, 0));
+								break;
 							}
 						}
 
@@ -673,6 +634,15 @@ namespace NSUI
 							std::string msg = std::string("[cache.json] Found valid uri: ") + uri + "\n";
 							OutputDebugStringA(msg.c_str());
 							plugin->m_engine.m_additional_files_paths.push_back(NSStringUtils::utf8_to_wstring(uri));
+							run = true;
+						} 
+						else if (!found)
+						{
+							AVS::Label_SetTextAndColor(hStatus, NSStringUtils::utf8_to_wstring("Could not find cache for this file."), AVS::Color::MakeRGBA(255, 0, 0));
+						}
+						else if (!valid_48h)
+						{
+							AVS::Label_SetTextAndColor(hStatus, NSStringUtils::utf8_to_wstring("The video is outdated"), AVS::Color::MakeRGBA(255, 0, 0));
 						}
 					};
 					
@@ -682,6 +652,8 @@ namespace NSUI
 				default:
 					break;
 				}
+				
+				if (!run) break;
 
 				// UI
 				AVS::Button_SetSettings(hGenerate, AVS::ButtonSettings::Create(AVS::Buttons::Default),
@@ -1028,8 +1000,8 @@ namespace NSUI
 									item["video_hash"] = video_hash;
 									item["uri"] = file_url;
 									item["date_time"] = NSStringUtils::wstring_to_utf8(date_time);
-									//item["aspectRation"]
-									//item["resolution"]
+									item["aspectRatio"] = NSStringUtils::wstring_to_utf8(plugin->m_engine.m_aspectRatio);
+									item["resolution"] = NSStringUtils::wstring_to_utf8(plugin->m_engine.m_resolution);
 
 									cacheJson.push_back(item);
 									{

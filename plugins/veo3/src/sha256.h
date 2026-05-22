@@ -42,7 +42,7 @@ std::string CalcFileSHA256(const std::wstring& filePath)
     );
 
     if (status < 0)
-        throw std::runtime_error("BCryptOpenAlgorithmProvider failed");
+        throw std::runtime_error("[CalcFileSHA256] BCryptOpenAlgorithmProvider failed");
 
     status = BCryptGetProperty(
         hAlg,
@@ -56,7 +56,7 @@ std::string CalcFileSHA256(const std::wstring& filePath)
     if (status < 0)
     {
         BCryptCloseAlgorithmProvider(hAlg, 0);
-        throw std::runtime_error("BCryptGetProperty BCRYPT_OBJECT_LENGTH failed");
+        throw std::runtime_error("[CalcFileSHA256] BCryptGetProperty BCRYPT_OBJECT_LENGTH failed");
     }
 
     status = BCryptGetProperty(
@@ -71,7 +71,7 @@ std::string CalcFileSHA256(const std::wstring& filePath)
     if (status < 0)
     {
         BCryptCloseAlgorithmProvider(hAlg, 0);
-        throw std::runtime_error("BCryptGetProperty BCRYPT_HASH_LENGTH failed");
+        throw std::runtime_error("[CalcFileSHA256] BCryptGetProperty BCRYPT_HASH_LENGTH failed");
     }
 
     hashObject.resize(cbHashObject);
@@ -90,7 +90,7 @@ std::string CalcFileSHA256(const std::wstring& filePath)
     if (status < 0)
     {
         BCryptCloseAlgorithmProvider(hAlg, 0);
-        throw std::runtime_error("BCryptCreateHash failed");
+        throw std::runtime_error("[CalcFileSHA256] BCryptCreateHash failed");
     }
 
     std::ifstream file(filePath, std::ios::binary);
@@ -98,7 +98,7 @@ std::string CalcFileSHA256(const std::wstring& filePath)
     {
         BCryptDestroyHash(hHash);
         BCryptCloseAlgorithmProvider(hAlg, 0);
-        throw std::runtime_error("Cannot open file");
+        throw std::runtime_error("[CalcFileSHA256] Cannot open file");
     }
 
     const size_t bufferSize = 1024 * 1024; // 1 MB
@@ -122,7 +122,7 @@ std::string CalcFileSHA256(const std::wstring& filePath)
             {
                 BCryptDestroyHash(hHash);
                 BCryptCloseAlgorithmProvider(hAlg, 0);
-                throw std::runtime_error("BCryptHashData failed");
+                throw std::runtime_error("[CalcFileSHA256] BCryptHashData failed");
             }
         }
     }
@@ -138,7 +138,7 @@ std::string CalcFileSHA256(const std::wstring& filePath)
     BCryptCloseAlgorithmProvider(hAlg, 0);
 
     if (status < 0)
-        throw std::runtime_error("BCryptFinishHash failed");
+        throw std::runtime_error("[CalcFileSHA256] BCryptFinishHash failed");
 
     return BytesToHex(hash);
 }
