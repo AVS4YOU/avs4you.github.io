@@ -27,10 +27,11 @@ std::string CalcFileSHA256(const std::wstring& filePath)
     BCRYPT_ALG_HANDLE hAlg = nullptr;
     BCRYPT_HASH_HANDLE hHash = nullptr;
 
+    size_t sleep_counter = 0;
     DWORD cbData = 0;
     DWORD cbHash = 0;
     DWORD cbHashObject = 0;
-
+    
     std::vector<unsigned char> hashObject;
     std::vector<unsigned char> hash;
 
@@ -93,7 +94,18 @@ std::string CalcFileSHA256(const std::wstring& filePath)
         throw std::runtime_error("[CalcFileSHA256] BCryptCreateHash failed");
     }
 
-    std::ifstream file(filePath, std::ios::binary);
+    std::ifstream file;
+    
+    while (sleep_counter < 100)
+    {
+        file.clear();
+        file.open(filePath, std::ios::binary);
+        if (file.is_open())
+            break;
+        Sleep(1000);
+        ++sleep_counter;
+    }
+    
     if (!file)
     {
         BCryptDestroyHash(hHash);

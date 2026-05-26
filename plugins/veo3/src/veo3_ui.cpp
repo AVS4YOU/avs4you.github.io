@@ -959,9 +959,7 @@ namespace NSUI
 									.get<std::string>();
 
 								std::wstring path = plugin->m_workDirectory + L"\\" + plugin->m_engine.m_file;
-								DWORD attr = GetFileAttributesW(path.c_str());
-
-								//if (attr != INVALID_FILE_ATTRIBUTES && !(attr & FILE_ATTRIBUTE_DIRECTORY))
+								
 								{
 									std::wstring date_time = plugin->m_engine.GetCurrentDateTime();
 									std::wstring cachePath = plugin->m_workDirectory + L"\\cache.json";
@@ -1014,9 +1012,7 @@ namespace NSUI
 							}
 							else if (response.contains("name"))
 							{
-								if (fakeProgress < 90)
-									fakeProgress += 10;
-								AVS::ProgressBar_SetPos(hProgress, fakeProgress);
+								AVS::ProgressBar_SetPos(hProgress, plugin->m_engine.GetFakeProgress());
 							}
 						}
 					}

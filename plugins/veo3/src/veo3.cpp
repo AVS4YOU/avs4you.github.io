@@ -108,19 +108,13 @@ void CVeo3::FakeStart()
 int CVeo3::GetFakeProgress()
 {
 	DWORD current_time = GetTickCount();
-	DWORD current_progress = current_time - m_start_time;
+	DWORD elapsed_ms = current_time - m_start_time;
+	
+	int steps = elapsed_ms / 5000;
+	int progress = 10 + steps * 10;
 
-	double count_video_seconds_in_realseconds = 0.075;
-
-	// 10% => 90%
-	double duration = (double)(std::stoi(m_durationSeconds) * 1000);
-	double current_duration = current_progress * count_video_seconds_in_realseconds;
-
-	int current_progress_int = (int)(80 * current_duration / duration);
-
-	int progress = 10 + current_progress_int;
 	if (progress > 90)
-		return 90;
+		progress = 90;
 
 	return progress;
 }
