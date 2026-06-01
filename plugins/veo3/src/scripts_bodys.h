@@ -958,3 +958,117 @@ catch {
     Write-Cmd "[ERROR]$_"
     exit
 })";
+
+const std::wstring SCRIPT_FAKE_REQUEST = LR"([Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+$ErrorActionPreference = "Stop"
+
+$logfile = "${PARAM_VIDEO_LOG_FILE}"
+
+function Write-Log($msg) {
+    $timestamp = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
+    "$timestamp $msg" | Out-File -FilePath $logfile -Append -Encoding UTF8
+}
+
+function Write-Cmd($msg) {
+    Write-Output (($msg -replace "`r`n", "" -replace "`n", "") + "`n")
+}
+
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+Set-Location -Path $ScriptDir
+
+$output      = "${PARAM_VIDEO_NAME}"
+$model       = "${PARAM_MODEL_NAME}"
+$resolution  = "${PARAM_RESOLUTION}"
+$aspectRatio = "${PARAM_ASPECT_RATIO}"
+$duration    = "${PARAM_SECONDS}"
+
+Write-Log "Creating fake Veo video job..."
+Write-Log "Model: $model"
+Write-Log "Resolution: $resolution"
+Write-Log "AspectRatio: $aspectRatio"
+Write-Log "Duration: $duration"
+
+# --- FAKE CREATE LONG-RUNNING JOB ---
+
+$operationName = "models/veo-3.1-generate-preview/operations/nftsadf808hc"
+
+$createResponse = @{
+    name = $operationName
+}
+
+Write-Log "Fake create operation response:"
+Write-Log ($createResponse | ConvertTo-Json -Depth 20)
+
+Write-Cmd ("[SUCCESS]" + ($createResponse | ConvertTo-Json -Depth 20 -Compress))
+
+Write-Log "Operation name: $operationName"
+
+# --- FAKE POLL OPERATION STATUS ---
+
+for ($i = 1; $i -le 10; $i++) {
+
+    Write-Log "Fake status response number: $i"
+
+    if ($i -lt 10) {
+        $statusResp = @{
+            name = $operationName
+        }
+
+        Write-Log ($statusResp | ConvertTo-Json -Depth 20)
+        Write-Cmd ("[SUCCESS]" + ($statusResp | ConvertTo-Json -Depth 20 -Compress))
+
+        Write-Log "Waiting for fake Veo generation..."
+        Start-Sleep -Seconds 5
+        continue
+    }
+
+    # --- FAKE FINAL RESULT ---
+
+    $statusResp = @{
+        name = $operationName
+        done = $true
+        response = @{
+            "@type" = "type.googleapis.com/google.ai.generativelanguage.v1beta.PredictLongRunningResponse"
+            generateVideoResponse = @{
+                generatedSamples = @(
+                    @{
+                        video = @{
+                            uri = "https://generativelanguage.googleapis.com/v1beta/files/uigrmseaojcb:download?alt=media"
+                        }
+                    }
+                )
+            }
+        }
+    }
+
+    Write-Log "Fake operation completed:"
+    Write-Log ($statusResp | ConvertTo-Json -Depth 20)
+
+    Write-Cmd ("[SUCCESS]" + ($statusResp | ConvertTo-Json -Depth 20 -Compress))
+}
+
+# --- EXTRACT FAKE VIDEO URI ---
+
+$videoUri = $statusResp.response.generateVideoResponse.generatedSamples[0].video.uri
+
+if (-not $videoUri) {
+    Write-Log "Failed to get fake video URI:"
+    Write-Log ($statusResp | ConvertTo-Json -Depth 20)
+    Write-Cmd ("[ERROR]" + ($statusResp | ConvertTo-Json -Depth 20 -Compress))
+    exit
+}
+
+Write-Log "Fake video URI: $videoUri"
+
+# --- FAKE DOWNLOAD RESULT ---
+
+Write-Log "Fake download completed: $output"
+
+$result = @{
+    file = $output
+    videoUri = $videoUri
+    operationName = $operationName
+}
+
+Write-Cmd ("[SUCCESS]" + ($result | ConvertTo-Json -Compress)))";
