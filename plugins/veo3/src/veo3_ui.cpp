@@ -632,8 +632,6 @@ namespace NSUI
 
 						if (found && valid_48h)
 						{
-							std::string msg = std::string("[cache.json] Found valid uri: ") + uri + "\n";
-							OutputDebugStringA(msg.c_str());
 							plugin->m_engine.m_additional_files_paths.push_back(NSStringUtils::utf8_to_wstring(uri));
 							run = true;
 						} 
@@ -971,8 +969,6 @@ namespace NSUI
 									}
 									catch (const std::exception& e)
 									{
-										std::string msg = std::string("CalcFileSHA256 exception: ") + e.what() + "\n";
-										OutputDebugStringA(msg.c_str());
 										throw std::runtime_error("SHA256 failed");
 									}
 
