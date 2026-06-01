@@ -501,11 +501,11 @@ namespace NSUI
 
 				// MODEL
 				int model = AVS::ComboBox_GetCurrent(hModel);
-				if (model == 0) // VEO_3_1
+				if (model == 0)			// VEO_3_1
 					plugin->m_engine.m_model = VEO_3_1_PREVIEW;
-				else if (model == 1) // VEO_3_1_FAST
+				else if (model == 1)	// VEO_3_1_FAST
 					plugin->m_engine.m_model = VEO_3_1_FAST_PREVIEW;
-				else // VEO_3_1_LITE
+				else					// VEO_3_1_LITE
 					plugin->m_engine.m_model = VEO_3_1_LITE_PREVIEW;
 
 				// GENERATION TYPE + INPUT FILES
@@ -1012,7 +1012,13 @@ namespace NSUI
 							}
 							else if (response.contains("name"))
 							{
-								AVS::ProgressBar_SetPos(hProgress, plugin->m_engine.GetFakeProgress());
+
+								if (AVS::ProgressBar_GetPos(hProgress) == 0)
+								{
+									AVS::ProgressBar_SetPos(hProgress, 10);
+									plugin->m_engine.FakeStart();
+								} else 
+									AVS::ProgressBar_SetPos(hProgress, plugin->m_engine.GetFakeProgress());
 							}
 						}
 					}
