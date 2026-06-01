@@ -28,13 +28,13 @@
 #define RES_FULLHD	L"1080p"
 #define RES_4K		L"4k"
 
-// Text 
-#define FIRST_IMAGE		L"First Image"
-#define SECOND_IMAGE	L"Second Image"
-#define THIRD_IMAGE		L"Third Image"
-#define FIRST_FRAME		L"First Frame"
-#define LAST_FRAME		L"Last Frame"
-#define PREV_VIDEO		L"Video from a previous generation"
+// Text (routed through Translate; English literal is the lookup key)
+#define FIRST_IMAGE		CTranslate::GetInstance().GetManager()->Translate(L"First Image").c_str()
+#define SECOND_IMAGE	CTranslate::GetInstance().GetManager()->Translate(L"Second Image").c_str()
+#define THIRD_IMAGE		CTranslate::GetInstance().GetManager()->Translate(L"Third Image").c_str()
+#define FIRST_FRAME		CTranslate::GetInstance().GetManager()->Translate(L"First Frame").c_str()
+#define LAST_FRAME		CTranslate::GetInstance().GetManager()->Translate(L"Last Frame").c_str()
+#define PREV_VIDEO		CTranslate::GetInstance().GetManager()->Translate(L"Video from a previous generation").c_str()
 
 static bool ParseCacheDateTime(const std::string& text, std::time_t& outTime)
 {
@@ -278,12 +278,13 @@ namespace NSUI
 			&hExtendVideo
 		};
 
+		CTranslateManager* trToggle = CTranslate::GetInstance().GetManager();
 		std::vector<std::wstring> vToggleGroupNames =
 		{
-			L"Text to Video",
-			L"Image to Video",
-			L"First + Last Frame",
-			L"Extend Video"
+			trToggle->Translate(L"Text to Video"),
+			trToggle->Translate(L"Image to Video"),
+			trToggle->Translate(L"First + Last Frame"),
+			trToggle->Translate(L"Extend Video")
 		};
 
 		if (msg == WM_NCCREATE)
@@ -313,22 +314,22 @@ namespace NSUI
 
 			// Toggle Group
 			hTextToVideo = AVS::CreateButton(hwnd, (HMENU)WmMainWindowCommands::ButtonTextToVideo, hInstance,
-				L"Text to Video",
+				tr->Translate(L"Text to Video").c_str(),
 				15, 15, 80, 25,
 				AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupEnable));
 
 			hImageToVideo = AVS::CreateButton(hwnd, (HMENU)WmMainWindowCommands::ButtonImageToVideo, hInstance,
-				L"Image to Video",
+				tr->Translate(L"Image to Video").c_str(),
 				15 + (80 * 1), 15, 100, 25,
 				AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupDisable));
 
 			hFirstAndLastFrame = AVS::CreateButton(hwnd, (HMENU)WmMainWindowCommands::ButtonFirstAndLastFrame, hInstance,
-				L"First + Last Frame",
+				tr->Translate(L"First + Last Frame").c_str(),
 				15 + (80 * 2) + 20, 15, 100, 25,
 				AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupDisable));
 
 			hExtendVideo = AVS::CreateButton(hwnd, (HMENU)WmMainWindowCommands::ButtonExtendVideo, hInstance,
-				L"Extend Video",
+				tr->Translate(L"Extend Video").c_str(),
 				15 + (80 * 3) + 20 + 20, 15, 80, 25,
 				AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupDisable));
 
@@ -338,21 +339,21 @@ namespace NSUI
 			int file3h = 250 + 50 + 16;
 
 			hFile1 = AVS::CreateButton(hwnd, (HMENU)WmMainWindowCommands::ButtonFile1, hInstance,
-				L"Add File",
+				tr->Translate(L"Add File").c_str(),
 				15, 250, 80, 25,
 				AVS::ButtonSettings::Create(AVS::Buttons::Default));
 			hFile2 = AVS::CreateButton(hwnd, (HMENU)WmMainWindowCommands::ButtonFile2, hInstance,
-				L"Add File",
+				tr->Translate(L"Add File").c_str(),
 				15, 250 + 25 + 8, 80, 25,
 				AVS::ButtonSettings::Create(AVS::Buttons::Default));
 			hFile3 = AVS::CreateButton(hwnd, (HMENU)WmMainWindowCommands::ButtonFile3, hInstance,
-				L"Add File",
+				tr->Translate(L"Add File").c_str(),
 				15, 250 + 50 + 16, 80, 25,
 				AVS::ButtonSettings::Create(AVS::Buttons::Default));
 
-			hPathFile1 = AVS::CreateLabel(hwnd, hInstance, L"Add file #1", 100, file1h, 380, 25, AVS::LabelSettings::Create(AVS::LabelType::Enabled));
-			hPathFile2 = AVS::CreateLabel(hwnd, hInstance, L"Add file #2", 100, file2h, 380, 25, AVS::LabelSettings::Create(AVS::LabelType::Enabled));
-			hPathFile3 = AVS::CreateLabel(hwnd, hInstance, L"Add file #3", 100, file3h, 380, 25, AVS::LabelSettings::Create(AVS::LabelType::Enabled));
+			hPathFile1 = AVS::CreateLabel(hwnd, hInstance, tr->Translate(L"Add file #1").c_str(), 100, file1h, 380, 25, AVS::LabelSettings::Create(AVS::LabelType::Enabled));
+			hPathFile2 = AVS::CreateLabel(hwnd, hInstance, tr->Translate(L"Add file #2").c_str(), 100, file2h, 380, 25, AVS::LabelSettings::Create(AVS::LabelType::Enabled));
+			hPathFile3 = AVS::CreateLabel(hwnd, hInstance, tr->Translate(L"Add file #3").c_str(), 100, file3h, 380, 25, AVS::LabelSettings::Create(AVS::LabelType::Enabled));
 			
 			ShowWindow(hFile1, SW_HIDE);
 			ShowWindow(hFile2, SW_HIDE);
@@ -564,7 +565,7 @@ namespace NSUI
 
 						if (attr == INVALID_FILE_ATTRIBUTES || (attr & FILE_ATTRIBUTE_DIRECTORY))
 						{
-							AVS::Label_SetTextAndColor(hStatus, NSStringUtils::utf8_to_wstring("Unable to open file cache.json"), AVS::Color::MakeRGBA(255, 0, 0));
+							AVS::Label_SetTextAndColor(hStatus, CTranslate::GetInstance().GetManager()->Translate(L"Unable to open file cache.json"), AVS::Color::MakeRGBA(255, 0, 0));
 							break;
 						}
 						else
@@ -595,7 +596,7 @@ namespace NSUI
 
 									if (item["aspectRatio"] != plugin->m_engine.m_aspectRatio || 
 										item["resolution"] != plugin->m_engine.m_resolution)
-										throw std::runtime_error("aspectRatio and resolution must match the original video");
+										throw std::runtime_error(NSStringUtils::wstring_to_utf8(CTranslate::GetInstance().GetManager()->Translate(L"aspectRatio and resolution must match the original video")));
 
 									found = true;
 
@@ -638,11 +639,11 @@ namespace NSUI
 						} 
 						else if (!found)
 						{
-							AVS::Label_SetTextAndColor(hStatus, NSStringUtils::utf8_to_wstring("Could not find cache for this file."), AVS::Color::MakeRGBA(255, 0, 0));
+							AVS::Label_SetTextAndColor(hStatus, CTranslate::GetInstance().GetManager()->Translate(L"Could not find cache for this file."), AVS::Color::MakeRGBA(255, 0, 0));
 						}
 						else if (!valid_48h)
 						{
-							AVS::Label_SetTextAndColor(hStatus, NSStringUtils::utf8_to_wstring("The video is outdated"), AVS::Color::MakeRGBA(255, 0, 0));
+							AVS::Label_SetTextAndColor(hStatus, CTranslate::GetInstance().GetManager()->Translate(L"The video is outdated"), AVS::Color::MakeRGBA(255, 0, 0));
 						}
 					};
 					
@@ -683,7 +684,7 @@ namespace NSUI
 				AVS::Button_SetSettings(
 					hTextToVideo,
 					AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupEnable),
-					L"Text to Video");
+					CTranslate::GetInstance().GetManager()->Translate(L"Text to Video"));
 
 				ShowWindow(hFile1, SW_HIDE);
 				ShowWindow(hFile2, SW_HIDE);
@@ -713,7 +714,7 @@ namespace NSUI
 				AVS::Button_SetSettings(
 					hImageToVideo,
 					AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupEnable),
-					L"Image to Video");
+					CTranslate::GetInstance().GetManager()->Translate(L"Image to Video"));
 
 				ShowWindow(hFile1, SW_SHOW);
 				ShowWindow(hFile2, SW_SHOW);
@@ -747,14 +748,14 @@ namespace NSUI
 				AVS::Button_SetSettings(
 					hFirstAndLastFrame,
 					AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupEnable),
-					L"First + Last Frame");
+					CTranslate::GetInstance().GetManager()->Translate(L"First + Last Frame"));
 
 				ShowWindow(hFile1, SW_SHOW);
 				ShowWindow(hFile2, SW_SHOW);
 				ShowWindow(hFile3, SW_HIDE);
 
-				AVS::Label_SetText(hPathFile1, L"First Frame");
-				AVS::Label_SetText(hPathFile2, L"Last Frame");
+				AVS::Label_SetText(hPathFile1, FIRST_FRAME);
+				AVS::Label_SetText(hPathFile2, LAST_FRAME);
 
 				ShowWindow(hPathFile1, SW_SHOW);
 				ShowWindow(hPathFile2, SW_SHOW);
@@ -779,13 +780,13 @@ namespace NSUI
 				AVS::Button_SetSettings(
 					hExtendVideo,
 					AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupEnable),
-					L"Extend Video");
+					CTranslate::GetInstance().GetManager()->Translate(L"Extend Video"));
 
 				ShowWindow(hFile1, SW_SHOW);
 				ShowWindow(hFile2, SW_HIDE);
 				ShowWindow(hFile3, SW_HIDE);
 
-				AVS::Label_SetText(hPathFile1, L"Video from a previous generation");
+				AVS::Label_SetText(hPathFile1, PREV_VIDEO);
 
 				ShowWindow(hPathFile1, SW_SHOW);
 				ShowWindow(hPathFile2, SW_HIDE);
