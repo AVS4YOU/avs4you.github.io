@@ -659,6 +659,7 @@ namespace NSUI
 					CTranslate::GetInstance().GetManager()->Translate(L"Cancel"));
 
 				AVS::Label_SetText(hStatus, L"");
+				AVS::ProgressBar_SetPos(hProgress, 0);
 				ShowWindow(hProgress, SW_SHOW);
 
 				plugin->m_engine.Process(plugin, plugin->m_workDirectory);
