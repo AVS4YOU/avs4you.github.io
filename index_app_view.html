@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
+
+    <title>AVS4YOU Plugins Marketplace</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            padding: 40px 20px;
+        }
+
+        h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .plugins-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            padding: 20px;
+        }
+
+        .plugin-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .plugin-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+
+        .plugin-title {
+            font-size: 1.8em;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 15px;
+            line-height: 1.3;
+            min-height: 2.6em;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .plugin-description {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            min-height: 6.4em;
+            display: -webkit-box;
+            -webkit-line-clamp: 4;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .supported-apps {
+            margin-bottom: 20px;
+        }
+
+        .supported-apps-label {
+            font-size: 0.9em;
+            color: #999;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .apps-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .app-tag {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 500;
+        }
+
+        .plugin-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .meta-tag {
+            background: #f0f0f0;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            color: #666;
+        }
+
+        .platform-tag {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .version-tag {
+            background: #2196F3;
+            color: white;
+        }
+
+        .download-btn {
+            display: inline-block;
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            text-decoration: none;
+            text-align: center;
+            font-weight: 600;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            margin-top: auto;
+        }
+
+        .download-btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .download-btn:active {
+            transform: scale(0.98);
+        }
+
+        footer {
+            text-align: center;
+            color: white;
+            padding: 40px 20px;
+            margin-top: 40px;
+        }
+
+        footer a {
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2em;
+            }
+
+            .plugins-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>AVS4YOU Plugins Marketplace</h1>
+            <p class="subtitle">Enhance your AVS applications with powerful plugins</p>
+        </header>
+
+        <div class="plugins-grid">
+            <!-- Effect Spiral Plugin -->
+            <div class="plugin-card">
+                <div class="plugin-title">Effect Spiral</div>
+                <p class="plugin-description">
+                    Creates a dynamic spiral distortion with an outward explosion effect. Apply radial twist and expansion animations to your videos for stunning visual effects.
+                </p>
+                <div class="supported-apps">
+                    <div class="supported-apps-label">Supported Applications:</div>
+                    <div class="apps-list">
+                        <span class="app-tag">Video Converter</span>
+                        <span class="app-tag">Video Editor</span>
+                    </div>
+                </div>
+                <div class="plugin-meta">
+                    <span class="meta-tag platform-tag">x86</span>
+                    <span class="meta-tag version-tag">v1.0.1</span>
+                    <span class="meta-tag">Image Effect</span>
+                </div>
+                <a href="#"
+                   class="download-btn"
+                   onclick="window.chrome.webview.postMessage('download|plugins/effect-spiral/build/x86/effect-spiral.avsp'); return false;">
+                    Install
+                </a>
+            </div>
+
+            <!-- Effect VHS Plugin -->
+            <div class="plugin-card">
+                <div class="plugin-title">Effect VHS</div>
+                <p class="plugin-description">
+                    Authentic VHS tape effect with noise, color degradation, tracking errors, and chromatic aberration. Give your videos that nostalgic retro 80s-90s feel.
+                </p>
+                <div class="supported-apps">
+                    <div class="supported-apps-label">Supported Applications:</div>
+                    <div class="apps-list">
+                        <span class="app-tag">Video Converter</span>
+                        <span class="app-tag">Video Editor</span>
+                        <span class="app-tag">Image Converter</span>
+                    </div>
+                </div>
+                <div class="plugin-meta">
+                    <span class="meta-tag platform-tag">x86</span>
+                    <span class="meta-tag version-tag">v1.0.1</span>
+                    <span class="meta-tag">Image Effect</span>
+                </div>
+                <a href="#"
+                   class="download-btn"
+                   onclick="window.chrome.webview.postMessage('download|plugins/effect-vhs/build/x86/effect-vhs.avsp'); return false;">
+                    Install
+                </a>
+            </div>
+
+            <!-- Sora2 Plugin -->
+            <div class="plugin-card">
+                <div class="plugin-title">Sora2 Video Generator</div>
+                <p class="plugin-description">
+                    AI-powered video generation using OpenAI's Sora 2 API. Create high-quality videos from text descriptions directly within your AVS workflow.
+                </p>
+                <div class="supported-apps">
+                    <div class="supported-apps-label">Supported Applications:</div>
+                    <div class="apps-list">
+                        <span class="app-tag">Video Converter</span>
+                        <span class="app-tag">Video Editor</span>
+                    </div>
+                </div>
+                <div class="plugin-meta">
+                    <span class="meta-tag platform-tag">x86</span>
+                    <span class="meta-tag">Content Plugin</span>
+                    <span class="meta-tag">AI Powered</span>
+                    <span class="meta-tag">Requires API Key</span>
+                </div>
+                <a href="#"
+                   class="download-btn"
+                   onclick="window.chrome.webview.postMessage('download|plugins/sora2/build/x86/Sora2.avsp'); return false;">
+                    Install
+                </a>
+            </div>
+			
+			 <!-- Effect Spiral Plugin -->
+            <div class="plugin-card">
+                <div class="plugin-title">Effect Restoration Gaterv3</div>
+                <p class="plugin-description">
+                    The effect uses a 1× restoration model for improving image quality — handles noise, resizing, JPEG compression, and mild blur.
+                </p>
+                <div class="supported-apps">
+                    <div class="supported-apps-label">Supported Applications:</div>
+                    <div class="apps-list">
+						<span class="app-tag">Image Converter</span>
+                        <span class="app-tag">Video Converter</span>
+                        <span class="app-tag">Video Editor</span>
+                    </div>
+                </div>
+                <div class="plugin-meta">
+                    <span class="meta-tag platform-tag">x86</span>
+                    <span class="meta-tag version-tag">v1.0.0</span>
+                    <span class="meta-tag">AI Powered</span>
+                    <span class="meta-tag">Image Effect</span>
+                </div>
+                <a href="#"
+                   class="download-btn"
+                   onclick="window.chrome.webview.postMessage('download|plugins/effect-restoration-gaterv3/build/effect-restoration-gaterv3.avsp'); return false;">
+                    Install
+                </a>
+            </div>
+			
+			<!-- Heygen Plugin -->
+            <div class="plugin-card">
+                <div class="plugin-title">HeyGen AI Video Generator</div>
+                <p class="plugin-description">
+                    HeyGen is the best online AI video generator and video creator for professionals and marketers who value ease of use.
+                </p>
+                <div class="supported-apps">
+                    <div class="supported-apps-label">Supported Applications:</div>
+                    <div class="apps-list">
+                        <span class="app-tag">Video Converter</span>
+                        <span class="app-tag">Video Editor</span>
+                    </div>
+                </div>
+                <div class="plugin-meta">
+                    <span class="meta-tag platform-tag">x86</span>
+                    <span class="meta-tag">Content Plugin</span>
+                    <span class="meta-tag">AI Powered</span>
+                    <span class="meta-tag">Requires API Key</span>
+                </div>
+                <a href="#"
+                   class="download-btn"
+                   onclick="window.chrome.webview.postMessage('download|plugins/heygen/build/x86/Heygen.avsp'); return false;">
+                    Install
+                </a>
+            </div>
+        </div>
+        <footer>
+            <p>
+                <a href="https://github.com/avs4you/avs4you.github.io" target="_blank">View on GitHub</a> |
+                <a href="docs">Documentation</a> |
+                <a href="https://www.avs4you.com" target="_blank">Visit AVS4YOU</a>
+            </p>
+            <p style="margin-top: 10px; opacity: 0.8;">
+                All plugins are open source and available on GitHub
+            </p>
+        </footer>
+    </div>
+</body>
+</html>
