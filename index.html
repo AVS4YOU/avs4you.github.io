@@ -194,6 +194,47 @@
             }
         }
     </style>
+    <script>
+		document.addEventListener("DOMContentLoaded", function() {
+
+		    const params = new URLSearchParams(window.location.search);
+		    let x64_app = false;
+
+		    if (params.get("type") !== "app")
+		        return;
+
+		    if (params.get("platform") == "x64")
+		        x64_app = true;
+
+		    document.querySelectorAll("a.download-btn").forEach(function(link) {
+
+		        let originalHref = link.getAttribute("href");
+
+		        if (!originalHref)
+		            return;
+
+		        if (x64_app)
+		            originalHref = originalHref.replace("/x86/", "/x64/");
+
+		        link.setAttribute("href", "#");
+		        link.removeAttribute("download");
+		        link.textContent = "Install";
+
+		        console.log(originalHref);
+
+		        link.onclick = function() {
+		            if (window.chrome && window.chrome.webview) {
+		                window.chrome.webview.postMessage(
+		                    "download|" + originalHref
+		                );
+		            }
+
+		            return false;
+		        };
+		    });
+
+		});
+    </script>
 </head>
 <body>
     <div class="container">
