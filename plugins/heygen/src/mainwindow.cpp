@@ -340,6 +340,7 @@ MainWindow::MainWindow(const Rect &rc, BYTE flags) :
 
     connect(ui->linkHeygenKey->clickSignal, this, &MainWindow::linkHeygenKeyClick);
     connect(ui->btnRetrieve->clickSignal, this, &MainWindow::btnRetrieveClick);
+    connect(ui->btnApiKey->clickSignal, this, &MainWindow::btnSetApiKeyClick);
     connect(ui->btnGenerate->clickSignal, this, &MainWindow::btnGenerateClick);
 
     /* Setup */
@@ -538,6 +539,11 @@ void MainWindow::btnRetrieveClick()
     m_intf->http().setRequestHeaders(CCore::getInstance().requestHeaders());
     m_intf->http().setRequestJsonData(L"");
     m_intf->http().request(_url.c_str(), ACTION_CHECK_STATUS);
+}
+
+void MainWindow::btnSetApiKeyClick()
+{
+    CCore::getInstance().setApiKey();
 }
 
 void MainWindow::btnGenerateClick()
