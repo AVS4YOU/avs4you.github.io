@@ -1,0 +1,14 @@
+{
+  "slug": "effect-spiral",
+  "name": "Effect Spiral",
+  "desc": "Dynamic spiral distortion with an outward explosion effect. Radial twist and expansion animations for stunning visuals.",
+  "apps": [ "Video Converter", "Video Editor" ],
+  "version": "v1.0.1",
+  "type": "effect",
+  "typeLabel": "Image Effect",
+  "aiPowered": false,
+  "requiresKey": false,
+  "tint": "linear-gradient(135deg,#3B4FE0,#7C5CFF)",
+  "media": "Effect Spiral.gif",
+  "download": "/build/x86/effect-spiral.avsp"
+}
