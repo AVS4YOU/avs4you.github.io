@@ -1,0 +1,14 @@
+{
+  "slug": "sora2",
+  "name": "Sora2 Video Generator",
+  "desc": "AI-powered video generation using OpenAI's Sora 2 API. Create high-quality videos from text directly in your AVS workflow.",
+  "apps": [ "Video Converter", "Video Editor" ],
+  "version": "v1.0.0",
+  "type": "content",
+  "typeLabel": "Content Plugin",
+  "aiPowered": true,
+  "requiresKey": true,
+  "tint": "linear-gradient(135deg,#0FB5C9,#1577E0)",
+  "media": "icon.ico",
+  "download": "build/x86/Sora2.avsp"
+}
