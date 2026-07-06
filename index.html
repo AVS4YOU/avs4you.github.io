@@ -922,6 +922,7 @@
     let PLUGINS = [];
 
     const ICON_PLUGIN_BACKGROUND = "linear-gradient(135deg,#0FB5C9,#1577E0)";
+    const X86_ONLY = true;
 
     const ICONS = {
       search: '<svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
@@ -963,7 +964,7 @@
     const initialAppFilter = typeAppFilter[typeParam] || "all";
     const state = {
       isApp: typeParam === "app" || initialAppFilter !== "all",
-      appPlatform: params.get("platform") === "x64" ? "x64" : "x86",
+      appPlatform: X86_ONLY ? "x86" : (params.get("platform") === "x64" ? "x64" : "x86"),
       category: "all",
       app: initialAppFilter,
       search: "",
@@ -1097,7 +1098,7 @@
     }
 
     function makePlatformChips(plugin, activePlatform) {
-      if (state.isApp) return null;
+      if (state.isApp || X86_ONLY) return null;
 
       const wrap = document.createElement("span");
       wrap.className = "platforms";
