@@ -1,0 +1,14 @@
+{
+  "slug": "veo3",
+  "name": "Veo3 Video Generator",
+  "desc": "AI-powered video creation with Google Veo 3. Turn your ideas into polished, cinematic clips from simple text prompts inside your AVS workflow.",
+  "apps": [ "Video Converter", "Video Editor" ],
+  "version": "v1.0.0",
+  "type": "content",
+  "typeLabel": "Content Plugin",
+  "aiPowered": true,
+  "requiresKey": true,
+  "tint": "linear-gradient(135deg,#0FB5C9,#1577E0)",
+  "media": "icon.ico",
+  "download": "build/x86/Veo3.avsp"
+}
