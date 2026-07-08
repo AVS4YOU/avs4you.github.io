@@ -969,13 +969,18 @@
 
     const APPS = [
       { key: "all", label: "All apps", icon: "all" },
-      { key: "Video Converter", label: "Video Converter", letters: "VC", grad: "linear-gradient(135deg,#2E9BFF,#7BE04B)" },
-      { key: "Video Editor", label: "Video Editor", letters: "VE", grad: "linear-gradient(135deg,#8B5CF6,#15101F)" },
-      { key: "Image Converter", label: "Image Converter", letters: "IC", grad: "linear-gradient(135deg,#F5C518,#13294B)" },
-      { key: "Audio Editor", label: "Audio Editor", letters: "AE", grad: "linear-gradient(135deg,#FF6C30,#FFD342)" },
-      { key: "Audio Converter", label: "Audio Converter", letters: "AC", grad: "linear-gradient(135deg,#FFDB05,#00C0F7)" },
-      { key: "Video ReMaker", label: "Video ReMaker", letters: "VR", grad: "linear-gradient(135deg,#FF8D2D,#9C9C9C)" }
+      { key: "Video Converter", label: "AVS Video Converter", letters: "VC", grad: "linear-gradient(135deg,#2E9BFF,#7BE04B)" },
+      { key: "Video Editor", label: "AVS Video Editor", letters: "VE", grad: "linear-gradient(135deg,#8B5CF6,#15101F)" },
+      { key: "Image Converter", label: "AVS Image Converter", letters: "IC", grad: "linear-gradient(135deg,#F5C518,#13294B)" },
+      { key: "Audio Editor", label: "AVS Audio Editor", letters: "AE", grad: "linear-gradient(135deg,#FF6C30,#FFD342)" },
+      { key: "Audio Converter", label: "AVS Audio Converter", letters: "AC", grad: "linear-gradient(135deg,#FFDB05,#00C0F7)" },
+      { key: "Video ReMaker", label: "AVS Video ReMaker", letters: "VR", grad: "linear-gradient(135deg,#FF8D2D,#9C9C9C)" }
     ];
+
+    function getAppLabel(appKey) {
+      const app = APPS.find((item) => item.key === appKey);
+      return app ? app.label : appKey;
+    }
 
     const params = new URLSearchParams(window.location.search);
     const typeParam = (params.get("type") || "").toLowerCase();
@@ -1264,7 +1269,7 @@
 
       const currentCategory = CATEGORIES.find((item) => item.key === state.category);
       els.currentTitle.textContent = state.app !== "all"
-        ? state.app
+        ? getAppLabel(state.app)
         : (currentCategory ? currentCategory.label : "All plugins");
       els.resultLabel.textContent = filtered.length === PLUGINS.length
         ? PLUGINS.length + " plugins available"
