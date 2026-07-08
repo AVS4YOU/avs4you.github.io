@@ -183,6 +183,11 @@
       font-weight: 900;
       letter-spacing: 0.3px;
     }
+    .app-badge.app-icon {
+      object-fit: contain;
+      background: transparent;
+    }
+
 
     .main {
       height: 100vh;
@@ -969,12 +974,12 @@
 
     const APPS = [
       { key: "all", label: "All apps", icon: "all" },
-      { key: "Video Converter", label: "AVS Video Converter", letters: "VC", grad: "linear-gradient(135deg,#2E9BFF,#7BE04B)" },
-      { key: "Video Editor", label: "AVS Video Editor", letters: "VE", grad: "linear-gradient(135deg,#8B5CF6,#15101F)" },
-      { key: "Image Converter", label: "AVS Image Converter", letters: "IC", grad: "linear-gradient(135deg,#F5C518,#13294B)" },
-      { key: "Audio Editor", label: "AVS Audio Editor", letters: "AE", grad: "linear-gradient(135deg,#FF6C30,#FFD342)" },
-      { key: "Audio Converter", label: "AVS Audio Converter", letters: "AC", grad: "linear-gradient(135deg,#FFDB05,#00C0F7)" },
-      { key: "Video ReMaker", label: "AVS Video ReMaker", letters: "VR", grad: "linear-gradient(135deg,#FF8D2D,#9C9C9C)" }
+      { key: "Video Converter", label: "AVS Video Converter", asset: "assets/AVSVideoConverter_Icon.png" },
+      { key: "Video Editor", label: "AVS Video Editor", asset: "assets/AVSVideoEditor_Icon.png" },
+      { key: "Image Converter", label: "AVS Image Converter", asset: "assets/AVSImageConverter_Icon.png" },
+      { key: "Audio Editor", label: "AVS Audio Editor", asset: "assets/AVSAudioEditor_Icon.png" },
+      { key: "Audio Converter", label: "AVS Audio Converter", asset: "assets/AVSAudioConverter_Icon.png" },
+      { key: "Video ReMaker", label: "AVS Video ReMaker", asset: "assets/AVSVideoReMaker_Icon.png" }
     ];
 
     function getAppLabel(appKey) {
@@ -1069,11 +1074,12 @@
       button.className = "rail-button" + (active ? " active" : "");
       button.addEventListener("click", onClick);
 
-      const icon = document.createElement("span");
-      if (item.grad) {
-        icon.className = "app-badge";
-        icon.style.background = item.grad;
-        icon.textContent = item.letters;
+      const icon = document.createElement(item.asset ? "img" : "span");
+      if (item.asset) {
+        icon.className = "app-badge app-icon";
+        icon.src = item.asset;
+        icon.alt = "";
+        icon.setAttribute("aria-hidden", "true");
       } else {
         icon.className = "rail-icon";
         icon.innerHTML = ICONS[item.icon] || "";
