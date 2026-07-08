@@ -615,8 +615,13 @@ namespace NSUI
 									if (item_hash != hash)
 										continue;
 
-									if (item["aspectRatio"] != plugin->m_engine.m_aspectRatio || 
-										item["resolution"] != plugin->m_engine.m_resolution)
+									std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+
+									std::wstring item_ar = converter.from_bytes(item["aspectRatio"]);
+									std::wstring item_res = converter.from_bytes(item["resolution"]);
+
+									if (item_ar != plugin->m_engine.m_aspectRatio ||
+										item_res != plugin->m_engine.m_resolution)
 										throw std::runtime_error(NSStringUtils::wstring_to_utf8(CTranslate::GetInstance().GetManager()->Translate(L"aspectRatio and resolution must match the original video")));
 
 									found = true;
