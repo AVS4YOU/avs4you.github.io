@@ -1,345 +1,1337 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Google Tag Manager -->
-    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-WMB2TZX');</script>
-    <!-- End Google Tag Manager -->
+  <!-- Google Tag Manager -->
+  <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-WMB2TZX');</script>
+  <!-- End Google Tag Manager -->
 
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AVS4YOU Plugins Marketplace</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800;900&family=Mulish:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <title>AVS4YOU Plugins Marketplace</title>
+  <style>
+    :root {
+      --accent: #1577e0;
+      --accent-dark: #1463c4;
+      --bg: #f4f7fb;
+      --panel: #ffffff;
+      --line: #e1e9f2;
+      --line-soft: #e7edf4;
+      --text: #16202e;
+      --muted: #5b6b7e;
+      --faint: #8494a8;
+      --shadow: 0 2px 8px rgba(16, 32, 46, 0.06);
+    }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
+    * {
+      box-sizing: border-box;
+    }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
+    html,
+    body {
+      height: 100%;
+      overflow: hidden;
+    }
 
-        header {
-            text-align: center;
-            color: white;
-            padding: 40px 20px;
-        }
+    body {
+      margin: 0;
+      font-family: Mulish, "Segoe UI", Roboto, Arial, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+    }
 
-        h1 {
-            font-size: 3em;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-        }
+    button,
+    input {
+      font: inherit;
+    }
 
-        .subtitle {
-            font-size: 1.2em;
-            opacity: 0.9;
-        }
+    button {
+      border: 0;
+    }
 
-        .plugins-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 30px;
-            padding: 20px;
-        }
+    a {
+      color: inherit;
+    }
 
-        .plugin-card {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            display: flex;
-            flex-direction: column;
-        }
+    .app-shell {
+      height: 100vh;
+      display: flex;
+      background: var(--bg);
+      overflow: hidden;
+    }
 
-        .plugin-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
-        }
+    .sidebar {
+      width: 250px;
+      flex: 0 0 250px;
+      display: flex;
+      flex-direction: column;
+      background: var(--panel);
+      border-right: 1px solid var(--line);
+      overflow-y: auto;
+    }
 
-        .plugin-title {
-            font-size: 1.8em;
-            color: #333;
-            font-weight: 600;
-            margin-bottom: 15px;
-            line-height: 1.3;
-            min-height: 2.6em;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
+    .brand {
+      padding: 18px 18px 16px;
+      line-height: 1;
+    }
 
-        .plugin-description {
-            color: #666;
-            line-height: 1.6;
-            margin-bottom: 20px;
-            min-height: 6.4em;
-            display: -webkit-box;
-            -webkit-line-clamp: 4;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
+    .brand-title {
+      font-family: Manrope, Mulish, sans-serif;
+      font-size: 14.5px;
+      font-weight: 900;
+    }
 
-        .supported-apps {
-            margin-bottom: 20px;
-        }
+    .brand-subtitle {
+      margin-top: 3px;
+      color: var(--accent);
+      font-family: Manrope, Mulish, sans-serif;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+    }
 
-        .supported-apps-label {
-            font-size: 0.9em;
-            color: #999;
-            margin-bottom: 8px;
-            font-weight: 500;
-        }
+    .rail-section {
+      padding: 6px 12px 0;
+    }
 
-        .apps-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
+    .rail-section + .rail-section {
+      padding-top: 18px;
+    }
 
-        .app-tag {
-            background: #e8f5e9;
-            color: #2e7d32;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.85em;
-            font-weight: 500;
-        }
+    .rail-title {
+      padding: 0 8px 8px;
+      color: #9aa8bc;
+      font-size: 10.5px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
 
-        .plugin-meta {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
+    .rail-button {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 38px;
+      padding: 9px 11px;
+      margin-bottom: 2px;
+      border-radius: 9px;
+      color: #46566b;
+      background: transparent;
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: left;
+    }
 
-        .meta-tag {
-            background: #f0f0f0;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.85em;
-            color: #666;
-        }
+    .rail-button.active {
+      color: var(--accent-dark);
+      background: #eef4fc;
+      font-weight: 800;
+    }
 
-        .platform-tag {
-            background: #4CAF50;
-            color: white;
-        }
+    .rail-button .rail-icon {
+      width: 20px;
+      height: 20px;
+      flex: 0 0 20px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #9aa8bc;
+      font-size: 13px;
+    }
 
-        .version-tag {
-            background: #2196F3;
-            color: white;
-        }
+    .rail-button.active .rail-icon {
+      color: var(--accent);
+    }
 
-        .download-btn {
-            display: inline-block;
-            width: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 15px 30px;
-            border-radius: 10px;
-            text-decoration: none;
-            text-align: center;
-            font-weight: 600;
-            font-size: 1.1em;
-            transition: all 0.3s ease;
-            border: none;
-            cursor: pointer;
-            margin-top: auto;
-        }
+    .rail-button .rail-label {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
 
-        .download-btn:hover {
-            transform: scale(1.02);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
+    .rail-count {
+      color: #a6b3c4;
+      font-family: "JetBrains Mono", "Courier New", monospace;
+      font-size: 10.5px;
+      font-weight: 700;
+    }
 
-        .download-btn:active {
-            transform: scale(0.98);
-        }
+    .rail-button.active .rail-count {
+      color: var(--accent);
+    }
 
-        footer {
-            text-align: center;
-            color: white;
-            padding: 40px 20px;
-            margin-top: 40px;
-        }
+    .app-badge {
+      width: 20px;
+      height: 20px;
+      flex: 0 0 20px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      color: #fff;
+      font-family: Mulish, sans-serif;
+      font-size: 8.5px;
+      font-weight: 900;
+      letter-spacing: 0.3px;
+    }
+    .app-badge.app-icon {
+      object-fit: contain;
+      background: transparent;
+    }
 
-        footer a {
-            color: white;
-            text-decoration: none;
-            font-weight: 600;
-        }
 
-        footer a:hover {
-            text-decoration: underline;
-        }
+    .main {
+      height: 100vh;
+      min-width: 0;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
 
-        @media (max-width: 768px) {
-            h1 {
-                font-size: 2em;
-            }
+    .toolbar {
+      min-height: 64px;
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 22px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--line);
+    }
 
-            .plugins-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+    .heading {
+      min-width: 145px;
+      line-height: 1;
+    }
+
+    .heading-title {
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    .heading-subtitle {
+      margin-top: 5px;
+      color: var(--faint);
+      font-size: 11.5px;
+      font-weight: 600;
+    }
+
+    .toolbar-spacer {
+      flex: 1;
+    }
+
+    .search {
+      width: min(260px, 32vw);
+      height: 38px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 13px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--bg);
+    }
+
+    .search span {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #9aa8bc;
+    }
+
+    .svg-icon {
+      width: 16px;
+      height: 16px;
+      display: block;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .rail-icon .svg-icon {
+      width: 15px;
+      height: 15px;
+    }
+
+    .view-button .svg-icon {
+      width: 17px;
+      height: 17px;
+    }
+
+    .search input {
+      min-width: 0;
+      width: 100%;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: var(--text);
+      font-size: 13.5px;
+      font-weight: 500;
+    }
+
+    .segmented {
+      flex: 0 0 auto;
+      display: flex;
+      gap: 3px;
+      padding: 3px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f0f4f9;
+    }
+
+    .view-button {
+      width: 30px;
+      height: 30px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 7px;
+      background: transparent;
+      color: #9aa8bc;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    .view-button.active {
+      background: #fff;
+      color: var(--accent);
+      box-shadow: 0 1px 3px rgba(16, 32, 46, 0.14);
+    }
+
+    .content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      padding: 20px 22px 26px;
+    }
+
+    .plugins {
+      flex: 0 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .plugins.list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .plugin-card {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid var(--line-soft);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .preview {
+      position: relative;
+      height: 158px;
+      overflow: hidden;
+      background: #0e1b2b;
+    }
+
+    .preview-bg,
+    .preview img {
+      position: absolute;
+      inset: 0;
+    }
+
+    .preview-bg {
+      z-index: 0;
+    }
+
+    .preview img {
+      z-index: 1;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .preview img.icon-media {
+      width: 88px;
+      height: 88px;
+      margin: auto;
+      object-fit: contain;
+    }
+
+    .preview-badges {
+      position: absolute;
+      top: 11px;
+      left: 11px;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
+    }
+
+    .preview-ai {
+      position: absolute;
+      top: 11px;
+      right: 11px;
+      z-index: 2;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      height: 21px;
+      padding: 0 9px;
+      border-radius: 7px;
+      background: rgba(255, 255, 255, 0.92);
+      color: var(--accent-dark);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      white-space: nowrap;
+      backdrop-filter: blur(4px);
+    }
+
+    .badge.key {
+      color: #b5701a;
+    }
+
+    .badge.ai {
+      background: rgba(15, 16, 30, 0.55);
+      color: #ffd9ae;
+    }
+
+    .dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 999px;
+      background: #fda050;
+    }
+
+    .card-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+      padding: 15px 16px 16px;
+    }
+
+    .plugin-title {
+      margin: 0;
+      overflow: hidden;
+      color: var(--text);
+      font-size: 15.5px;
+      font-weight: 800;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .plugin-desc {
+      margin: 0;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      color: var(--muted);
+      font-size: 12.5px;
+      font-weight: 500;
+      line-height: 1.5;
+    }
+
+    .card-bottom {
+      margin-top: auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding-top: 13px;
+      border-top: 1px solid #eef2f7;
+    }
+
+    .meta {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .meta-text {
+      color: #9aa8bc;
+      font-family: "JetBrains Mono", "Courier New", monospace;
+      font-size: 10.5px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .platforms {
+      display: inline-flex;
+      gap: 2px;
+      padding: 2px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #f0f4f9;
+    }
+
+    .platform-chip {
+      padding: 3px 9px;
+      border-radius: 5px;
+      background: transparent;
+      color: var(--faint);
+      font-family: "JetBrains Mono", "Courier New", monospace;
+      font-size: 10px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .platform-chip.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .download-btn {
+      height: 34px;
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 18px;
+      border-radius: 8px;
+      color: #fff;
+      background: linear-gradient(135deg, #2b9bf4, #1577e0);
+      box-shadow: 0 3px 8px rgba(21, 119, 224, 0.28);
+      font-size: 12.5px;
+      font-weight: 800;
+      text-decoration: none;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .plugins.list .plugin-card {
+      min-height: 88px;
+      flex-direction: row;
+      align-items: center;
+      gap: 18px;
+      padding: 14px 18px;
+    }
+
+    .plugins.list .preview {
+      width: 60px;
+      height: 60px;
+      flex: 0 0 60px;
+      border-radius: 8px;
+    }
+
+    .plugins.list .preview-badges,
+    .plugins.list .preview-ai {
+      display: none;
+    }
+
+    .plugins.list .preview img.icon-media {
+      width: 100%;
+      height: 100%;
+      transform: scale(1.25);
+    }
+
+    .plugins.list .card-body {
+      min-width: 0;
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(180px, 300px) minmax(160px, 1fr) auto;
+      align-items: center;
+      gap: 18px;
+      padding: 0;
+    }
+
+    .plugins.list .plugin-heading {
+      min-width: 0;
+    }
+
+    .plugins.list .plugin-title {
+      font-size: 15px;
+    }
+
+    .plugins.list .plugin-desc {
+      min-width: 0;
+      -webkit-line-clamp: 2;
+    }
+
+    .plugins.list .card-bottom {
+      flex: 0 0 auto;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 7px;
+      margin: 0;
+      padding: 0;
+      border: 0;
+    }
+
+    .empty {
+      flex: 1;
+      display: none;
+      text-align: center;
+      padding: 56px 20px;
+    }
+
+    .empty.visible {
+      display: block;
+    }
+
+    .empty h3 {
+      margin: 0;
+      color: var(--text);
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    .empty p {
+      margin: 7px 0 18px;
+      color: #62718a;
+      font-size: 13px;
+    }
+
+    .reset-btn {
+      height: 38px;
+      padding: 0 18px;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin: auto -22px -26px;
+      padding: 15px 22px;
+      border-top: 1px solid var(--line);
+      background: var(--panel);
+    }
+
+    .footer[hidden] {
+      display: none;
+    }
+
+    .footer.after-scroll {
+      margin-top: 34px;
+    }
+
+    .footer-note {
+      color: var(--faint);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .footer-links {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 12.5px;
+      font-weight: 700;
+    }
+
+    .footer-links a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .footer-sep {
+      width: 1px;
+      height: 13px;
+      background: #dce4ee;
+    }
+
+    .toast {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 10;
+      max-width: min(420px, calc(100vw - 36px));
+      padding: 12px 14px;
+      border-radius: 8px;
+      background: #16202e;
+      color: #fff;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.22);
+      font-size: 13px;
+      font-weight: 700;
+      opacity: 0;
+      transform: translateY(8px);
+      pointer-events: none;
+      transition: opacity 0.18s ease, transform 0.18s ease;
+    }
+
+    .toast.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 1080px) {
+      .plugins.list .card-body {
+        grid-template-columns: minmax(160px, 260px) minmax(140px, 1fr);
+      }
+
+      .plugins.list .card-bottom {
+        grid-column: 1 / -1;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
+    }
+
+    @media (max-width: 900px) {
+      .toolbar {
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .toolbar-spacer {
+        display: none;
+      }
+
+      .search {
+        order: 3;
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .toolbar,
+      .content {
+        padding-left: 14px;
+        padding-right: 14px;
+      }
+
+      .plugins {
+        grid-template-columns: 1fr;
+      }
+
+      .plugins.list .plugin-card {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .plugins.list .preview {
+        width: 100%;
+        height: 120px;
+        flex-basis: auto;
+      }
+
+      .plugins.list .preview-badges,
+      .plugins.list .preview-ai {
+        display: flex;
+      }
+
+      .plugins.list .card-body {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 9px;
+      }
+
+      .plugins.list .card-bottom {
+        padding-top: 13px;
+        border-top: 1px solid #eef2f7;
+      }
+
+      .footer {
+        align-items: flex-start;
+        flex-direction: column;
+        margin-left: -14px;
+        margin-right: -14px;
+        padding-left: 14px;
+        padding-right: 14px;
+      }
+
+      .footer-links {
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .footer-sep {
+        display: none;
+      }
+    }
+  </style>
 </head>
 <body>
-    <!-- Google Tag Manager (noscript) -->
-    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-WMB2TZX" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
-    <!-- End Google Tag Manager (noscript) -->
+  <!-- Google Tag Manager (noscript) -->
+  <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-WMB2TZX" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+  <!-- End Google Tag Manager (noscript) -->
+  <div class="app-shell" id="shell">
+    <aside class="sidebar" aria-label="Marketplace filters">
+      <div class="brand">
+        <div class="brand-title">AVS4YOU</div>
+        <div class="brand-subtitle">Plugin Marketplace</div>
+      </div>
 
-    <div class="container">
-        <header>
-            <h1>AVS4YOU Plugins Marketplace</h1>
-            <p class="subtitle">Enhance your AVS applications with powerful plugins</p>
-        </header>
+      <div class="rail-section">
+        <div class="rail-title">Categories</div>
+        <div id="categories"></div>
+      </div>
 
-        <div class="plugins-grid">
-            <!-- Effect Spiral Plugin -->
-            <div class="plugin-card">
-                <div class="plugin-title">Effect Spiral</div>
-                <p class="plugin-description">
-                    Creates a dynamic spiral distortion with an outward explosion effect. Apply radial twist and expansion animations to your videos for stunning visual effects.
-                </p>
-                <div class="supported-apps">
-                    <div class="supported-apps-label">Supported Applications:</div>
-                    <div class="apps-list">
-                        <span class="app-tag">Video Converter</span>
-                        <span class="app-tag">Video Editor</span>
-                    </div>
-                </div>
-                <div class="plugin-meta">
-                    <span class="meta-tag platform-tag">x86</span>
-                    <span class="meta-tag version-tag">v1.0.1</span>
-                    <span class="meta-tag">Image Effect</span>
-                </div>
-                <a href="plugins/effect-spiral/build/x86/effect-spiral.avsp" class="download-btn" download>
-                    Download Effect Spiral
-                </a>
-            </div>
+      <div class="rail-section">
+        <div class="rail-title">Applications</div>
+        <div id="apps"></div>
+      </div>
+    </aside>
 
-            <!-- Effect VHS Plugin -->
-            <div class="plugin-card">
-                <div class="plugin-title">Effect VHS</div>
-                <p class="plugin-description">
-                    Authentic VHS tape effect with noise, color degradation, tracking errors, and chromatic aberration. Give your videos that nostalgic retro 80s-90s feel.
-                </p>
-                <div class="supported-apps">
-                    <div class="supported-apps-label">Supported Applications:</div>
-                    <div class="apps-list">
-                        <span class="app-tag">Video Converter</span>
-                        <span class="app-tag">Video Editor</span>
-                        <span class="app-tag">Image Converter</span>
-                    </div>
-                </div>
-                <div class="plugin-meta">
-                    <span class="meta-tag platform-tag">x86</span>
-                    <span class="meta-tag version-tag">v1.0.1</span>
-                    <span class="meta-tag">Image Effect</span>
-                </div>
-                <a href="plugins/effect-vhs/build/x86/effect-vhs.avsp" class="download-btn" download>
-                    Download Effect VHS
-                </a>
-            </div>
-
-            <!-- Sora2 Plugin -->
-            <div class="plugin-card">
-                <div class="plugin-title">Sora2 Video Generator</div>
-                <p class="plugin-description">
-                    AI-powered video generation using OpenAI's Sora 2 API. Create high-quality videos from text descriptions directly within your AVS workflow.
-                </p>
-                <div class="supported-apps">
-                    <div class="supported-apps-label">Supported Applications:</div>
-                    <div class="apps-list">
-                        <span class="app-tag">Video Converter</span>
-                        <span class="app-tag">Video Editor</span>
-                    </div>
-                </div>
-                <div class="plugin-meta">
-                    <span class="meta-tag platform-tag">x86</span>
-                    <span class="meta-tag">Content Plugin</span>
-                    <span class="meta-tag">AI Powered</span>
-                    <span class="meta-tag">Requires API Key</span>
-                </div>
-                <a href="plugins/sora2/build/x86/Sora2.avsp" class="download-btn" download>
-                    Download Sora2
-                </a>
-            </div>
-			
-			 <!-- Effect Spiral Plugin -->
-            <div class="plugin-card">
-                <div class="plugin-title">Effect Restoration Gaterv3</div>
-                <p class="plugin-description">
-                    The effect uses a 1× restoration model for improving image quality — handles noise, resizing, JPEG compression, and mild blur.
-                </p>
-                <div class="supported-apps">
-                    <div class="supported-apps-label">Supported Applications:</div>
-                    <div class="apps-list">
-						<span class="app-tag">Image Converter</span>
-                        <span class="app-tag">Video Converter</span>
-                        <span class="app-tag">Video Editor</span>
-                    </div>
-                </div>
-                <div class="plugin-meta">
-                    <span class="meta-tag platform-tag">x86</span>
-                    <span class="meta-tag version-tag">v1.0.0</span>
-                    <span class="meta-tag">AI Powered</span>
-                    <span class="meta-tag">Image Effect</span>
-                </div>
-                <a href="plugins/effect-restoration-gaterv3/build/effect-restoration-gaterv3.avsp" class="download-btn" download>
-                    Download Restoration Gaterv3
-                </a>
-            </div>
-			
-			<!-- Heygen Plugin -->
-            <div class="plugin-card">
-                <div class="plugin-title">HeyGen AI Video Generator</div>
-                <p class="plugin-description">
-                    HeyGen is the best online AI video generator and video creator for professionals and marketers who value ease of use.
-                </p>
-                <div class="supported-apps">
-                    <div class="supported-apps-label">Supported Applications:</div>
-                    <div class="apps-list">
-                        <span class="app-tag">Video Converter</span>
-                        <span class="app-tag">Video Editor</span>
-                    </div>
-                </div>
-                <div class="plugin-meta">
-                    <span class="meta-tag platform-tag">x86</span>
-                    <span class="meta-tag">Content Plugin</span>
-                    <span class="meta-tag">AI Powered</span>
-                    <span class="meta-tag">Requires API Key</span>
-                </div>
-                <a href="plugins/heygen/build/x86/Heygen.avsp" class="download-btn" download>
-                    Download HeyGen
-                </a>
-            </div>
+    <main class="main">
+      <header class="toolbar">
+        <div class="heading">
+          <div class="heading-title" id="currentTitle">All plugins</div>
+          <div class="heading-subtitle" id="resultLabel">0 plugins available</div>
         </div>
-        <footer>
-            <p>
-                <a href="https://github.com/avs4you/avs4you.github.io" target="_blank">View on GitHub</a> |
-                <a href="docs">Documentation</a> |
-                <a href="https://www.avs4you.com" target="_blank">Visit AVS4YOU</a>
-            </p>
-            <p style="margin-top: 10px; opacity: 0.8;">
-                All plugins are open source and available on GitHub
-            </p>
+        <div class="toolbar-spacer"></div>
+        <label class="search">
+          <span aria-hidden="true" data-icon="search"></span>
+          <input id="search" type="search" placeholder="Search plugins..." autocomplete="off">
+        </label>
+        <div class="segmented" aria-label="View">
+          <button class="view-button active" id="gridView" type="button" title="Grid view" aria-label="Grid view"></button>
+          <button class="view-button" id="listView" type="button" title="List view" aria-label="List view"></button>
+        </div>
+      </header>
+
+      <section class="content">
+        <div class="plugins" id="plugins"></div>
+        <div class="empty" id="empty">
+          <h3>No plugins match</h3>
+          <p>Try another category, app, or search.</p>
+          <button class="reset-btn" id="reset" type="button">Reset filters</button>
+        </div>
+        <footer class="footer" id="footer">
+          <div class="footer-note">All plugins are open source and available on GitHub</div>
+          <div class="footer-links">
+            <a href="https://github.com/avs4you/avs4you.github.io" target="_blank" rel="noopener">View on GitHub</a>
+            <span class="footer-sep"></span>
+            <a href="docs">Documentation</a>
+            <span class="footer-sep"></span>
+            <a href="https://avs4you.com" target="_blank" rel="noopener">Visit AVS4YOU</a>
+          </div>
         </footer>
-    </div>
+      </section>
+    </main>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script type="application/json" id="plugins-data">
+[
+  {
+    "slug": "effect-restoration-gaterv3",
+    "name": "Restoration Gaterv3",
+    "desc": "A 1x restoration model for improving image quality, including noise, resizing, JPEG compression and mild blur.",
+    "apps": [
+      "Image Converter",
+      "Video Converter",
+      "Video Editor"
+    ],
+    "version": "v1.0.0",
+    "type": "effect",
+    "typeLabel": "Image Effect",
+    "aiPowered": true,
+    "requiresKey": false,
+    "tint": "linear-gradient(135deg,#1FA85C,#0FB5C9)",
+    "media": "plugins/effect-restoration-gaterv3/Effect Restoration Gaterv3.gif",
+    "download": "plugins/effect-restoration-gaterv3/build/x86/effect-restoration-gaterv3.avsp",
+    "basePath": "plugins/effect-restoration-gaterv3"
+  },
+  {
+    "slug": "effect-spiral",
+    "name": "Effect Spiral",
+    "desc": "Dynamic spiral distortion with an outward explosion effect. Radial twist and expansion animations for stunning visuals.",
+    "apps": [
+      "Video Converter",
+      "Video Editor"
+    ],
+    "version": "v1.0.1",
+    "type": "effect",
+    "typeLabel": "Image Effect",
+    "aiPowered": false,
+    "requiresKey": false,
+    "tint": "linear-gradient(135deg,#3B4FE0,#7C5CFF)",
+    "media": "plugins/effect-spiral/Effect Spiral.gif",
+    "download": "plugins/effect-spiral/build/x86/effect-spiral.avsp",
+    "basePath": "plugins/effect-spiral"
+  },
+  {
+    "slug": "effect-vhs",
+    "name": "Effect VHS",
+    "desc": "Authentic VHS tape effect with noise, color degradation, tracking errors and chromatic aberration for a retro 80s-90s feel.",
+    "apps": [
+      "Video Converter",
+      "Video Editor",
+      "Image Converter"
+    ],
+    "version": "v1.0.1",
+    "type": "effect",
+    "typeLabel": "Image Effect",
+    "aiPowered": false,
+    "requiresKey": false,
+    "tint": "linear-gradient(135deg,#E0398E,#7C2BD6)",
+    "media": "plugins/effect-vhs/Effect VHS.gif",
+    "download": "plugins/effect-vhs/build/x86/effect-vhs.avsp",
+    "basePath": "plugins/effect-vhs"
+  },
+  {
+    "slug": "heygen",
+    "name": "HeyGen AI Video Generator",
+    "desc": "The best online AI video generator and creator for professionals and marketers who value ease of use.",
+    "apps": [
+      "Video Converter",
+      "Video Editor"
+    ],
+    "version": "v1.0.0",
+    "type": "content",
+    "typeLabel": "Content Plugin",
+    "aiPowered": true,
+    "requiresKey": true,
+    "tint": "linear-gradient(135deg,#FF9A2E,#F2552E)",
+    "media": "plugins/heygen/res/icons/app-icon.ico",
+    "download": "plugins/heygen/build/x86/Heygen.avsp",
+    "basePath": "plugins/heygen"
+  },
+  {
+    "slug": "sora2",
+    "name": "Sora2 Video Generator",
+    "desc": "AI-powered video generation using OpenAI's Sora 2 API. Create high-quality videos from text directly in your AVS workflow.",
+    "apps": [
+      "Video Converter",
+      "Video Editor"
+    ],
+    "version": "v1.0.0",
+    "type": "content",
+    "typeLabel": "Content Plugin",
+    "aiPowered": true,
+    "requiresKey": true,
+    "tint": "linear-gradient(135deg,#0FB5C9,#1577E0)",
+    "media": "plugins/sora2/icon.ico",
+    "download": "plugins/sora2/build/x86/Sora2.avsp",
+    "basePath": "plugins/sora2"
+  },
+  {
+    "slug": "veo3",
+    "name": "Veo3 Video Generator",
+    "desc": "AI-powered video creation with Google Veo 3. Turn your ideas into polished, cinematic clips from simple text prompts inside your AVS workflow.",
+    "apps": [
+      "Video Converter",
+      "Video Editor"
+    ],
+    "version": "v1.0.0",
+    "type": "content",
+    "typeLabel": "Content Plugin",
+    "aiPowered": true,
+    "requiresKey": true,
+    "tint": "linear-gradient(135deg,#0FB5C9,#1577E0)",
+    "media": "plugins/veo3/icon.ico",
+    "download": "plugins/veo3/build/x86/Veo3.avsp",
+    "basePath": "plugins/veo3"
+  }
+]
+</script>
+
+  <script>
+    let PLUGINS = [];
+
+    const ICON_PLUGIN_BACKGROUND = "linear-gradient(135deg,#0FB5C9,#1577E0)";
+    const X86_ONLY = true;
+
+    const ICONS = {
+      search: '<svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
+      grid: '<svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
+      list: '<svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></svg>',
+      all: '<svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg>',
+      ai: '<svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v4M12 18v4M2 12h4M18 12h4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M19.1 4.9l-2.8 2.8M7.7 16.3l-2.8 2.8"/><circle cx="12" cy="12" r="3"/></svg>',
+      effect: '<svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z"/><path d="m19 15 .8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15Z"/></svg>',
+      content: '<svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M4 12h16M4 19h16"/><path d="M8 5v14"/></svg>'
+    };
+
+    const CATEGORIES = [
+      { key: "all", label: "All plugins", icon: "all" },
+      { key: "ai", label: "AI Powered", icon: "ai" },
+      { key: "effect", label: "Effects", icon: "effect" },
+      { key: "content", label: "Content", icon: "content" }
+    ];
+
+    const APPS = [
+      { key: "all", label: "All apps", icon: "all" },
+      { key: "Video Converter", label: "AVS Video Converter", asset: "assets/AVSVideoConverter_Icon.png" },
+      { key: "Video Editor", label: "AVS Video Editor", asset: "assets/AVSVideoEditor_Icon.png" },
+      { key: "Image Converter", label: "AVS Image Converter", asset: "assets/AVSImageConverter_Icon.png" },
+      { key: "Audio Editor", label: "AVS Audio Editor", asset: "assets/AVSAudioEditor_Icon.png" },
+      { key: "Audio Converter", label: "AVS Audio Converter", asset: "assets/AVSAudioConverter_Icon.png" },
+      { key: "Video ReMaker", label: "AVS Video ReMaker", asset: "assets/AVSVideoReMaker_Icon.png" }
+    ];
+
+    function getAppLabel(appKey) {
+      const app = APPS.find((item) => item.key === appKey);
+      return app ? app.label : appKey;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const typeParam = (params.get("type") || "").toLowerCase();
+    const typeAppFilter = {
+      vc: "Video Converter",
+      ve: "Video Editor",
+      ic: "Image Converter",
+      ae: "Audio Editor",
+      ac: "Audio Converter",
+      rm: "Video ReMaker"
+    };
+    const initialAppFilter = typeAppFilter[typeParam] || "all";
+    const state = {
+      isApp: typeParam === "app" || initialAppFilter !== "all",
+      appPlatform: X86_ONLY ? "x86" : (params.get("platform") === "x64" ? "x64" : "x86"),
+      category: "all",
+      app: initialAppFilter,
+      search: "",
+      view: "grid",
+      platform: {}
+    };
+
+    const els = {
+      brand: document.querySelector(".brand"),
+      categories: document.getElementById("categories"),
+      apps: document.getElementById("apps"),
+      plugins: document.getElementById("plugins"),
+      empty: document.getElementById("empty"),
+      reset: document.getElementById("reset"),
+      search: document.getElementById("search"),
+      currentTitle: document.getElementById("currentTitle"),
+      resultLabel: document.getElementById("resultLabel"),
+      gridView: document.getElementById("gridView"),
+      listView: document.getElementById("listView"),
+      footer: document.getElementById("footer"),
+      toast: document.getElementById("toast")
+    };
+
+    let toastTimer = null;
+
+    function renderStaticIcons() {
+      els.gridView.innerHTML = ICONS.grid;
+      els.listView.innerHTML = ICONS.list;
+      document.querySelectorAll("[data-icon]").forEach((element) => {
+        element.innerHTML = ICONS[element.dataset.icon] || "";
+      });
+    }
+
+    function loadPlugins() {
+      const node = document.getElementById("plugins-data");
+      if (!node) throw new Error("Missing plugins-data");
+      PLUGINS = JSON.parse(node.textContent || "[]");
+    }
+
+    function matchCategory(plugin, category) {
+      if (category === "all") return true;
+      if (category === "effect") return plugin.type === "effect";
+      if (category === "ai") return plugin.aiPowered;
+      if (category === "content") return plugin.type === "content";
+      return true;
+    }
+
+    function getHref(plugin, platform) {
+      return plugin.download
+        .replace("/x86/", "/" + platform + "/")
+        .replace("/x64/", "/" + platform + "/");
+    }
+
+    function getFilteredPlugins() {
+      const query = state.search.trim().toLowerCase();
+      return PLUGINS.filter((plugin) => {
+        if (!matchCategory(plugin, state.category)) return false;
+        if (state.app !== "all" && !plugin.apps.includes(state.app)) return false;
+        if (!query) return true;
+        return (
+          plugin.name.toLowerCase().includes(query) ||
+          plugin.desc.toLowerCase().includes(query) ||
+          plugin.typeLabel.toLowerCase().includes(query)
+        );
+      });
+    }
+
+    function makeButton(item, active, count, onClick) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "rail-button" + (active ? " active" : "");
+      button.addEventListener("click", onClick);
+
+      const icon = document.createElement(item.asset ? "img" : "span");
+      if (item.asset) {
+        icon.className = "app-badge app-icon";
+        icon.src = item.asset;
+        icon.alt = "";
+        icon.setAttribute("aria-hidden", "true");
+      } else {
+        icon.className = "rail-icon";
+        icon.innerHTML = ICONS[item.icon] || "";
+      }
+
+      const label = document.createElement("span");
+      label.className = "rail-label";
+      label.textContent = item.label;
+
+      const counter = document.createElement("span");
+      counter.className = "rail-count";
+      counter.textContent = count;
+
+      button.append(icon, label, counter);
+      return button;
+    }
+
+    function renderFilters() {
+      els.categories.replaceChildren();
+      CATEGORIES.forEach((item) => {
+        const count = PLUGINS.filter((plugin) => matchCategory(plugin, item.key)).length;
+        els.categories.appendChild(makeButton(item, state.category === item.key, count, () => {
+          state.category = item.key;
+          render();
+        }));
+      });
+
+      els.apps.replaceChildren();
+      APPS.forEach((item) => {
+        const count = item.key === "all"
+          ? PLUGINS.length
+          : PLUGINS.filter((plugin) => plugin.apps.includes(item.key)).length;
+        els.apps.appendChild(makeButton(item, state.app === item.key, count, () => {
+          state.app = item.key;
+          render();
+        }));
+      });
+    }
+
+    function makeBadge(text, className) {
+      const badge = document.createElement("span");
+      badge.className = "badge" + (className ? " " + className : "");
+      badge.textContent = text;
+      return badge;
+    }
+
+    function makeAiBadge() {
+      const badge = makeBadge("AI", "ai");
+      const dot = document.createElement("span");
+      dot.className = "dot";
+      badge.prepend(dot);
+      return badge;
+    }
+
+    function makePlatformChips(plugin, activePlatform) {
+      if (state.isApp || X86_ONLY) return null;
+
+      const wrap = document.createElement("span");
+      wrap.className = "platforms";
+
+      ["x86", "x64"].forEach((platform) => {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = "platform-chip" + (platform === activePlatform ? " active" : "");
+        chip.textContent = platform;
+        chip.addEventListener("click", () => {
+          state.platform[plugin.slug] = platform;
+          renderPlugins();
+        });
+        wrap.appendChild(chip);
+      });
+
+      return wrap;
+    }
+
+    function showToast(message) {
+      els.toast.textContent = message;
+      els.toast.classList.add("visible");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        els.toast.classList.remove("visible");
+      }, 2800);
+    }
+
+    function handleAction(event, href) {
+      if (!state.isApp) return;
+
+      event.preventDefault();
+      try {
+        if (window.chrome && window.chrome.webview) {
+          window.chrome.webview.postMessage("download|" + href);
+        }
+      } catch (error) {
+        // WebView messaging is only available inside the host application.
+      }
+      showToast("Install requested: " + href.split("/").pop());
+    }
+
+    function makeCard(plugin) {
+      const activePlatform = state.isApp
+        ? state.appPlatform
+        : (state.platform[plugin.slug] || state.appPlatform);
+      const href = getHref(plugin, activePlatform);
+      const card = document.createElement("article");
+      card.className = "plugin-card";
+
+      const preview = document.createElement("div");
+      preview.className = "preview";
+
+      const previewBg = document.createElement("div");
+      previewBg.className = "preview-bg";
+      previewBg.style.background = /\.ico$/i.test(plugin.media || "")
+        ? ICON_PLUGIN_BACKGROUND
+        : plugin.tint;
+      preview.appendChild(previewBg);
+
+      if (plugin.media) {
+        const image = document.createElement("img");
+        image.src = plugin.media;
+        image.alt = plugin.name;
+        if (/\.ico$/i.test(plugin.media)) image.className = "icon-media";
+        preview.appendChild(image);
+      }
+
+      const badges = document.createElement("div");
+      badges.className = "preview-badges";
+      badges.appendChild(makeBadge(plugin.typeLabel));
+      if (plugin.requiresKey) badges.appendChild(makeBadge("API key", "key"));
+      preview.appendChild(badges);
+
+      if (plugin.aiPowered) {
+        const ai = document.createElement("div");
+        ai.className = "preview-ai";
+        ai.appendChild(makeAiBadge());
+        preview.appendChild(ai);
+      }
+
+      const body = document.createElement("div");
+      body.className = "card-body";
+
+      const heading = document.createElement("div");
+      heading.className = "plugin-heading";
+
+      const title = document.createElement("h3");
+      title.className = "plugin-title";
+      title.textContent = plugin.name;
+      heading.appendChild(title);
+
+      const desc = document.createElement("p");
+      desc.className = "plugin-desc";
+      desc.textContent = plugin.desc;
+
+      const bottom = document.createElement("div");
+      bottom.className = "card-bottom";
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+
+      const metaText = document.createElement("span");
+      metaText.className = "meta-text";
+      metaText.textContent = state.isApp
+        ? activePlatform + " \u00b7 " + plugin.version
+        : plugin.version;
+
+      const platformChips = makePlatformChips(plugin, activePlatform);
+      meta.append(metaText);
+      if (platformChips) meta.append(platformChips);
+
+      const link = document.createElement("a");
+      link.className = "download-btn";
+      link.href = state.isApp ? "#" : href;
+      link.textContent = state.isApp ? "Install" : "Download";
+      if (!state.isApp) link.setAttribute("download", "");
+      link.addEventListener("click", (event) => handleAction(event, href));
+
+      bottom.append(meta, link);
+      body.append(heading, desc, bottom);
+      card.append(preview, body);
+      return card;
+    }
+
+    function renderPlugins() {
+      const filtered = getFilteredPlugins();
+      els.plugins.className = "plugins" + (state.view === "list" ? " list" : "");
+      els.plugins.replaceChildren(...filtered.map(makeCard));
+      els.empty.classList.toggle("visible", filtered.length === 0);
+      els.plugins.style.display = filtered.length === 0 ? "none" : "";
+      requestAnimationFrame(() => {
+        const content = document.querySelector(".content");
+        const canScroll = content.scrollHeight > content.clientHeight + 1;
+        els.footer.classList.toggle("after-scroll", canScroll);
+      });
+
+      const currentCategory = CATEGORIES.find((item) => item.key === state.category);
+      els.currentTitle.textContent = state.app !== "all"
+        ? getAppLabel(state.app)
+        : (currentCategory ? currentCategory.label : "All plugins");
+      els.resultLabel.textContent = filtered.length === PLUGINS.length
+        ? PLUGINS.length + " plugins available"
+        : filtered.length + " of " + PLUGINS.length + " shown";
+    }
+
+    function render() {
+      els.gridView.classList.toggle("active", state.view === "grid");
+      els.listView.classList.toggle("active", state.view === "list");
+      els.footer.hidden = state.isApp;
+      els.brand.hidden = state.isApp;
+      renderFilters();
+      renderPlugins();
+    }
+
+    els.gridView.addEventListener("click", () => {
+      state.view = "grid";
+      render();
+    });
+
+    els.listView.addEventListener("click", () => {
+      state.view = "list";
+      render();
+    });
+
+    els.search.addEventListener("input", (event) => {
+      state.search = event.target.value;
+      renderPlugins();
+    });
+
+    els.reset.addEventListener("click", () => {
+      state.category = "all";
+      state.app = "all";
+      state.search = "";
+      els.search.value = "";
+      render();
+    });
+
+    async function init() {
+      renderStaticIcons();
+      try {
+        loadPlugins();
+      } catch (error) {
+        console.warn(error);
+        els.currentTitle.textContent = "Plugins unavailable";
+        els.resultLabel.textContent = "Could not load plugin data";
+        els.empty.classList.add("visible");
+        els.empty.querySelector("h3").textContent = "Plugins unavailable";
+        els.empty.querySelector("p").textContent = "Run package.py and reload the page.";
+        els.reset.hidden = true;
+        els.footer.hidden = true;
+        return;
+      }
+      render();
+    }
+
+    init();
+  </script>
 </body>
 </html>

@@ -225,6 +225,20 @@ void CCore::keepVoices(const nlohmann::json& jv)
 	m_intf->keep_voices(jv);
 }
 
+void CCore::setApiKey()
+{
+    auto windows = UIApplication::instance()->windows();
+    UIWidget *parent = windows.empty() ? nullptr : windows[0];
+
+    ApiKeyDialog dlg(parent, utils::calcWindowPlacement(parent, Size(350, 220)));
+    if ( !m_intf->m_api_key.empty() )
+        dlg.setKey(m_intf->m_api_key);
+    if ( dlg.runDialog() == UIDialog::Accepted ) {
+        m_intf->m_api_key = dlg.key();
+        m_intf->user_settings->keepApiKey(m_intf->m_api_key);
+    }
+}
+
 void CCore::resetApiKey()
 {
     m_intf->m_api_key = L"";
@@ -234,14 +248,7 @@ void CCore::resetApiKey()
 bool CCore::checkApiKey()
 {
     if ( m_intf->m_api_key.empty() ) {
-        auto windows = UIApplication::instance()->windows();
-        UIWidget *parent = windows.empty() ? nullptr : windows[0];
-
-        ApiKeyDialog dlg(parent, utils::calcWindowPlacement(parent, Size(350, 220)));
-        if ( dlg.runDialog() == UIDialog::Accepted ) {
-            m_intf->m_api_key = dlg.key();
-			m_intf->user_settings->keepApiKey(m_intf->m_api_key.c_str());
-        }
+        setApiKey();
     }
 
     return !m_intf->m_api_key.empty();

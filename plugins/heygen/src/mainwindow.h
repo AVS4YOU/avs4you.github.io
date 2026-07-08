@@ -33,6 +33,7 @@ private:
     void btnRefreshClick();
     void btnPlayVoiceClick();
     void btnRetrieveClick();
+    void btnSetApiKeyClick();
     void btnGenerateClick();
     void linkHeygenKeyClick();
 

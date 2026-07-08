@@ -27,6 +27,7 @@ public:
     UIComboBox *cmbGender;
     UIComboBox *cmbLanguage;
     UIButton *btnRefresh;
+    UIButton *btnApiKey;
     UITextEdit *textEdit;
     UILabel *viewPanel;
     UILabel *bottomPanel;
@@ -402,6 +403,14 @@ public:
         UISpacer *spacerConf2 = new UISpacer(5, 4, SizePolicy::Fixed, SizePolicy::Fixed);
         settingsVlut->addSpacer(spacerConf2);
 
+        btnApiKey = new UIButton(settingsPanel);
+        btnApiKey->setObjectGroupId(_T("PushButtonSecondary"));
+        btnApiKey->SetMetrics(Metrics::TextAlignment, Metrics::AlignHCenter | Metrics::AlignVCenter);
+        settingsVlut->addWidget(btnApiKey);
+
+        UISpacer *spacerConf3 = new UISpacer(5, 4, SizePolicy::Fixed, SizePolicy::Fixed);
+        settingsVlut->addSpacer(spacerConf3);
+
         btnGenerate = new UIButton(settingsPanel);
         btnGenerate->setObjectGroupId(_T("PushButton"));
         btnGenerate->SetMetrics(Metrics::TextAlignment, Metrics::AlignHCenter | Metrics::AlignVCenter);
@@ -446,6 +455,7 @@ public:
         linkHeygenKey->setText(_T("Heygen website"));
         linkHeygenKey->adjustSizeBasedOnContent();
         btnRetrieve->setText(_TR(BUTTON_RETRIEVE_STATUS));
+        btnApiKey->setText(_TR(BUTTON_API_KEY));
         btnGenerate->setText(_TR(BUTTON_GENERATE));
     }
 

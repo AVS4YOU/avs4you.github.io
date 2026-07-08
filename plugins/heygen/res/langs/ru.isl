@@ -23,6 +23,7 @@ ru.LABEL_WIDTH =Ширина
 ru.LABEL_HEIGHT =Высота
 
 ru.BUTTON_REFRESH =Обновить
+ru.BUTTON_API_KEY =Задать ключ API
 ru.BUTTON_PLAY_VOICE =Воспроизвести
 ru.BUTTON_RETRIEVE_STATUS =Получить статус
 ru.BUTTON_GENERATE =Генерировать
