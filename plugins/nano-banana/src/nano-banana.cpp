@@ -108,27 +108,5 @@ void CNanoBanana::Process(NSProcesses::CProcessRunnerCallback* callback, const s
 	NSSystemUtils::WriteWStringToUtf8File(m_prompt, sPromptPath, false);
 
 	m_file = sPath;
-	m_start_time = 0;
 	m_manager->Start(L"powershell -ExecutionPolicy Bypass -File \"" + sWorkScript + L"\"", {});
-}
-
-void CNanoBanana::FakeStart()
-{
-	if (0 != m_start_time)
-		return;
-	m_start_time = GetTickCount();
-}
-
-int CNanoBanana::GetFakeProgress()
-{
-	DWORD current_time = GetTickCount();
-	DWORD elapsed_ms = current_time - m_start_time;
-
-	int steps = elapsed_ms / 2000;
-	int progress = 10 + steps * 10;
-
-	if (progress > 90)
-		progress = 90;
-
-	return progress;
 }

@@ -26,6 +26,7 @@
 
 static const int kModeFirst = static_cast<int>(WmMainWindowCommands::ButtonTextToImage);
 static const int kModeLast = static_cast<int>(WmMainWindowCommands::ButtonVideoToImage);
+static const UINT_PTR kProgressTimerId = 1;
 static int activeNow = static_cast<int>(WmMainWindowCommands::ButtonTextToImage);
 
 namespace NSUI
@@ -352,6 +353,7 @@ namespace NSUI
 		static HWND hProgress, hStatus, hSettings, hGenerate;
 		static HWND hTextToImage, hImageEdit, hMultiTurn, hGoogleSearch, hImageSearch, hVideoToImage;
 		static HWND hFile[6], hPathFile[6], hModeDescription[4];
+		static int progressValue = 0;
 		static std::wstring editPathText[6];
 		static std::wstring multiTurnPathText;
 
@@ -483,7 +485,10 @@ namespace NSUI
 				if (plugin->m_engine.m_manager && 0 < plugin->m_engine.m_manager->GetTasksCount())
 				{
 					plugin->m_engine.m_manager->StopAll();
+					KillTimer(hwnd, kProgressTimerId);
+					progressValue = 0;
 					AVS::Button_SetSettings(hGenerate, AVS::ButtonSettings::Create(AVS::Buttons::Primary), CTranslate::GetInstance().GetManager()->Translate(L"Generate"));
+					AVS::ProgressBar_SetPos(hProgress, progressValue);
 					ShowWindow(hProgress, SW_HIDE);
 					break;
 				}
@@ -592,9 +597,10 @@ namespace NSUI
 
 				AVS::Button_SetSettings(hGenerate, AVS::ButtonSettings::Create(AVS::Buttons::Default), CTranslate::GetInstance().GetManager()->Translate(L"Cancel"));
 				AVS::Label_SetText(hStatus, L"");
-				AVS::ProgressBar_SetPos(hProgress, 10);
-				plugin->m_engine.FakeStart();
+				progressValue = 0;
+				AVS::ProgressBar_SetPos(hProgress, progressValue);
 				ShowWindow(hProgress, SW_SHOW);
+				SetTimer(hwnd, kProgressTimerId, 1000, NULL);
 				plugin->m_engine.Process(plugin, plugin->m_workDirectory);
 				break;
 			}
@@ -698,15 +704,14 @@ namespace NSUI
 						plugin->m_engine.m_previousInteractionId = NSStringUtils::utf8_to_wstring(response["interactionId"].get<std::string>());
 						std::wstring path = plugin->m_workDirectory + L"\\" + plugin->m_engine.m_file;
 						SaveInteractionIdToCache(plugin, path, plugin->m_engine.m_previousInteractionId);
-						AVS::ProgressBar_SetPos(hProgress, 100);
+						KillTimer(hwnd, kProgressTimerId);
+						progressValue = 100;
+						AVS::ProgressBar_SetPos(hProgress, progressValue);
 						AVS::Label_SetText(hStatus, CTranslate::GetInstance().GetManager()->Translate(L"Done"));
 						if (CompleteGeneration(hwnd, plugin))
 							return 0;
 					}
-					else if (response.contains("id") && response["id"].is_string())
-					{
-						AVS::ProgressBar_SetPos(hProgress, plugin->m_engine.GetFakeProgress());
-					}
+
 				}
 				catch (...)
 				{
@@ -716,8 +721,10 @@ namespace NSUI
 			}
 			case static_cast<int>(WmMainWindowCommands::OutputStop):
 			{
+				KillTimer(hwnd, kProgressTimerId);
 				AVS::Button_SetSettings(hGenerate, AVS::ButtonSettings::Create(AVS::Buttons::Primary), CTranslate::GetInstance().GetManager()->Translate(L"Generate"));
-				AVS::ProgressBar_SetPos(hProgress, 0);
+				progressValue = 0;
+				AVS::ProgressBar_SetPos(hProgress, progressValue);
 				ShowWindow(hProgress, SW_HIDE);
 
 				if (CompleteGeneration(hwnd, plugin))
@@ -729,7 +736,26 @@ namespace NSUI
 			}
 			break;
 		}
+		case WM_TIMER:
+		{
+			if (wParam != kProgressTimerId)
+				break;
+
+			if (!plugin->m_engine.m_manager || plugin->m_engine.m_manager->GetTasksCount() <= 0)
+			{
+				KillTimer(hwnd, kProgressTimerId);
+				break;
+			}
+
+			if (progressValue < 99)
+			{
+				++progressValue;
+				AVS::ProgressBar_SetPos(hProgress, progressValue);
+			}
+			break;
+		}
 		case WM_DESTROY:
+			KillTimer(hwnd, kProgressTimerId);
 			if (plugin->m_engine.m_manager)
 				plugin->m_engine.m_manager->StopAll();
 			PostQuitMessage(0);

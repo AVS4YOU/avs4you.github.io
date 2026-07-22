@@ -23,7 +23,6 @@ public:
     std::wstring m_key = L"";
     std::wstring m_previousInteractionId = L"";
     std::wstring m_videoUri = L"";
-    DWORD m_start_time = 0;
 
     NSProcesses::CProcessManager* m_manager = nullptr;
 
@@ -33,10 +32,6 @@ public:
     ~CNanoBanana();
 
     void Process(NSProcesses::CProcessRunnerCallback* callback, const std::wstring& workDirectory);
-
-    void FakeStart();
-    int GetFakeProgress();
-
     std::wstring GetCurrentDateTime();
 protected:
     std::wstring CreateWorkDirectory();
