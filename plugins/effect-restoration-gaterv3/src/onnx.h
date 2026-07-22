@@ -1,7 +1,12 @@
 #pragma once
 
 #include "../3dparty/include/onnxruntime/core/session/onnxruntime_cxx_api.h"
-#pragma comment(lib, "./libs/onnxruntime.lib")
+#ifdef _WIN64
+#pragma comment(lib, "./libs/x64/onnxruntime.lib")
+#else
+#pragma comment(lib, "./libs/x86/onnxruntime.lib")
+#endif // _WIN64
+
 
 #include <string>
 

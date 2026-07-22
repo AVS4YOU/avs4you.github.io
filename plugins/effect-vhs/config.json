@@ -1,0 +1,14 @@
+{
+  "slug": "effect-vhs",
+  "name": "Effect VHS",
+  "desc": "Authentic VHS tape effect with noise, color degradation, tracking errors and chromatic aberration for a retro 80s-90s feel.",
+  "apps": [ "Video Converter", "Video Editor", "Image Converter" ],
+  "version": "v1.0.1",
+  "type": "effect",
+  "typeLabel": "Image Effect",
+  "aiPowered": false,
+  "requiresKey": false,
+  "tint": "linear-gradient(135deg,#E0398E,#7C2BD6)",
+  "media": "Effect VHS.gif",
+  "download": "build/x86/effect-vhs.avsp"
+}

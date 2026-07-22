@@ -9,6 +9,8 @@ namespace AVS
 	{
 		Primary = 0,
 		Default = 1,
+		ToggleGroupDisable = 2,
+		ToggleGroupEnable = 3,
 
 		Undefined = 255
 	};

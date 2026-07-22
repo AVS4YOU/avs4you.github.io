@@ -29,6 +29,40 @@ namespace AVS
 				settings.FocusColor = Color::MakeRGBA(22, 61, 128);
 				break;
 			}
+			case Buttons::ToggleGroupEnable:
+			{
+				settings.Background = Color::MakeRGBA(55, 119, 227);
+				settings.Border = Color::MakeRGBA(43, 93, 179);
+
+				settings.BackgroundHover = Color::MakeRGBA(68, 132, 240);
+				settings.BorderHover = Color::MakeRGBA(52, 105, 194);
+
+				settings.BackgroundPressed = Color::MakeRGBA(43, 104, 209);
+				settings.BorderPressed = Color::MakeRGBA(31, 77, 156);
+
+				settings.TextColor = Color::MakeRGBA(255, 255, 255);
+				settings.TextColorPressed = Color::MakeRGBA(255, 255, 255);
+
+				settings.FocusColor = Color::MakeRGBA(22, 61, 128);
+				break;
+			}
+			case Buttons::ToggleGroupDisable:
+			{
+				settings.Background = Color::MakeRGBA(218, 226, 242);
+				settings.Border = Color::MakeRGBA(190, 201, 224);
+
+				settings.BackgroundHover = Color::MakeRGBA(228, 234, 247);
+				settings.BorderHover = Color::MakeRGBA(160, 177, 210);
+
+				settings.BackgroundPressed = Color::MakeRGBA(200, 214, 240);
+				settings.BorderPressed = Color::MakeRGBA(120, 145, 194);
+
+				settings.TextColor = Color::MakeRGBA(0, 0, 0);
+				settings.TextColorPressed = Color::MakeRGBA(0, 0, 0);
+
+				settings.FocusColor = Color::MakeRGBA(57, 114, 227);
+				break;
+			}
 			case Buttons::Default:
 			default:
 			{

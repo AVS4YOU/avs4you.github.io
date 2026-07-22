@@ -1,0 +1,14 @@
+{
+  "slug": "effect-restoration-gaterv3",
+  "name": "Restoration Gaterv3",
+  "desc": "A 1x restoration model for improving image quality, including noise, resizing, JPEG compression and mild blur.",
+  "apps": [ "Image Converter", "Video Converter", "Video Editor" ],
+  "version": "v1.0.0",
+  "type": "effect",
+  "typeLabel": "Image Effect",
+  "aiPowered": true,
+  "requiresKey": false,
+  "tint": "linear-gradient(135deg,#1FA85C,#0FB5C9)",
+  "media": "Effect Restoration Gaterv3.gif",
+  "download": "build/x86/effect-restoration-gaterv3.avsp"
+}

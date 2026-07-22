@@ -1,0 +1,14 @@
+{
+  "slug": "heygen",
+  "name": "HeyGen AI Video Generator",
+  "desc": "The best online AI video generator and creator for professionals and marketers who value ease of use.",
+  "apps": [ "Video Converter", "Video Editor" ],
+  "version": "v1.0.0",
+  "type": "content",
+  "typeLabel": "Content Plugin",
+  "aiPowered": true,
+  "requiresKey": true,
+  "tint": "linear-gradient(135deg,#FF9A2E,#F2552E)",
+  "media": "res/icons/app-icon.ico",
+  "download": "build/x86/Heygen.avsp"
+}
