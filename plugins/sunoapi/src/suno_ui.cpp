@@ -305,19 +305,32 @@ void UpdateSourceField(State *state)
 
 void CenterWindow(HWND hwnd)
 {
-
 	RECT windowRect{};
 	GetWindowRect(hwnd, &windowRect);
-	HMONITOR monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+
+	HWND owner = GetWindow(hwnd, GW_OWNER);
+	RECT centerRect{};
+	if (owner && IsWindow(owner))
+		GetWindowRect(owner, &centerRect);
+	else
+	{
+		HMONITOR centerMonitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+		MONITORINFO centerInfo{sizeof(centerInfo)};
+		GetMonitorInfoW(centerMonitor, &centerInfo);
+		centerRect = centerInfo.rcWork;
+	}
+
+	HMONITOR monitor = MonitorFromRect(&centerRect, MONITOR_DEFAULTTONEAREST);
 	MONITORINFO info{sizeof(info)};
 	GetMonitorInfoW(monitor, &info);
 	int width = windowRect.right - windowRect.left;
 	int height = windowRect.bottom - windowRect.top;
-	int x = info.rcWork.left + (info.rcWork.right - info.rcWork.left - width) / 2;
-	int y = info.rcWork.top + (info.rcWork.bottom - info.rcWork.top - height) / 2;
+	int x = centerRect.left + (centerRect.right - centerRect.left - width) / 2;
+	int y = centerRect.top + (centerRect.bottom - centerRect.top - height) / 2;
+	x = max(info.rcWork.left, min(x, info.rcWork.right - width));
+	y = max(info.rcWork.top, min(y, info.rcWork.bottom - height));
 	SetWindowPos(hwnd, nullptr, x, y, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
 }
-
 LRESULT CALLBACK SettingsProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	struct SettingsState
@@ -913,6 +926,7 @@ void SunoUI::Show(CSunoApiPlugin *p)
 							690, 514, p->parentWindow,
 							nullptr, g_hInst, p);
 	
+	CenterWindow(w);
 	ShowWindow(w, SW_SHOW);
 	UpdateWindow(w);
 }
