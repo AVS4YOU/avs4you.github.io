@@ -7,6 +7,7 @@
 #include <atomic>
 #include <commctrl.h>
 #include <fstream>
+#include <shellapi.h>
 #include <thread>
 #pragma comment(lib, "comctl32.lib")
 
@@ -27,6 +28,8 @@ using json = nlohmann::json;
 #define SUNO_TASK_POLL_INTERVAL_MS 4000
 #define SUNO_DOWNLOAD_ATTEMPTS 3
 #define SUNO_DOWNLOAD_RETRY_INTERVAL_MS 750
+#define SUNO_HELP_URL L"https://docs.sunoapi.org/#-music-generation-apis"
+#define SUNO_CALLBACK_URL "https://api.example.com/callback"
 
 namespace
 {
@@ -36,11 +39,13 @@ enum
 	ID_MODEL,
 	ID_PROMPT,
 	ID_STYLE,
+	ID_NEGATIVE_TAGS,
 	ID_TITLE,
 	ID_SOURCE,
 	ID_FILE,
 	ID_CUSTOM,
 	ID_INSTRUMENTAL,
+	ID_HELP,
 	ID_RUN,
 	ID_SETTINGS,
 	ID_STATUS
@@ -49,7 +54,7 @@ enum
 struct State
 {
 	CSunoApiPlugin *p = nullptr;
-	HWND mode{}, model{}, prompt{}, style{}, title{}, sourceLabel{}, source{}, audioIdLabel{}, audioId{}, titleCounter{}, promptCounter{}, styleCounter{}, custom{}, instrumental{}, file{}, settings{}, run{}, status{};
+	HWND mode{}, model{}, prompt{}, style{}, negativeTagsLabel{}, negativeTags{}, title{}, sourceLabel{}, source{}, audioIdLabel{}, audioId{}, titleCounter{}, promptCounter{}, styleCounter{}, custom{}, instrumental{}, help{}, file{}, settings{}, run{}, status{};
 	std::atomic<bool> busy{false};
 	bool customEnabled = false;
 	bool instrumentalEnabled = false;
@@ -175,7 +180,7 @@ std::wstring CachePath(const State *state)
 	return state->p->workDirectory + L"\\cache.json";
 }
 
-bool FindIdInCache(State *state, const std::string &hash, std::wstring &audioId)
+bool FindTrackInCache(State *state, const std::string &hash, std::wstring &audioId, std::wstring &audioUrl)
 {
 	try
 	{
@@ -190,12 +195,13 @@ bool FindIdInCache(State *state, const std::string &hash, std::wstring &audioId)
 		if (entry.is_string())
 		{
 			audioId = Suno::Utf8ToWide(entry.get<std::string>());
-			return !audioId.empty();
+			return true;
 		}
 		if (entry.is_object())
 		{
 			audioId = Suno::Utf8ToWide(entry.value("audioId", ""));
-			return !audioId.empty();
+			audioUrl = Suno::Utf8ToWide(entry.value("audioUrl", ""));
+			return true;
 		}
 		return false;
 	}
@@ -205,9 +211,9 @@ bool FindIdInCache(State *state, const std::string &hash, std::wstring &audioId)
 	}
 }
 
-void SaveIdToCache(State *state, const std::wstring &filePath, const std::string &audioId)
+void SaveTrackToCache(State *state, const std::wstring &filePath, const std::string &taskId, const std::string &audioId, const std::string &audioUrl)
 {
-	if (audioId.empty())
+	if (audioUrl.empty())
 		return;
 	try
 	{
@@ -228,7 +234,7 @@ void SaveIdToCache(State *state, const std::wstring &filePath, const std::string
 				cache = json::object();
 			}
 		}
-		cache[hash] = audioId;
+		cache[hash] = {{"taskId", taskId}, {"audioId", audioId}, {"audioUrl", audioUrl}};
 		std::ofstream output(path, std::ios::binary | std::ios::trunc);
 		if (output.is_open())
 			output << cache.dump(4);
@@ -284,23 +290,29 @@ void UpdateCounters(State *state)
 void UpdateSourceField(State *state)
 {
 	int mode = AVS::ComboBox_GetCurrent(state->mode);
+	const bool addVocalsMode = mode == SUNO_MODE_ADD_VOCALS;
 	bool visible = mode == SUNO_MODE_EXTEND_MUSIC || mode == SUNO_MODE_COVER_AUDIO || mode == SUNO_MODE_ADD_VOCALS || mode == SUNO_MODE_VOCAL_REMOVAL;
 	if (mode == SUNO_MODE_COVER_AUDIO || mode == SUNO_MODE_ADD_VOCALS)
 		AVS::Label_SetText(state->sourceLabel, L"URL");
 	else if (mode == SUNO_MODE_VOCAL_REMOVAL)
 		AVS::Label_SetText(state->sourceLabel, L"Task ID");
 
-	const bool fileMode = mode == SUNO_MODE_EXTEND_MUSIC || mode == SUNO_MODE_VOCAL_REMOVAL;
-	ShowWindow(state->sourceLabel, visible && mode != SUNO_MODE_EXTEND_MUSIC ? SW_SHOW : SW_HIDE);
+	const bool fileMode = mode == SUNO_MODE_EXTEND_MUSIC || mode == SUNO_MODE_COVER_AUDIO || mode == SUNO_MODE_ADD_VOCALS || mode == SUNO_MODE_VOCAL_REMOVAL;
+	ShowWindow(state->sourceLabel, visible && !fileMode ? SW_SHOW : SW_HIDE);
 	ShowWindow(state->source, visible ? SW_SHOW : SW_HIDE);
+	ShowWindow(state->negativeTagsLabel, addVocalsMode ? SW_SHOW : SW_HIDE);
+	ShowWindow(state->negativeTags, addVocalsMode ? SW_SHOW : SW_HIDE);
+	SetWindowPos(state->source, nullptr, 130, addVocalsMode ? 381 : 343, 520, 25, SWP_NOZORDER | SWP_NOACTIVATE);
 
 	const bool showAudioId = mode == SUNO_MODE_VOCAL_REMOVAL;
 	ShowWindow(state->audioIdLabel, SW_HIDE);
 	ShowWindow(state->audioId, showAudioId ? SW_SHOW : SW_HIDE);
 	ShowWindow(state->file, fileMode ? SW_SHOW : SW_HIDE);
-	SetWindowPos(state->file, nullptr, 16, mode == SUNO_MODE_VOCAL_REMOVAL ? 381 : 343, 100, 25, SWP_NOZORDER | SWP_NOACTIVATE);
+	SetWindowPos(state->file, nullptr, 16, mode == SUNO_MODE_VOCAL_REMOVAL || addVocalsMode ? 381 : 343, 100, 25, SWP_NOZORDER | SWP_NOACTIVATE);
 	if (!visible)
 		Set(state->source, L"");
+	if (!addVocalsMode)
+		Set(state->negativeTags, L"");
 }
 
 void CenterWindow(HWND hwnd)
@@ -504,10 +516,11 @@ void Worker(State *s)
 		return;
 	}
 	int mode = AVS::ComboBox_GetCurrent(s->mode);
-	std::wstring prompt = Text(s->prompt), style = Text(s->style), title = Text(s->title), source = Text(s->source), model = AVS::ComboBox_GetCurrentText(s->model), audioId = Text(s->audioId);
+	std::wstring prompt = Text(s->prompt), style = Text(s->style), negativeTags = Text(s->negativeTags), title = Text(s->title), source = Text(s->source), model = AVS::ComboBox_GetCurrentText(s->model), audioId = Text(s->audioId);
 	json b;
 	b["prompt"] = Suno::WideToUtf8(prompt);
 	b["model"] = Suno::WideToUtf8(model);
+	b["callBackUrl"] = SUNO_CALLBACK_URL;
 	if (mode == SUNO_MODE_GENERATE_MUSIC)
 	{
 		b["customMode"] = s->customEnabled;
@@ -536,6 +549,8 @@ void Worker(State *s)
 	else if (mode == SUNO_MODE_COVER_AUDIO || mode == SUNO_MODE_ADD_VOCALS)
 	{
 		b["uploadUrl"] = Suno::WideToUtf8(source);
+		if (mode == SUNO_MODE_ADD_VOCALS)
+			b["negativeTags"] = Suno::WideToUtf8(negativeTags);
 		if (!style.empty())
 			b["style"] = Suno::WideToUtf8(style);
 		if (!title.empty())
@@ -546,7 +561,8 @@ void Worker(State *s)
 		b.clear();
 		b["taskId"] = Suno::WideToUtf8(source);
 		b["audioId"] = Suno::WideToUtf8(audioId);
-			b["type"] = "separate_vocal";
+		b["callBackUrl"] = SUNO_CALLBACK_URL;
+		b["type"] = "separate_vocal";
 	}
 	if (mode == SUNO_MODE_GENERATE_LYRICS)
 		b.erase("model");
@@ -670,7 +686,7 @@ void Worker(State *s)
 			const int itemIndex = index++;
 			const std::wstring basePath = s->p->workDirectory + L"\\" + fileName + L"_" + std::to_wstring(itemIndex);
 
-			auto downloadAsset = [&](const std::vector<const char *> &fields, const std::wstring &target, std::wstring &error) {
+			auto downloadAsset = [&](const std::vector<const char *> &fields, const std::wstring &target, std::wstring &error, std::string *downloadedUrl = nullptr) {
 				for (const char *field : fields)
 				{
 					const std::string url = t.value(field, "");
@@ -679,7 +695,11 @@ void Worker(State *s)
 					for (int attempt = 0; attempt < SUNO_DOWNLOAD_ATTEMPTS; ++attempt)
 					{
 						if (Suno::Download(Suno::Utf8ToWide(url), target, error))
+						{
+							if (downloadedUrl)
+								*downloadedUrl = url;
 							return true;
+						}
 						if (attempt + 1 < SUNO_DOWNLOAD_ATTEMPTS)
 							Sleep(SUNO_DOWNLOAD_RETRY_INTERVAL_MS);
 					}
@@ -688,12 +708,13 @@ void Worker(State *s)
 			};
 
 			std::wstring audioError;
+			std::string audioUrl;
 			const std::wstring audioFile = basePath + L".mp3";
-			if (downloadAsset({"audioUrl", "sourceAudioUrl", "streamAudioUrl", "sourceStreamAudioUrl"}, audioFile, audioError))
+			if (downloadAsset({"audioUrl", "sourceAudioUrl", "streamAudioUrl", "sourceStreamAudioUrl"}, audioFile, audioError, &audioUrl))
 			{
 				++downloaded;
 				const std::string audioId = t.value("id", t.value("audioId", t.value("audio_id", "")));
-				SaveIdToCache(s, audioFile, audioId);
+				SaveTrackToCache(s, audioFile, task, audioId, audioUrl);
 				NotifyHost(s, audioFile);
 			}
 
@@ -739,6 +760,7 @@ LRESULT CALLBACK Proc(HWND w, UINT m, WPARAM wp, LPARAM lp)
 
 		s->custom = AVS::CreateButton(w, (HMENU)ID_CUSTOM, g_hInst, L"Custom mode", 130, 50, 130, 25, AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupDisable));
 		s->instrumental = AVS::CreateButton(w, (HMENU)ID_INSTRUMENTAL, g_hInst, L"Instrumental", 275, 50, 130, 25, AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupDisable));
+		s->help = AVS::CreateButton(w, (HMENU)ID_HELP, g_hInst, L"Help", 585, 50, 65, 25, AVS::ButtonSettings::Create(AVS::Buttons::Default));
 
 		s->titleCounter = AVS::CreateLabel(w, g_hInst, L"0/0", 550, 81, 100, 18, AVS::LabelSettings::Create(AVS::LabelType::Disabled, DT_RIGHT));
 		Label(w, L"Title", 16, 106);
@@ -751,6 +773,8 @@ LRESULT CALLBACK Proc(HWND w, UINT m, WPARAM wp, LPARAM lp)
 		s->styleCounter = AVS::CreateLabel(w, g_hInst, L"0/0", 550, 281, 100, 18, AVS::LabelSettings::Create(AVS::LabelType::Disabled, DT_RIGHT));
 		Label(w, L"Style", 16, 309);
 		s->style = Edit(w, ID_STYLE, 130, 305, 520, 25);
+		s->negativeTagsLabel = AVS::CreateLabel(w, g_hInst, L"Negative Tags", 16, 347, 110, 20, AVS::LabelSettings::Create(AVS::LabelType::Disabled));
+		s->negativeTags = Edit(w, ID_NEGATIVE_TAGS, 130, 343, 520, 25);
 		s->sourceLabel = AVS::CreateLabel(w, g_hInst, L"Audio ID", 16, 347, 110, 20, AVS::LabelSettings::Create(AVS::LabelType::Disabled));
 		s->source = Edit(w, ID_SOURCE, 130, 343, 520, 25);
 		s->audioIdLabel = AVS::CreateLabel(w, g_hInst, L"Audio ID", 16, 385, 110, 20, AVS::LabelSettings::Create(AVS::LabelType::Disabled));
@@ -812,8 +836,9 @@ LRESULT CALLBACK Proc(HWND w, UINT m, WPARAM wp, LPARAM lp)
 		try
 		{
 			std::wstring audioId;
+			std::wstring audioUrl;
 			const std::string hash = CalcFileSHA256(path);
-			if (!FindIdInCache(s, hash, audioId))
+			if (!FindTrackInCache(s, hash, audioId, audioUrl))
 			{
 				AVS::Label_SetText(s->status, L"Could not find this file in cache.json.");
 				return 0;
@@ -821,10 +846,33 @@ LRESULT CALLBACK Proc(HWND w, UINT m, WPARAM wp, LPARAM lp)
 
 			const int mode = AVS::ComboBox_GetCurrent(s->mode);
 			if (mode == SUNO_MODE_EXTEND_MUSIC)
+			{
+				if (audioId.empty())
+				{
+					AVS::Label_SetText(s->status, L"Audio ID is missing for this file in cache.json.");
+					return 0;
+				}
 				Set(s->source, audioId);
+			}
+			else if (mode == SUNO_MODE_COVER_AUDIO || mode == SUNO_MODE_ADD_VOCALS)
+			{
+				if (audioUrl.empty())
+				{
+					AVS::Label_SetText(s->status, L"Audio URL is missing for this file in cache.json.");
+					return 0;
+				}
+				Set(s->source, audioUrl);
+			}
 			else if (mode == SUNO_MODE_VOCAL_REMOVAL)
+			{
+				if (audioId.empty())
+				{
+					AVS::Label_SetText(s->status, L"Audio ID is missing for this file in cache.json.");
+					return 0;
+				}
 				Set(s->audioId, audioId);
-			AVS::Label_SetText(s->status, L"Audio ID loaded from cache.json.");
+			}
+			AVS::Label_SetText(s->status, mode == SUNO_MODE_COVER_AUDIO || mode == SUNO_MODE_ADD_VOCALS ? L"Audio URL loaded from cache.json." : L"Audio ID loaded from cache.json.");
 		}
 		catch (const std::exception &error)
 		{
@@ -839,6 +887,13 @@ LRESULT CALLBACK Proc(HWND w, UINT m, WPARAM wp, LPARAM lp)
 	if (m == WM_COMMAND && LOWORD(wp) == ID_SETTINGS)
 	{
 		ShowSettings(w, s->p);
+		return 0;
+	}
+	if (m == WM_COMMAND && LOWORD(wp) == ID_HELP)
+	{
+		HINSTANCE result = ShellExecuteW(w, L"open", SUNO_HELP_URL, nullptr, nullptr, SW_SHOWNORMAL);
+		if (reinterpret_cast<INT_PTR>(result) <= 32)
+			AVS::Label_SetText(s->status, L"Unable to open the Suno API documentation.");
 		return 0;
 	}
 	if (m == WM_COMMAND && LOWORD(wp) == ID_RUN && !s->busy.exchange(true))
