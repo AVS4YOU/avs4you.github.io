@@ -37,16 +37,10 @@ extern "C"
 		return export_str(L"1.0.0");
 	}
 
-	wchar_t *__stdcall PluginIcon(PluginHandle)
+	wchar_t *__stdcall PluginIcon(PluginHandle p)
 	{
-		wchar_t path[MAX_PATH] = {};
-		GetModuleFileNameW(g_hInst, path, MAX_PATH);
-		std::wstring value = path;
-		size_t pos = value.find_last_of(L"\\/");
-		if (pos != std::wstring::npos)
-			value.resize(pos + 1);
-		value += L"icon.ico";
-		return export_str(value.c_str());
+		CSunoApiPlugin *plugin = (CSunoApiPlugin *)p;
+		return export_str((plugin->workDirectory + L"\\icon.ico").c_str());
 	}
 
 	bool __stdcall IsApplicationSupported(int id)
