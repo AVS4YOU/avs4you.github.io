@@ -1,6 +1,7 @@
 #include "suno_ui.h"
 #include "../../../sdk/3dparty/nlohmann/json/single_include/nlohmann/json.hpp"
 #include "../../../sdk/ui/winapi/ui.h"
+#include "../../../sdk/translate/translate.h"
 #include "export_utils.h"
 #include "sha256.h"
 #include "suno_api.h"
@@ -44,6 +45,11 @@ using json = nlohmann::json;
 
 namespace
 {
+std::wstring Tr(const wchar_t *text)
+{
+	return CTranslate::GetInstance().GetManager()->Translate(text);
+}
+
 void SetWindowClassIcons(WNDCLASSEXW &windowClass, CSunoApiPlugin *plugin)
 {
 	const std::wstring iconPath = plugin->workDirectory + L"\\icon_internal.ico";
@@ -342,7 +348,7 @@ void UpdateSourceField(State *state)
 	int mode = AVS::ComboBox_GetCurrent(state->mode);
 	const bool generateMusicMode = mode == SUNO_MODE_GENERATE_MUSIC;
 	const bool generationSwitchesEnabled = generateMusicMode || mode == SUNO_MODE_COVER_AUDIO;
-	AVS::Label_SetText(state->promptLabel, generateMusicMode ? (state->customEnabled ? L"Lyrics" : L"Prompt") : L"Prompt / lyrics");
+	AVS::Label_SetText(state->promptLabel, generateMusicMode ? (state->customEnabled ? Tr(L"Lyrics") : Tr(L"Prompt")) : Tr(L"Prompt / lyrics"));
 	ShowWindow(state->custom, generationSwitchesEnabled ? SW_SHOW : SW_HIDE);
 	ShowWindow(state->instrumental, generationSwitchesEnabled ? SW_SHOW : SW_HIDE);
 	ShowWindow(state->vocalGenderLabel, generateMusicMode ? SW_SHOW : SW_HIDE);
@@ -362,7 +368,7 @@ void UpdateSourceField(State *state)
 	SetWindowPos(state->prompt, nullptr, SUNO_PROMPT_X, showTitleAndStyle ? SUNO_PROMPT_DEFAULT_Y : SUNO_PROMPT_EXPANDED_Y, SUNO_PROMPT_WIDTH, showTitleAndStyle ? SUNO_PROMPT_DEFAULT_HEIGHT : SUNO_PROMPT_EXPANDED_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 	bool visible = mode == SUNO_MODE_EXTEND_MUSIC || mode == SUNO_MODE_COVER_AUDIO || mode == SUNO_MODE_ADD_VOCALS;
 	if (mode == SUNO_MODE_COVER_AUDIO || mode == SUNO_MODE_ADD_VOCALS)
-		AVS::Label_SetText(state->sourceLabel, L"URL");
+		AVS::Label_SetText(state->sourceLabel, Tr(L"URL"));
 
 	const bool fileMode = mode == SUNO_MODE_EXTEND_MUSIC || mode == SUNO_MODE_COVER_AUDIO || mode == SUNO_MODE_ADD_VOCALS;
 	ShowWindow(state->sourceLabel, visible && !fileMode ? SW_SHOW : SW_HIDE);
@@ -427,8 +433,8 @@ void ApplyLyricsVariant(LyricsSelectionState *selection, size_t index)
 	AVS::ComboBox_SetCurrent(state->mode, SUNO_MODE_GENERATE_MUSIC);
 	state->customEnabled = true;
 	state->instrumentalEnabled = false;
-	AVS::Button_SetSettings(state->custom, AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupEnable), L"Custom mode");
-	AVS::Button_SetSettings(state->instrumental, AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupDisable), L"Instrumental");
+	AVS::Button_SetSettings(state->custom, AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupEnable), Tr(L"Custom mode"));
+	AVS::Button_SetSettings(state->instrumental, AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupDisable), Tr(L"Instrumental"));
 	UpdateSourceField(state);
 	UpdateCounters(state);
 
@@ -436,7 +442,7 @@ void ApplyLyricsVariant(LyricsSelectionState *selection, size_t index)
 	Set(state->prompt, normalizedLyrics);
 	Set(state->title, variant.title);
 	UpdateCounters(state);
-	AVS::Label_SetText(state->status, L"Lyrics selected. Generate music Custom mode enabled.");
+	AVS::Label_SetText(state->status, Tr(L"Lyrics selected. Generate music Custom mode enabled."));
 	SetFocus(state->prompt);
 }
 
@@ -454,24 +460,24 @@ LRESULT CALLBACK LyricsSelectionProc(HWND hwnd, UINT message, WPARAM wParam, LPA
 	switch (message)
 	{
 	case WM_CREATE: {
-		AVS::CreateLabel(hwnd, g_hInst, L"Choose one of the two generated lyrics", 15, 15, 735, 20, AVS::LabelSettings::Create(AVS::LabelType::Enabled));
+		AVS::CreateLabel(hwnd, g_hInst, Tr(L"Choose one of the two generated lyrics").c_str(), 15, 15, 735, 20, AVS::LabelSettings::Create(AVS::LabelType::Enabled));
 		const LyricsVariant &first = state->result->variants[0];
-		const std::wstring firstTitle = first.title.empty() ? L"Variant 1" : L"1. " + first.title;
+		const std::wstring firstTitle = first.title.empty() ? Tr(L"Variant 1") : L"1. " + first.title;
 		AVS::CreateLabel(hwnd, g_hInst, firstTitle.c_str(), 15, 45, 355, 20, AVS::LabelSettings::Create(AVS::LabelType::Enabled));
 		state->firstText = Edit(hwnd, 0, 15, 70, 355, 330, true);
 		Set(state->firstText, NormalizeLineEndings(first.text));
 		SendMessageW(state->firstText, EM_SETREADONLY, TRUE, 0);
-		AVS::CreateButton(hwnd, (HMENU)ID_LYRICS_SELECT_FIRST, g_hInst, L"Select first", 142, 415, 105, 30, AVS::ButtonSettings::Create(AVS::Buttons::Primary));
+		AVS::CreateButton(hwnd, (HMENU)ID_LYRICS_SELECT_FIRST, g_hInst, Tr(L"Select first").c_str(), 142, 415, 105, 30, AVS::ButtonSettings::Create(AVS::Buttons::Primary));
 
 		LyricsVariant second;
 		if (state->result->variants.size() > 1)
 			second = state->result->variants[1];
-		const std::wstring secondTitle = second.title.empty() ? L"Variant 2" : L"2. " + second.title;
+		const std::wstring secondTitle = second.title.empty() ? Tr(L"Variant 2") : L"2. " + second.title;
 		AVS::CreateLabel(hwnd, g_hInst, secondTitle.c_str(), 400, 45, 355, 20, AVS::LabelSettings::Create(AVS::LabelType::Enabled));
 		state->secondText = Edit(hwnd, 0, 400, 70, 355, 330, true);
 		Set(state->secondText, NormalizeLineEndings(second.text));
 		SendMessageW(state->secondText, EM_SETREADONLY, TRUE, 0);
-		HWND secondButton = AVS::CreateButton(hwnd, (HMENU)ID_LYRICS_SELECT_SECOND, g_hInst, L"Select second", 527, 415, 105, 30, AVS::ButtonSettings::Create(AVS::Buttons::Primary));
+		HWND secondButton = AVS::CreateButton(hwnd, (HMENU)ID_LYRICS_SELECT_SECOND, g_hInst, Tr(L"Select second").c_str(), 527, 415, 105, 30, AVS::ButtonSettings::Create(AVS::Buttons::Primary));
 		if (state->result->variants.size() < 2)
 			EnableWindow(secondButton, FALSE);
 		return 0;
@@ -523,7 +529,7 @@ void ShowLyricsSelection(HWND owner, State *mainState, GeneratedLyrics *result)
 	DWORD style = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU;
 	RECT rect{0, 0, 770, 465};
 	AdjustWindowRectEx(&rect, style, FALSE, WS_EX_DLGMODALFRAME);
-	HWND window = CreateWindowExW(WS_EX_DLGMODALFRAME, className, L"Choose one of the two generated lyrics", style, CW_USEDEFAULT, CW_USEDEFAULT, rect.right - rect.left, rect.bottom - rect.top, owner, nullptr, g_hInst, state);
+	HWND window = CreateWindowExW(WS_EX_DLGMODALFRAME, className, Tr(L"Choose one of the two generated lyrics").c_str(), style, CW_USEDEFAULT, CW_USEDEFAULT, rect.right - rect.left, rect.bottom - rect.top, owner, nullptr, g_hInst, state);
 	if (!window)
 	{
 		delete result;
@@ -573,9 +579,9 @@ LRESULT CALLBACK SettingsProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPa
 		std::getline(file, key);
 		Set(state->edit, key);
 
-		AVS::CreateButton(hwnd, (HMENU)0x8201, g_hInst, L"Save", 265, 55, 80, 25, AVS::ButtonSettings::Create(AVS::Buttons::Primary));
-		AVS::CreateButton(hwnd, (HMENU)0x8202, g_hInst, L"Cancel", 175, 55, 80, 25, AVS::ButtonSettings::Create(AVS::Buttons::Default));
-		AVS::CreateButton(hwnd, (HMENU)0x8203, g_hInst, L"Delete API key", 15, 55, 130, 25, AVS::ButtonSettings::Create(AVS::Buttons::Default));
+		AVS::CreateButton(hwnd, (HMENU)0x8201, g_hInst, Tr(L"Save").c_str(), 265, 55, 80, 25, AVS::ButtonSettings::Create(AVS::Buttons::Primary));
+		AVS::CreateButton(hwnd, (HMENU)0x8202, g_hInst, Tr(L"Cancel").c_str(), 175, 55, 80, 25, AVS::ButtonSettings::Create(AVS::Buttons::Default));
+		AVS::CreateButton(hwnd, (HMENU)0x8203, g_hInst, Tr(L"Delete API key").c_str(), 15, 55, 130, 25, AVS::ButtonSettings::Create(AVS::Buttons::Default));
 		SetFocus(state->edit);
 		return 0;
 	}
@@ -637,7 +643,7 @@ void ShowSettings(HWND owner, CSunoApiPlugin *plugin)
 	AdjustWindowRectEx(&rect, style, FALSE, 0);
 	
 	HWND window = CreateWindowExW(0, className,
-									L"Suno API Settings",
+									(L"Suno API " + Tr(L"Settings")).c_str(),
 									style,
 									CW_USEDEFAULT, CW_USEDEFAULT, 
 									rect.right - rect.left,
@@ -663,7 +669,7 @@ void LoadCredits(HWND window, CSunoApiPlugin *plugin)
 	std::wstring status;
 	if (key.empty())
 	{
-		status = L"Ready (Credits left: API key required)";
+		status = Tr(L"Ready (Credits left: API key required)");
 	}
 	else
 	{
@@ -676,16 +682,16 @@ void LoadCredits(HWND window, CSunoApiPlugin *plugin)
 				std::string credits = body["data"].dump();
 				if (credits.size() > 2 && credits.compare(credits.size() - 2, 2, ".0") == 0)
 					credits.resize(credits.size() - 2);
-				status = L"Ready (Credits left: " + Suno::Utf8ToWide(credits) + L")";
+				status = Tr(L"Ready (Credits left: ") + Suno::Utf8ToWide(credits) + L")";
 			}
 			else
 			{
-				status = L"Ready (Credits left: unavailable)";
+				status = Tr(L"Ready (Credits left: unavailable)");
 			}
 		}
 		catch (...)
 		{
-			status = L"Ready (Credits left: unavailable)";
+			status = Tr(L"Ready (Credits left: unavailable)");
 		}
 	}
 
@@ -704,12 +710,12 @@ void Worker(State *s)
 	}
 	if (key.empty())
 	{
-		Status(s, L"Open API key settings first.");
+		Status(s, Tr(L"Open API key settings first."));
 		done();
 		return;
 	}
 	int mode = AVS::ComboBox_GetCurrent(s->mode);
-	std::wstring prompt = Text(s->prompt), style = Text(s->style), negativeTags = Text(s->negativeTags), title = Text(s->title), source = Text(s->source), model = AVS::ComboBox_GetCurrentText(s->model), vocalGender = AVS::ComboBox_GetCurrentText(s->vocalGender);
+	std::wstring prompt = Text(s->prompt), style = Text(s->style), negativeTags = Text(s->negativeTags), title = Text(s->title), source = Text(s->source), model = AVS::ComboBox_GetCurrentText(s->model);
 	json b;
 	b["prompt"] = Suno::WideToUtf8(prompt);
 	b["model"] = Suno::WideToUtf8(model);
@@ -723,7 +729,7 @@ void Worker(State *s)
 		if (!title.empty())
 			b["title"] = Suno::WideToUtf8(title);
 		if (s->customEnabled && !s->instrumentalEnabled)
-			b["vocalGender"] = vocalGender == L"Female" ? "f" : "m";
+			b["vocalGender"] = AVS::ComboBox_GetCurrent(s->vocalGender) == 1 ? "f" : "m";
 	}
 	else if (mode == SUNO_MODE_EXTEND_MUSIC)
 	{
@@ -758,11 +764,11 @@ void Worker(State *s)
 	}
 	if (mode == SUNO_MODE_GENERATE_LYRICS)
 		b.erase("model");
-	Status(s, L"Sending request...");
+	Status(s, Tr(L"Sending request..."));
 	auto r = Suno::Request(key, L"POST", Endpoint(mode), b.dump());
 	if (!r.error.empty())
 	{
-		Status(s, L"Network error: " + r.error);
+		Status(s, Tr(L"Network error: ") + r.error);
 		done();
 		return;
 	}
@@ -773,26 +779,26 @@ void Worker(State *s)
 	}
 	catch (...)
 	{
-		Status(s, L"Invalid API response (HTTP " + std::to_wstring(r.status) + L")");
+		Status(s, Tr(L"Invalid API response (HTTP ") + std::to_wstring(r.status) + L")");
 		done();
 		return;
 	}
 	if (r.status < SUNO_HTTP_SUCCESS_MIN || r.status >= SUNO_HTTP_SUCCESS_MAX || response.value("code", 0) != SUNO_API_SUCCESS_CODE)
 	{
-		Status(s, L"API error: " + Suno::Utf8ToWide(response.value("msg", r.body)));
+		Status(s, Tr(L"API error: ") + Suno::Utf8ToWide(response.value("msg", r.body)));
 		done();
 		return;
 	}
 	std::string task = response["data"].value("taskId", "");
 	if (task.empty())
 	{
-		Status(s, L"API did not return taskId.");
+		Status(s, Tr(L"API did not return taskId."));
 		done();
 		return;
 	}
 	for (int attempt = 0; attempt < SUNO_TASK_POLL_ATTEMPTS; attempt++)
 	{
-		Status(s, L"Processing task " + Suno::Utf8ToWide(task) + L"...");
+		Status(s, Tr(L"Processing task ") + Suno::Utf8ToWide(task) + L"...");
 		Sleep(SUNO_TASK_POLL_INTERVAL_MS);
 		auto q = Suno::Request(key, L"GET", RecordEndpoint(mode, task));
 		if (!q.error.empty())
@@ -811,7 +817,7 @@ void Worker(State *s)
 		std::string st = data.value("status", "");
 		if (st == "FAILED" || st == "ERROR" || st == "CREATE_TASK_FAILED" || st == "GENERATE_AUDIO_FAILED" || st == "GENERATE_LYRICS_FAILED" || st == "SENSITIVE_WORD_ERROR" || st == "CALLBACK_EXCEPTION")
 		{
-			Status(s, L"Generation failed: " + Suno::Utf8ToWide(data.value("errorMessage", st)));
+			Status(s, Tr(L"Generation failed: ") + Suno::Utf8ToWide(data.value("errorMessage", st)));
 			done();
 			return;
 		}
@@ -836,18 +842,18 @@ void Worker(State *s)
 			if (message->variants.empty())
 			{
 				delete message;
-				Status(s, L"Lyrics generation completed, but no text was returned.");
+				Status(s, Tr(L"Lyrics generation completed, but no text was returned."));
 				done();
 				return;
 			}
 			if (!PostMessageW(s->p->window, WM_APP + 6, 0, reinterpret_cast<LPARAM>(message)))
 			{
 				delete message;
-				Status(s, L"Unable to show generated lyrics.");
+				Status(s, Tr(L"Unable to show generated lyrics."));
 				done();
 				return;
 			}
-			Status(s, L"Choose one of the generated lyrics variants.");
+			Status(s, Tr(L"Choose one of the generated lyrics variants."));
 			done();
 			return;
 		}
@@ -862,7 +868,7 @@ void Worker(State *s)
 		}
 		if (!tracks.is_array())
 		{
-			Status(s, L"Task completed, but no audio was returned.");
+			Status(s, Tr(L"Task completed, but no audio was returned."));
 			done();
 			return;
 		}
@@ -920,7 +926,7 @@ void Worker(State *s)
 			PostMessageW(s->p->window, WM_APP + 7, 0, 0);
 		return;
 	}
-	Status(s, L"Timed out. The task can still finish on Suno API.");
+	Status(s, Tr(L"Timed out. The task can still finish on Suno API."));
 	done();
 }
 
@@ -939,46 +945,46 @@ LRESULT CALLBACK Proc(HWND w, UINT m, WPARAM wp, LPARAM lp)
 
 	if (m == WM_CREATE)
 	{
-		const std::vector<std::wstring> modes = {L"Generate music", L"Extend music",
-												L"Generate lyrics", L"Generate sounds",
-												L"Cover audio", L"Add vocals"};
+		const std::vector<std::wstring> modes = {Tr(L"Generate music"), Tr(L"Extend music"),
+								Tr(L"Generate lyrics"), Tr(L"Generate sounds"),
+								Tr(L"Cover audio"), Tr(L"Add vocals")};
 
 		const std::vector<std::wstring> models = {L"V5", L"V5_5", L"V4_5ALL", L"V4_5PLUS", L"V4_5", L"V4"};
-		const std::vector<std::wstring> vocalGenders = {L"Male", L"Female"};
+		const std::vector<std::wstring> vocalGenders = {Tr(L"Male"), Tr(L"Female")};
 
-		Label(w, L"Mode", 16, 16);
+		Label(w, Tr(L"Mode").c_str(), 16, 16);
 		s->mode = AVS::CreateComboBox(w, (HMENU)ID_MODE, g_hInst, 130, 12, 275, 25, AVS::ComboBoxSettings::Create(), modes);
 		
-		Label(w, L"Model", 465, 16, 50);
+		Label(w, Tr(L"Model").c_str(), 465, 16, 50);
 		s->model = AVS::CreateComboBox(w, (HMENU)ID_MODEL, g_hInst, 530, 12, 120, 25, AVS::ComboBoxSettings::Create(), models);
 
-		s->custom = AVS::CreateButton(w, (HMENU)ID_CUSTOM, g_hInst, L"Custom mode", 130, 50, 130, 25, AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupDisable));
-		s->instrumental = AVS::CreateButton(w, (HMENU)ID_INSTRUMENTAL, g_hInst, L"Instrumental", 275, 50, 130, 25, AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupDisable));
-		s->help = AVS::CreateButton(w, (HMENU)ID_HELP, g_hInst, L"Help", 560, 50, 90, 25, AVS::ButtonSettings::Create(AVS::Buttons::Default));
+		s->custom = AVS::CreateButton(w, (HMENU)ID_CUSTOM, g_hInst, Tr(L"Custom mode").c_str(), 130, 50, 130, 25, AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupDisable));
+		s->instrumental = AVS::CreateButton(w, (HMENU)ID_INSTRUMENTAL, g_hInst, Tr(L"Instrumental").c_str(), 275, 50, 130, 25, AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupDisable));
+		s->help = AVS::CreateButton(w, (HMENU)ID_HELP, g_hInst, Tr(L"Help").c_str(), 560, 50, 90, 25, AVS::ButtonSettings::Create(AVS::Buttons::Default));
 
 		s->titleCounter = AVS::CreateLabel(w, g_hInst, L"0/0", 550, 81, 100, 18, AVS::LabelSettings::Create(AVS::LabelType::Disabled, DT_RIGHT));
-		s->titleLabel = Label(w, L"Title", 16, 106);
+		s->titleLabel = Label(w, Tr(L"Title").c_str(), 16, 106);
 		s->title = Edit(w, ID_TITLE, 130, 102, 520, 25);
 
 		s->promptCounter = AVS::CreateLabel(w, g_hInst, L"0/0", 550, 133, 100, 18, AVS::LabelSettings::Create(AVS::LabelType::Disabled, DT_RIGHT));
-		s->promptLabel = Label(w, L"Prompt", 16, 159);
+		s->promptLabel = Label(w, Tr(L"Prompt").c_str(), 16, 159);
 		s->prompt = Edit(w, ID_PROMPT, 130, 155, 520, 120, true);
 
 		s->styleCounter = AVS::CreateLabel(w, g_hInst, L"0/0", 550, 281, 100, 18, AVS::LabelSettings::Create(AVS::LabelType::Disabled, DT_RIGHT));
-		s->styleLabel = Label(w, L"Style", 16, 309);
+		s->styleLabel = Label(w, Tr(L"Style").c_str(), 16, 309);
 		s->style = Edit(w, ID_STYLE, 130, 305, 520, 25);
-		s->vocalGenderLabel = Label(w, L"Voice", 16, 347);
+		s->vocalGenderLabel = Label(w, Tr(L"Voice").c_str(), 16, 347);
 		s->vocalGender = AVS::CreateComboBox(w, (HMENU)ID_VOCAL_GENDER, g_hInst, 130, 343, 120, 25, AVS::ComboBoxSettings::Create(), vocalGenders);
-		s->negativeTagsLabel = AVS::CreateLabel(w, g_hInst, L"Negative Tags", 16, 347, 110, 20, AVS::LabelSettings::Create(AVS::LabelType::Disabled));
+		s->negativeTagsLabel = AVS::CreateLabel(w, g_hInst, Tr(L"Negative Tags").c_str(), 16, 347, 110, 20, AVS::LabelSettings::Create(AVS::LabelType::Disabled));
 		s->negativeTags = Edit(w, ID_NEGATIVE_TAGS, 130, 343, 520, 25);
-		s->sourceLabel = AVS::CreateLabel(w, g_hInst, L"Audio ID", 16, 347, 110, 20, AVS::LabelSettings::Create(AVS::LabelType::Disabled));
+		s->sourceLabel = AVS::CreateLabel(w, g_hInst, Tr(L"Audio ID").c_str(), 16, 347, 110, 20, AVS::LabelSettings::Create(AVS::LabelType::Disabled));
 		s->source = Edit(w, ID_SOURCE, 130, 343, 520, 25);
-		s->file = AVS::CreateButton(w, (HMENU)ID_FILE, g_hInst, L"File", 16, 343, 100, 25, AVS::ButtonSettings::Create(AVS::Buttons::Default));
+		s->file = AVS::CreateButton(w, (HMENU)ID_FILE, g_hInst, Tr(L"File").c_str(), 16, 343, 100, 25, AVS::ButtonSettings::Create(AVS::Buttons::Default));
 		UpdateSourceField(s);
 		UpdateCounters(s);
-		s->settings = AVS::CreateButton(w, (HMENU)ID_SETTINGS, g_hInst, L"Settings", 465, 428, 85, 30, AVS::ButtonSettings::Create(AVS::Buttons::Default));
-		s->run = AVS::CreateButton(w, (HMENU)ID_RUN, g_hInst, L"Generate", 560, 428, 90, 30, AVS::ButtonSettings::Create(AVS::Buttons::Primary));
-		s->status = AVS::CreateLabel(w, g_hInst, L"Ready (Credits left: loading...)", 16, 432, 440, 30, AVS::LabelSettings::Create(AVS::LabelType::Enabled));
+		s->settings = AVS::CreateButton(w, (HMENU)ID_SETTINGS, g_hInst, Tr(L"Settings").c_str(), 465, 428, 85, 30, AVS::ButtonSettings::Create(AVS::Buttons::Default));
+		s->run = AVS::CreateButton(w, (HMENU)ID_RUN, g_hInst, Tr(L"Generate").c_str(), 560, 428, 90, 30, AVS::ButtonSettings::Create(AVS::Buttons::Primary));
+		s->status = AVS::CreateLabel(w, g_hInst, Tr(L"Ready (Credits left: loading...)").c_str(), 16, 432, 440, 30, AVS::LabelSettings::Create(AVS::LabelType::Enabled));
 		std::thread(LoadCredits, w, s->p).detach();
 		
 		return 0;
@@ -1002,7 +1008,7 @@ LRESULT CALLBACK Proc(HWND w, UINT m, WPARAM wp, LPARAM lp)
 	if (m == WM_COMMAND && LOWORD(wp) == ID_CUSTOM)
 	{
 		s->customEnabled = !s->customEnabled;
-		AVS::Button_SetSettings(s->custom, AVS::ButtonSettings::Create(s->customEnabled ? AVS::Buttons::ToggleGroupEnable : AVS::Buttons::ToggleGroupDisable), L"Custom mode");
+		AVS::Button_SetSettings(s->custom, AVS::ButtonSettings::Create(s->customEnabled ? AVS::Buttons::ToggleGroupEnable : AVS::Buttons::ToggleGroupDisable), Tr(L"Custom mode"));
 		UpdateSourceField(s);
 		UpdateCounters(s);
 		return 0;
@@ -1010,7 +1016,7 @@ LRESULT CALLBACK Proc(HWND w, UINT m, WPARAM wp, LPARAM lp)
 	if (m == WM_COMMAND && LOWORD(wp) == ID_INSTRUMENTAL)
 	{
 		s->instrumentalEnabled = !s->instrumentalEnabled;
-		AVS::Button_SetSettings(s->instrumental, AVS::ButtonSettings::Create(s->instrumentalEnabled ? AVS::Buttons::ToggleGroupEnable : AVS::Buttons::ToggleGroupDisable), L"Instrumental");
+		AVS::Button_SetSettings(s->instrumental, AVS::ButtonSettings::Create(s->instrumentalEnabled ? AVS::Buttons::ToggleGroupEnable : AVS::Buttons::ToggleGroupDisable), Tr(L"Instrumental"));
 		return 0;
 	}
 	if (m == WM_COMMAND && LOWORD(wp) == ID_FILE)
@@ -1035,7 +1041,7 @@ LRESULT CALLBACK Proc(HWND w, UINT m, WPARAM wp, LPARAM lp)
 			const std::string hash = CalcFileSHA256(path);
 			if (!FindTrackInCache(s, hash, audioId, audioUrl))
 			{
-				AVS::Label_SetText(s->status, L"Could not find this file in cache.json.");
+				AVS::Label_SetText(s->status, Tr(L"Could not find this file in cache.json."));
 				return 0;
 			}
 
@@ -1044,7 +1050,7 @@ LRESULT CALLBACK Proc(HWND w, UINT m, WPARAM wp, LPARAM lp)
 			{
 				if (audioId.empty())
 				{
-					AVS::Label_SetText(s->status, L"Audio ID is missing for this file in cache.json.");
+					AVS::Label_SetText(s->status, Tr(L"Audio ID is missing for this file in cache.json."));
 					return 0;
 				}
 				Set(s->source, audioId);
@@ -1053,12 +1059,12 @@ LRESULT CALLBACK Proc(HWND w, UINT m, WPARAM wp, LPARAM lp)
 			{
 				if (audioUrl.empty())
 				{
-					AVS::Label_SetText(s->status, L"Audio URL is missing for this file in cache.json.");
+					AVS::Label_SetText(s->status, Tr(L"Audio URL is missing for this file in cache.json."));
 					return 0;
 				}
 				Set(s->source, audioUrl);
 			}
-			AVS::Label_SetText(s->status, mode == SUNO_MODE_COVER_AUDIO || mode == SUNO_MODE_ADD_VOCALS ? L"Audio URL loaded from cache.json." : L"Audio ID loaded from cache.json.");
+			AVS::Label_SetText(s->status, mode == SUNO_MODE_COVER_AUDIO || mode == SUNO_MODE_ADD_VOCALS ? Tr(L"Audio URL loaded from cache.json.") : Tr(L"Audio ID loaded from cache.json."));
 		}
 		catch (const std::exception &error)
 		{
@@ -1066,7 +1072,7 @@ LRESULT CALLBACK Proc(HWND w, UINT m, WPARAM wp, LPARAM lp)
 		}
 		catch (...)
 		{
-			AVS::Label_SetText(s->status, L"Unable to calculate SHA-256 or read cache.json.");
+			AVS::Label_SetText(s->status, Tr(L"Unable to calculate SHA-256 or read cache.json."));
 		}
 		return 0;
 	}
@@ -1079,13 +1085,13 @@ LRESULT CALLBACK Proc(HWND w, UINT m, WPARAM wp, LPARAM lp)
 	{
 		HINSTANCE result = ShellExecuteW(w, L"open", SUNO_HELP_URL, nullptr, nullptr, SW_SHOWNORMAL);
 		if (reinterpret_cast<INT_PTR>(result) <= 32)
-			AVS::Label_SetText(s->status, L"Unable to open the Suno API documentation.");
+			AVS::Label_SetText(s->status, Tr(L"Unable to open the Suno API documentation."));
 		return 0;
 	}
 	if (m == WM_COMMAND && LOWORD(wp) == ID_RUN && !s->busy.exchange(true))
 	{
 		EnableWindow(s->run, FALSE);
-		AVS::Label_SetText(s->status, L"Starting...");
+		AVS::Label_SetText(s->status, Tr(L"Starting..."));
 		std::thread(Worker, s).detach();
 		return 0;
 	}
@@ -1114,7 +1120,7 @@ LRESULT CALLBACK Proc(HWND w, UINT m, WPARAM wp, LPARAM lp)
 	{
 		if (!s->busy)
 		{
-			AVS::Label_SetText(s->status, L"Ready (Credits left: loading...)");
+			AVS::Label_SetText(s->status, Tr(L"Ready (Credits left: loading...)"));
 			std::thread(LoadCredits, w, s->p).detach();
 		}
 		return 0;
@@ -1142,7 +1148,7 @@ LRESULT CALLBACK Proc(HWND w, UINT m, WPARAM wp, LPARAM lp)
 	{
 		if (s->busy)
 		{
-			MessageBoxW(w, L"Wait for the current task to finish.", L"Suno API", MB_OK | MB_ICONINFORMATION);
+			MessageBoxW(w, Tr(L"Wait for the current task to finish.").c_str(), L"Suno API", MB_OK | MB_ICONINFORMATION);
 			return 0;
 		}
 		DestroyWindow(w);
@@ -1174,7 +1180,7 @@ void SunoUI::Show(CSunoApiPlugin *p)
 		RegisterClassExW(&wc);
 	}
 	
-	HWND w = CreateWindowExW(0, cls, L"Suno API Music Generator",
+	HWND w = CreateWindowExW(0, cls, (L"Suno API " + Tr(L"Music Generator")).c_str(),
 							WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX, CW_USEDEFAULT, CW_USEDEFAULT,
 							690, 514, p->parentWindow,
 							nullptr, g_hInst, p);

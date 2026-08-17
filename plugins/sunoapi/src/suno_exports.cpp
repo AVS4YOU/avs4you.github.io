@@ -1,6 +1,8 @@
 #include "../../../sdk/3dparty/nlohmann/json/single_include/nlohmann/json.hpp"
 #include "../../../sdk/include/AVSConsts.h"
 #include "../../../sdk/include/CContentPluginIntf.h"
+#include "../../../sdk/common/utils.h"
+#include "../../../sdk/translate/translate.h"
 #include "export_utils.h"
 #include "suno_api.h"
 #include "suno_plugin.h"
@@ -53,8 +55,9 @@ extern "C"
 		release_export_ptr(p);
 	}
 
-	void __stdcall SetLanguage(PluginHandle, const wchar_t *)
+	void __stdcall SetLanguage(PluginHandle, const wchar_t *name)
 	{
+		CTranslate::GetInstance().GetManager()->SetLang(NSStringUtils::wstring_to_utf8(name));
 	}
 
 	wchar_t *__stdcall GetMenuForContext(PluginHandle, Plugins::ContextType type)
