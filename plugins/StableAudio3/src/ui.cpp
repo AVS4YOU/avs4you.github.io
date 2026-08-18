@@ -168,6 +168,16 @@ AVS::ButtonSettings CancelButtonSettings()
 
 void SetBusy(Controls *controls, bool busy)
 {
+    if (busy)
+    {
+        AVS::ProgressBar_SetPos(controls->progress, 0);
+        ShowWindow(controls->progress, SW_SHOW);
+    }
+    else
+    {
+        ShowWindow(controls->progress, SW_HIDE);
+        AVS::ProgressBar_SetPos(controls->progress, 0);
+    }
     EnableWindow(controls->download, !busy);
     EnableWindow(controls->settingsButton, !busy);
     EnableWindow(controls->model, !busy);
@@ -289,6 +299,8 @@ void ShowSettingsWindow(HWND owner, Controls *controls)
         windowClass.lpfnWndProc = SettingsWindowProc;
         windowClass.hInstance = GetModuleHandleW(nullptr);
         windowClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
+        windowClass.hIcon = reinterpret_cast<HICON>(SendMessageW(owner, WM_GETICON, ICON_BIG, 0));
+        windowClass.hIconSm = reinterpret_cast<HICON>(SendMessageW(owner, WM_GETICON, ICON_SMALL, 0));
         AVS::Color background = AVS::Color::GetDefaultWindowBackground();
         windowClass.hbrBackground = CreateSolidBrush(RGB(background.R, background.G, background.B));
         windowClass.lpszClassName = className;
@@ -539,6 +551,11 @@ void ShowStableAudioWindow(CStableAudio3Plugin *plugin)
         windowClass.lpfnWndProc = WindowProc;
         windowClass.hInstance = GetModuleHandleW(nullptr);
         windowClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
+        const auto iconPath = plugin->workDirectory / L"icon_internal.ico";
+        windowClass.hIcon = static_cast<HICON>(
+            LoadImageW(nullptr, iconPath.c_str(), IMAGE_ICON, 32, 32, LR_LOADFROMFILE | LR_DEFAULTCOLOR));
+        windowClass.hIconSm = static_cast<HICON>(
+            LoadImageW(nullptr, iconPath.c_str(), IMAGE_ICON, 16, 16, LR_LOADFROMFILE | LR_DEFAULTCOLOR));
         AVS::Color background = AVS::Color::GetDefaultWindowBackground();
         windowClass.hbrBackground = CreateSolidBrush(RGB(background.R, background.G, background.B));
         windowClass.lpszClassName = className;
@@ -549,10 +566,11 @@ void ShowStableAudioWindow(CStableAudio3Plugin *plugin)
     RECT rect{0, 0, CLIENT_WIDTH, CLIENT_HEIGHT};
     AdjustWindowRectEx(&rect, style, FALSE, 0);
     HWND hwnd =
-        CreateWindowExW(0, className, L"Stable Audio 3", style, CW_USEDEFAULT, CW_USEDEFAULT, rect.right - rect.left,
+        CreateWindowExW(0, className, L"StableAudio3", style, CW_USEDEFAULT, CW_USEDEFAULT, rect.right - rect.left,
                         rect.bottom - rect.top, nullptr, nullptr, GetModuleHandleW(nullptr), plugin);
     if (hwnd)
     {
+        SetWindowTextW(hwnd, L"StableAudio3");
         CenterWindow(hwnd);
         ShowWindow(hwnd, SW_SHOW);
         UpdateWindow(hwnd);

@@ -1,4 +1,4 @@
-﻿#include "export_utils.h"
+#include "export_utils.h"
 #include "plugin.h"
 #include "ui.h"
 #include "../../../sdk/include/AVSConsts.h"
@@ -29,9 +29,10 @@ extern "C"
     {
         return export_str(L"1.0.0");
     }
-    wchar_t *__stdcall PluginIcon(PluginHandle)
+    wchar_t *__stdcall PluginIcon(PluginHandle p)
     {
-        return nullptr;
+        auto *plugin = static_cast<CStableAudio3Plugin *>(p);
+        return export_str((plugin->workDirectory / L"icon.ico").c_str());
     }
     bool __stdcall IsApplicationSupported(int id)
     {
@@ -54,9 +55,9 @@ extern "C"
     {
         return GetMenuForContext(p, Plugins::ContextType::MediaLibrary);
     }
-    wchar_t *__stdcall GetIconById(PluginHandle, int)
+    wchar_t *__stdcall GetIconById(PluginHandle p, int)
     {
-        return nullptr;
+        return PluginIcon(p);
     }
     void __stdcall ClickMenuItem(PluginHandle p, int)
     {

@@ -1,3 +1,5 @@
 #include <windows.h>
+#include "src/resource.h"
 
+IDR_ICON RCDATA "icon.ico"
 1 RT_MANIFEST "module.manifest"

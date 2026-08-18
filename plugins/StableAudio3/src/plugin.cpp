@@ -1,8 +1,10 @@
-﻿#include "plugin.h"
+#include "plugin.h"
+#include "resource.h"
 #include "sa3_backend.h"
 #include "ui.h"
 #include <shlobj.h>
 #include <chrono>
+#include <fstream>
 static std::filesystem::path ModulePath()
 {
     wchar_t p[32768]{};
@@ -19,6 +21,22 @@ CStableAudio3Plugin::CStableAudio3Plugin() : moduleDirectory(ModulePath())
 
     std::error_code error;
     std::filesystem::create_directories(workDirectory / L"models", error);
+
+    const auto internalIcon = workDirectory / L"icon_internal.ico";
+    const auto publicIcon = workDirectory / L"icon.ico";
+    HRSRC iconResource = FindResourceW(g_module, MAKEINTRESOURCEW(IDR_ICON), RT_RCDATA);
+    if (iconResource)
+    {
+        HGLOBAL loaded = LoadResource(g_module, iconResource);
+        const DWORD size = SizeofResource(g_module, iconResource);
+        const void *data = loaded ? LockResource(loaded) : nullptr;
+        if (data && size)
+        {
+            std::ofstream output(internalIcon, std::ios::binary | std::ios::trunc);
+            output.write(static_cast<const char *>(data), size);
+        }
+    }
+    std::filesystem::copy_file(internalIcon, publicIcon, std::filesystem::copy_options::overwrite_existing, error);
 
     for (const wchar_t *directory : {L"sa3-cpp-cpu", L"sa3-cpp-gpu"})
     {
