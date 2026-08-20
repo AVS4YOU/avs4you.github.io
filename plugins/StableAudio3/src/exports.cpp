@@ -19,8 +19,7 @@ extern "C" {
 		return export_str((plugin->workDirectory / L"icon.ico").c_str());
 	}
 	bool __stdcall IsApplicationSupported(int id) {
-		return id == AVS_AUDIO_EDITOR || id == AVS_VIDEO_CONVERTER ||
-			id == AVS_VIDEO_EDITOR;
+		return id == AVS_AUDIO_EDITOR || id == AVS_VIDEO_EDITOR;
 	}
 	void __stdcall ReleasePluginString(wchar_t* p) { release_export_ptr(p); }
 	void __stdcall SetLanguage(PluginHandle, const wchar_t* name) {
