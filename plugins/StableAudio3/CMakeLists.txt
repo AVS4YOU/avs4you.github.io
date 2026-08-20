@@ -5,6 +5,12 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
+if(MSVC)
+  set(CMAKE_INSTALL_UCRT_LIBRARIES TRUE)
+  set(CMAKE_INSTALL_OPENMP_LIBRARIES TRUE)
+  include(InstallRequiredSystemLibraries)
+endif()
+
 set(STABLEAUDIO3_BACKEND "CPU" CACHE STRING "sa3 backend: CPU, CUDA or NONE")
 set_property(CACHE STABLEAUDIO3_BACKEND PROPERTY STRINGS CPU CUDA NONE)
 
@@ -27,7 +33,21 @@ add_library(StableAudio3 SHARED
 target_include_directories(StableAudio3 PRIVATE "${AVS_SDK_ROOT}/include" "${CMAKE_CURRENT_SOURCE_DIR}/sa3-cpp/src")
 target_compile_definitions(StableAudio3 PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN)
 target_link_libraries(StableAudio3 PRIVATE comctl32 dxgi winhttp shell32)
-set_target_properties(StableAudio3 PROPERTIES OUTPUT_NAME StableAudio3)
+if(CMAKE_SIZEOF_VOID_P EQUAL 4)
+  set(STABLEAUDIO3_ARCH_DIR "x86")
+else()
+  set(STABLEAUDIO3_ARCH_DIR "x64")
+endif()
+set(STABLEAUDIO3_PACKAGE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/build/${STABLEAUDIO3_ARCH_DIR}")
+set_target_properties(StableAudio3 PROPERTIES
+  OUTPUT_NAME StableAudio3
+  RUNTIME_OUTPUT_DIRECTORY "${STABLEAUDIO3_PACKAGE_DIR}"
+  PDB_OUTPUT_DIRECTORY "${STABLEAUDIO3_PACKAGE_DIR}")
+foreach(_configuration DEBUG RELEASE RELWITHDEBINFO MINSIZEREL)
+  set_target_properties(StableAudio3 PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY_${_configuration} "${STABLEAUDIO3_PACKAGE_DIR}"
+    PDB_OUTPUT_DIRECTORY_${_configuration} "${STABLEAUDIO3_PACKAGE_DIR}")
+endforeach()
 
 if(NOT STABLEAUDIO3_BACKEND STREQUAL "NONE")
   if(STABLEAUDIO3_BACKEND STREQUAL "CUDA")
@@ -50,17 +70,15 @@ if(NOT STABLEAUDIO3_BACKEND STREQUAL "NONE")
     COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:ggml-base>" "$<TARGET_FILE_DIR:StableAudio3>/${_sa3_destination}/"
     COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:ggml-cpu>" "$<TARGET_FILE_DIR:StableAudio3>/${_sa3_destination}/"
     VERBATIM)
+  foreach(_runtime_library IN LISTS CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS)
+    add_custom_command(TARGET sa3_backend POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different
+              "${_runtime_library}"
+              "$<TARGET_FILE_DIR:StableAudio3>/${_sa3_destination}/"
+      VERBATIM)
+  endforeach()
   if(STABLEAUDIO3_BACKEND STREQUAL "CUDA")
     add_custom_command(TARGET sa3_backend POST_BUILD
       COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:ggml-cuda>" "$<TARGET_FILE_DIR:StableAudio3>/${_sa3_destination}/")
   endif()
 endif()
-
-add_custom_command(TARGET StableAudio3 POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:StableAudio3>/models")
-
-
-
-
-
-
