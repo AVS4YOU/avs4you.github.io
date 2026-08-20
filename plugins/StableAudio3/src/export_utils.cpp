@@ -1,4 +1,5 @@
 #include "export_utils.h"
+#include "../../../sdk/translate/translate.h"
 #include <cwchar>
 wchar_t* export_str(const wchar_t* value) {
 	if (!value)
@@ -9,3 +10,6 @@ wchar_t* export_str(const wchar_t* value) {
 	return result;
 }
 void release_export_ptr(const wchar_t* value) { delete[] value; }
+std::wstring Translate(const wchar_t* value) {
+	return CTranslate::GetInstance().GetManager()->Translate(value);
+}

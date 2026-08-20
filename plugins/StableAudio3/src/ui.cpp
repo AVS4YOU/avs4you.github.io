@@ -174,7 +174,7 @@ namespace {
 			controls->action,
 			busy ? CancelButtonSettings()
 			: AVS::ButtonSettings::Create(AVS::Buttons::Primary),
-			busy ? L"Cancel" : L"Generate");
+			busy ? Translate(L"Cancel").c_str() : Translate(L"Generate").c_str());
 	}
 
 	void CloseSettings(HWND hwnd) {
@@ -203,30 +203,30 @@ namespace {
 			HINSTANCE instance = GetModuleHandleW(nullptr);
 			const auto& values = state->controls->generation;
 			struct Field {
-				const wchar_t* label;
+				std::wstring label;
 				int x;
 				int width;
 				HWND SettingsWindow::* member;
 				std::wstring value;
 			};
-			const Field fields[] = { {L"Steps", 15, 110, &SettingsWindow::steps,
+			const Field fields[] = { {Translate(L"Steps"), 15, 110, &SettingsWindow::steps,
 									 std::to_wstring(values.steps)},
-									{L"Seed", 140, 120, &SettingsWindow::seed,
+									{Translate(L"Seed"), 140, 120, &SettingsWindow::seed,
 									 std::to_wstring(values.seed)},
-									{L"CFG scale", 275, 110, &SettingsWindow::cfg,
+									{Translate(L"CFG scale"), 275, 110, &SettingsWindow::cfg,
 									 std::to_wstring(values.cfg)},
-									{L"CPU threads", 400, 110, &SettingsWindow::threads,
+									{Translate(L"CPU threads"), 400, 110, &SettingsWindow::threads,
 									 std::to_wstring(values.threads)},
-									{L"Padding, sec", 525, 110,
+									{Translate(L"Padding, sec"), 525, 110,
 									 &SettingsWindow::padding,
 									 std::to_wstring(values.padding)} };
 			for (const auto& field : fields) {
-				CreateLabel(hwnd, field.label, field.x, 15, field.width, 20);
+				CreateLabel(hwnd, field.label.c_str(), field.x, 15, field.width, 20);
 				state->*(field.member) =
 					CreateEdit(hwnd, field.x, 38, field.width, 28, field.value);
 			}
 
-			CreateLabel(hwnd, L"Distribution shift", 15, 82, 180, 20);
+			CreateLabel(hwnd, Translate(L"Distribution shift").c_str(), 15, 82, 180, 20);
 			std::vector<std::wstring> shifts{ L"LogSNR", L"Flux", L"Full", L"None" };
 			int selected = 0;
 			for (size_t i = 0; i < shifts.size(); ++i)
@@ -239,7 +239,7 @@ namespace {
 				104, 180, 28, comboSettings, shifts);
 
 			state->keepModels = CreateWindowExW(
-				0, L"BUTTON", L"Keep models loaded in memory",
+				0, L"BUTTON", Translate(L"Keep models loaded in memory").c_str(),
 				WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX, 220, 105, 255, 26,
 				hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_SETTINGS_KEEP)),
 				instance, nullptr);
@@ -251,11 +251,11 @@ namespace {
 
 			AVS::CreateButton(
 				hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_SETTINGS_CANCEL)),
-				instance, L"Cancel", 425, 157, 100, 30,
+				instance, Translate(L"Cancel").c_str(), 425, 157, 100, 30,
 				AVS::ButtonSettings::Create(AVS::Buttons::Default));
 			AVS::CreateButton(
 				hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_SETTINGS_SAVE)),
-				instance, L"Save", 535, 157, 100, 30,
+				instance, Translate(L"Save").c_str(), 535, 157, 100, 30,
 				AVS::ButtonSettings::Create(AVS::Buttons::Primary));
 			return 0;
 		}
@@ -313,7 +313,7 @@ namespace {
 		RECT rect{ 0, 0, 650, 205 };
 		AdjustWindowRectEx(&rect, style, FALSE, 0);
 		HWND window = CreateWindowExW(
-			0, className, L"Stable Audio 3 Settings", style, CW_USEDEFAULT,
+			0, className, Translate(L"Stable Audio 3 Settings").c_str(), style, CW_USEDEFAULT,
 			CW_USEDEFAULT, rect.right - rect.left, rect.bottom - rect.top, owner,
 			nullptr, GetModuleHandleW(nullptr), state);
 		if (!window) {
@@ -348,13 +348,13 @@ namespace {
 			SetPropW(hwnd, L"StableAudio3.Controls", controls);
 			HINSTANCE instance = GetModuleHandleW(nullptr);
 
-			CreateLabel(hwnd, L"Prompt", 15, 12, 180, 22);
+			CreateLabel(hwnd, Translate(L"Prompt").c_str(), 15, 12, 180, 22);
 			controls->prompt = CreateEdit(hwnd, 15, 36, 730, 150, L"", true);
-			CreateLabel(hwnd, L"Negative prompt", 15, 198, 145, 28);
+			CreateLabel(hwnd, Translate(L"Negative prompt").c_str(), 15, 198, 145, 28);
 			controls->negativePrompt = CreateEdit(hwnd, 165, 198, 580, 28, L"");
 
-			CreateLabel(hwnd, L"Model", 15, 245, 190, 20);
-			CreateLabel(hwnd, L"Duration, sec", 220, 245, 100, 20);
+			CreateLabel(hwnd, Translate(L"Model").c_str(), 15, 245, 190, 20);
+			CreateLabel(hwnd, Translate(L"Duration, sec").c_str(), 220, 245, 100, 20);
 #if defined(_WIN32) && !defined(_WIN64)
 			controls->model = AVS::CreateComboBox(
 				hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_MODEL)), instance,
@@ -369,11 +369,11 @@ namespace {
 			controls->duration = CreateEdit(hwnd, 220, 267, 100, 28, L"12.0");
 			controls->download = AVS::CreateButton(
 				hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_DOWNLOAD)),
-				instance, L"Download model", 565, 267, 180, 28,
+				instance, Translate(L"Download model").c_str(), 565, 267, 180, 28,
 				AVS::ButtonSettings::Create(AVS::Buttons::Default));
 
-			CreateLabel(hwnd, L"Encoding", 15, 311, 105, 20);
-			CreateLabel(hwnd, L"Device", 135, 311, 95, 20);
+			CreateLabel(hwnd, Translate(L"Encoding").c_str(), 15, 311, 105, 20);
+			CreateLabel(hwnd, Translate(L"Device").c_str(), 135, 311, 95, 20);
 			controls->encoding = AVS::CreateComboBox(
 				hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_ENCODING)),
 				instance, 15, 333, 105, 28, AVS::ComboBoxSettings::Create(),
@@ -389,7 +389,7 @@ namespace {
 				{ L"cpu", L"gpu" });
 #endif
 
-			CreateLabel(hwnd, L"System resources and available acceleration", 15, 379,
+			CreateLabel(hwnd, Translate(L"System resources and available acceleration").c_str(), 15, 379,
 				730, 22);
 			CreateLabel(hwnd, GetSystemSummary(plugin->moduleDirectory).c_str(), 15,
 				403, 730, 122, AVS::LabelType::Enabled,
@@ -398,15 +398,15 @@ namespace {
 				hwnd, instance, 15, 529, 730, 22, AVS::ProgressBarSettings::Create());
 			AVS::ProgressBar_SetRange(controls->progress, 0, 100);
 			controls->status =
-				CreateLabel(hwnd, L"Ready", 15, 562, 480, 28, AVS::LabelType::Enabled,
-					DT_LEFT | DT_TOP | DT_WORDBREAK);
+				CreateLabel(hwnd, Translate(L"Ready").c_str(), 15, 562, 480, 28,
+					AVS::LabelType::Enabled, DT_LEFT | DT_TOP | DT_WORDBREAK);
 			controls->settingsButton = AVS::CreateButton(
 				hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_SETTINGS)),
-				instance, L"Settings", 515, 560, 105, 30,
+				instance, Translate(L"Settings").c_str(), 515, 560, 105, 30,
 				AVS::ButtonSettings::Create(AVS::Buttons::Default));
 			controls->action = AVS::CreateButton(
 				hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_ACTION)),
-				instance, L"Generate", 635, 560, 110, 30,
+				instance, Translate(L"Generate").c_str(), 635, 560, 110, 30,
 				AVS::ButtonSettings::Create(AVS::Buttons::Primary));
 			SetBusy(controls, false);
 			SetFocus(controls->prompt);
@@ -427,7 +427,8 @@ namespace {
 					return 0;
 				AVS::ProgressBar_SetPos(controls->progress, 0);
 				SetBusy(controls, true, false);
-				AVS::Label_SetText(controls->status, L"Preparing model download...");
+				AVS::Label_SetText(controls->status,
+					Translate(L"Preparing model download...").c_str());
 				plugin->StartDownload(AVS::ComboBox_GetCurrentText(controls->model),
 					AVS::ComboBox_GetCurrentText(controls->encoding));
 				return 0;
@@ -435,15 +436,17 @@ namespace {
 				if (plugin->busy) {
 					plugin->Cancel();
 					EnableWindow(controls->action, FALSE);
-					AVS::Label_SetText(controls->status, L"Cancelling...");
+				AVS::Label_SetText(controls->status,
+						Translate(L"Cancelling...").c_str());
 					return 0;
 				}
 				else {
 					GenerationOptions options;
 					options.prompt = GetText(controls->prompt);
 					if (options.prompt.empty()) {
-						AVS::Label_SetText(controls->status,
-							L"Enter a prompt before generation.");
+				AVS::Label_SetText(
+                        controls->status,
+							Translate(L"Enter a prompt before generation.").c_str());
 						return 0;
 					}
 					options.negativePrompt = GetText(controls->negativePrompt);
@@ -452,8 +455,9 @@ namespace {
 					options.device = AVS::ComboBox_GetCurrentText(controls->device);
 					const float durationSeconds = GetReal(controls->duration, 0.0f);
 					if (!std::isfinite(durationSeconds) || durationSeconds <= 0.0f) {
-						AVS::Label_SetText(controls->status,
-							L"Duration must be greater than zero.");
+				AVS::Label_SetText(
+                        controls->status,
+							Translate(L"Duration must be greater than zero.").c_str());
 						return 0;
 					}
 					const float maximumDuration =
@@ -482,12 +486,14 @@ namespace {
 						options.encoding)) {
 						AVS::Label_SetText(
 							controls->status,
-							L"Model files are missing. Click Download model first.");
+							Translate(L"Model files are missing. Click Download model first.")
+								.c_str());
 						return 0;
 					}
 					AVS::ProgressBar_SetPos(controls->progress, 0);
 					SetBusy(controls, true);
-					AVS::Label_SetText(controls->status, L"Starting generation...");
+				AVS::Label_SetText(controls->status,
+						Translate(L"Starting generation...").c_str());
 					plugin->StartGeneration(std::move(options));
 					return 0;
 				}
@@ -526,7 +532,8 @@ namespace {
 				plugin->Cancel();
 				if (controls) {
 					EnableWindow(controls->action, FALSE);
-					AVS::Label_SetText(controls->status, L"Cancelling...");
+				AVS::Label_SetText(controls->status,
+						Translate(L"Cancelling...").c_str());
 				}
 				return 0;
 			}

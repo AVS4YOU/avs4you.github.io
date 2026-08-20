@@ -1,4 +1,6 @@
+#include "../../../sdk/common/utils.h"
 #include "../../../sdk/include/AVSConsts.h"
+#include "../../../sdk/translate/translate.h"
 #include "export_utils.h"
 #include "plugin.h"
 #include "ui.h"
@@ -10,7 +12,7 @@ extern "C" {
 		return Plugins::PluginType::Content;
 	}
 	wchar_t* __stdcall PluginId() { return export_str(L"StableAudio3.plugin"); }
-	wchar_t* __stdcall PluginName() { return export_str(L"Stable Audio 3"); }
+	wchar_t* __stdcall PluginName() { return export_str(Translate(L"Stable Audio 3").c_str()); }
 	wchar_t* __stdcall PluginVersion() { return export_str(L"1.0.0"); }
 	wchar_t* __stdcall PluginIcon(PluginHandle p) {
 		auto* plugin = static_cast<CStableAudio3Plugin*>(p);
@@ -21,12 +23,20 @@ extern "C" {
 			id == AVS_VIDEO_EDITOR;
 	}
 	void __stdcall ReleasePluginString(wchar_t* p) { release_export_ptr(p); }
-	void __stdcall SetLanguage(PluginHandle, const wchar_t*) {}
+	void __stdcall SetLanguage(PluginHandle, const wchar_t* name) {
+		CTranslate::GetInstance().GetManager()->SetLang(
+			NSStringUtils::wstring_to_utf8(name));
+	}
 	wchar_t* __stdcall GetMenuForContext(PluginHandle, Plugins::ContextType t) {
-		return export_str(
-			t == Plugins::ContextType::MediaLibrary
-			? L"[{\"text\":\"Stable Audio 3\",\"icon\":0,\"action\":0}]"
-			: L"[]");
+		nlohmann::json json = nlohmann::json::array();
+		if (t == Plugins::ContextType::MediaLibrary) {
+			nlohmann::json item;
+			item["text"] = NSStringUtils::wstring_to_utf8(Translate(L"Stable Audio 3"));
+			item["icon"] = 0;
+			item["action"] = 0;
+			json.push_back(item);
+		}
+		return export_str(NSStringUtils::utf8_to_wstring(json.dump()).c_str());
 	}
 	wchar_t* __stdcall GetPluginMenu(PluginHandle p) {
 		return GetMenuForContext(p, Plugins::ContextType::MediaLibrary);

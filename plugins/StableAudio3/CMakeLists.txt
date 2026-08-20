@@ -27,6 +27,8 @@ add_library(StableAudio3 SHARED
   src/sa3_backend.cpp
   src/system_info.cpp
   src/ui.cpp
+  "${AVS_SDK_ROOT}/common/utils.cpp"
+  "${AVS_SDK_ROOT}/translate/translate.cpp"
   "${AVS_SDK_ROOT}/ui/winapi/ui.cpp"
   StableAudio3.rc
   module.def)
