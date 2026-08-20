@@ -1,6 +1,7 @@
 **/.qtcreator
 **/.vs
 **/PreviewGenerator/build
+**/StableAudio3/out
 **/Release
 **/Debug
 *.vcxproj.user
