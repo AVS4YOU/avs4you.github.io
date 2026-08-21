@@ -1,0 +1,44 @@
+{
+    "en-US": {
+        "Status": "Status"
+    },
+    "cs-CZ": {
+        "Status": "Stav"
+    },
+    "de-DE": {
+        "Status": "Status"
+    },
+    "es-ES": {
+        "Status": "Estado"
+    },
+    "fr-FR": {
+        "Status": "Statut"
+    },
+    "ru-RU": {
+        "Status": "Статус"
+    },
+    "zh-CN": {
+        "Status": "状态"
+    },
+    "pt-BR": {
+        "Status": "Status"
+    },
+    "sr-Cyrl-RS": {
+        "Status": "Статус"
+    },
+    "sr-Latn-RS": {
+        "Status": "Status"
+    },
+    "ja-JP": {
+        "Status": "ステータス"
+    },
+    "sq-AL": {
+        "Status": "Statusi"
+    },
+    "it-IT": {
+        "Status": "Stato"
+    },
+    "ar-SA": {
+        "Status": "الحالة"
+    }
+}
