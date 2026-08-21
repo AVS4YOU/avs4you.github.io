@@ -207,7 +207,7 @@
   <ItemGroup>
     <ClCompile Include="..\..\sdk\common\utils.cpp" />
     <ClCompile Include="..\..\sdk\translate\translate.cpp" />
-    <ClCompile Include="src\avs_ui.cpp" />
+    <ClCompile Include="..\..\sdk\ui\winapi\ui.cpp" />
     <ClCompile Include="src\suno_dllmain.cpp" />
     <ClCompile Include="src\suno_exports.cpp" />
     <ClCompile Include="src\export_utils.cpp" />

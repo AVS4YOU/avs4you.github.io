@@ -45,6 +45,21 @@ using json = nlohmann::json;
 
 namespace
 {
+bool ReleaseActivationContext(CSunoApiPlugin *plugin)
+{
+	if (plugin->activationContext == INVALID_HANDLE_VALUE)
+		return true;
+	if (plugin->activationCookie)
+	{
+		if (plugin->activationThreadId != GetCurrentThreadId() || !DeactivateActCtx(0, plugin->activationCookie))
+			return false;
+	}
+	ReleaseActCtx(plugin->activationContext);
+	plugin->activationContext = INVALID_HANDLE_VALUE;
+	plugin->activationCookie = 0;
+	plugin->activationThreadId = 0;
+	return true;
+}
 std::wstring Tr(const wchar_t *text)
 {
 	return CTranslate::GetInstance().GetManager()->Translate(text);
@@ -1128,7 +1143,7 @@ LRESULT CALLBACK Proc(HWND w, UINT m, WPARAM wp, LPARAM lp)
 	if (m == WM_APP + 5)
 	{
 		auto *path = reinterpret_cast<std::wstring *>(lp);
-		if (s->p->callback)
+		if (s->p->callback && ReleaseActivationContext(s->p))
 			s->p->callback(export_str(L"SunoApi.plugin"), export_str(path->c_str()), 0, s->p->callbackContext);
 		delete path;
 		return 0;
@@ -1156,9 +1171,11 @@ LRESULT CALLBACK Proc(HWND w, UINT m, WPARAM wp, LPARAM lp)
 	}
 	if (m == WM_NCDESTROY)
 	{
-		s->p->window = nullptr;
+		CSunoApiPlugin *plugin = s->p;
+		plugin->window = nullptr;
 		delete s;
 		SetWindowLongPtrW(w, GWLP_USERDATA, 0);
+		ReleaseActivationContext(plugin);
 	}
 	return DefWindowProcW(w, m, wp, lp);
 }
@@ -1166,6 +1183,32 @@ LRESULT CALLBACK Proc(HWND w, UINT m, WPARAM wp, LPARAM lp)
 
 void SunoUI::Show(CSunoApiPlugin *p)
 {
+	if (p->window && IsWindow(p->window))
+	{
+		SetForegroundWindow(p->window);
+		return;
+	}
+
+	ACTCTXW activationContext{sizeof(activationContext)};
+	activationContext.dwFlags = ACTCTX_FLAG_RESOURCE_NAME_VALID | ACTCTX_FLAG_HMODULE_VALID;
+	activationContext.lpResourceName = MAKEINTRESOURCEW(1);
+	activationContext.hModule = g_hInst;
+	HANDLE context = CreateActCtxW(&activationContext);
+	if (context != INVALID_HANDLE_VALUE)
+	{
+		ULONG_PTR cookie = 0;
+		if (ActivateActCtx(context, &cookie))
+		{
+			p->activationContext = context;
+			p->activationCookie = cookie;
+			p->activationThreadId = GetCurrentThreadId();
+		}
+		else
+			ReleaseActCtx(context);
+	}
+
+	INITCOMMONCONTROLSEX commonControls{sizeof(commonControls), ICC_STANDARD_CLASSES};
+	InitCommonControlsEx(&commonControls);
 	const wchar_t *cls = L"SunoApiMainWindowClass";
 	WNDCLASSEXW wc = {sizeof(wc)};
 	if (!GetClassInfoExW(g_hInst, cls, &wc))
@@ -1184,6 +1227,11 @@ void SunoUI::Show(CSunoApiPlugin *p)
 							WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX, CW_USEDEFAULT, CW_USEDEFAULT,
 							690, 514, p->parentWindow,
 							nullptr, g_hInst, p);
+	if (!w)
+	{
+		ReleaseActivationContext(p);
+		return;
+	}
 	
 	CenterWindow(w);
 	ShowWindow(w, SW_SHOW);
