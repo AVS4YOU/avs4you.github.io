@@ -1,0 +1,7 @@
+#include "./src/resource.h"
+#include "windows.h"
+
+IDR_TRANSLATION  RCDATA  "translation.json"
+IDR_ICON         RCDATA  "icon.ico"
+
+1 RT_MANIFEST "module.manifest"
