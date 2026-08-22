@@ -1,18 +1,19 @@
 #ifndef YOUTUBE_DOWNLOADER_H
 #define YOUTUBE_DOWNLOADER_H
 
+// Builds the yt-dlp command line and runs it.
+//
+// Everything yt-dlp needs is shipped next to it inside the .avsp package:
+// ffmpeg.exe for muxing and qjs.exe (QuickJS) for the JavaScript challenge
+// YouTube puts in front of its stream URLs. Nothing installed on the user's
+// machine is relied upon.
+
 #include <string>
-#include <vector>
-#include <functional>
-#include <stdexcept>
 #include <sstream>
-#include <array>
-#include <memory>
-#include <thread>
-#include <atomic>
 #include <windows.h>
 
 #include "external_process_with_childs.h"
+#include "browser_cookies.h"
 
 namespace ytdl
 {
@@ -50,19 +51,11 @@ namespace ytdl
         std::wstring audioFormat = L"mp3";
     };
 
-    struct VideoInfo
-    {
-        std::string title;
-        std::string duration;
-        std::string uploader;
-        std::string viewCount;
-        std::string description;
-    };
-
     class YouTubeDownloader
     {
     public:
-        YouTubeDownloader(const std::wstring& dir, NSProcesses::CProcessRunnerCallback* callback) : m_manager(callback)
+        YouTubeDownloader(const std::wstring& dir, NSProcesses::CProcessRunnerCallback* callback)
+            : m_manager(callback)
         {
             m_dir = dir;
         }
@@ -72,15 +65,11 @@ namespace ytdl
             stop();
         }
 
-        std::wstring getApp()
+        void download(const std::wstring& url,
+                      const DownloadOptions& options = DownloadOptions(),
+                      const CookieStrategy& cookies = CookieStrategy())
         {
-            return L"\"" + m_dir + L"\\yt-dlp.exe\"";
-        }
-
-        void download(const std::wstring& url, const DownloadOptions& options = DownloadOptions())
-        {
-            std::wstring command = buildDownloadCommand(url, options);
-            m_manager.Start(command, {});
+            m_manager.Start(buildDownloadCommand(url, options, cookies), {});
         }
 
         void stop()
@@ -88,74 +77,78 @@ namespace ytdl
             m_manager.StopAll();
         }
 
-        VideoInfo getVideoInfo(const std::wstring& url)
-        {
-            std::wstring command = getApp() + L" --dump - json \"" + url + L"\"";
-            std::string output = executeCommand(command);
-            return parseVideoInfo(output);
-        }
-
-        std::vector<std::string> getAvailableFormats(const std::wstring& url)
-        {
-            std::wstring command = getApp() + L" -F \"" + url + L"\"";
-            std::string output = executeCommand(command);
-            return parseFormats(output);
-        }
-
-        bool isYtDlpInstalled()
-        {
-            std::wstring command = getApp() + L" --version > nul 2>&1";
-            return _wsystem(command.c_str()) == 0;
-        }
-
     private:
         std::wstring                 m_dir;
         NSProcesses::CProcessManager m_manager;
 
-        std::wstring buildDownloadCommand(const std::wstring& url, const DownloadOptions& options)
+        static std::wstring quote(const std::wstring& value)
+        {
+            return L"\"" + value + L"\"";
+        }
+
+        std::wstring app() const
+        {
+            return quote(m_dir + L"\\yt-dlp.exe");
+        }
+
+        static int qualityHeight(Quality quality)
+        {
+            switch (quality)
+            {
+            case Quality::P144:  return 144;
+            case Quality::P240:  return 240;
+            case Quality::P360:  return 360;
+            case Quality::P480:  return 480;
+            case Quality::P720:  return 720;
+            case Quality::P1080: return 1080;
+            case Quality::P1440: return 1440;
+            case Quality::P2160: return 2160;
+            default:             return 0;
+            }
+        }
+
+        /**
+         * Format selector that degrades instead of failing.
+         *
+         * YouTube offers separate mp4 video and m4a audio streams, so asking for
+         * that pair directly gives the best result there. Most other services do
+         * not: Twitch and many HLS sites only publish pre-muxed renditions, and
+         * some publish formats with no height at all. Each "/" step below is a
+         * looser fallback, ending in a bare "b" so an unusual site yields
+         * something rather than "Requested format is not available".
+         */
+        static std::wstring buildFormatSelector(Quality quality)
+        {
+            if (quality == Quality::WORST)
+                return L"wv*+wa/w";
+
+            const int height = qualityHeight(quality);
+
+            if (height <= 0)   // BEST
+                return L"bv*[ext=mp4]+ba[ext=m4a]/bv*+ba/b";
+
+            const std::wstring cap = L"[height<=" + std::to_wstring(height) + L"]";
+
+            return L"bv*" + cap + L"[ext=mp4]+ba[ext=m4a]"   // YouTube and friends
+                 + L"/bv*" + cap + L"+ba"                    // any split streams
+                 + L"/b" + cap                               // pre-muxed rendition
+                 + L"/b";                                    // no height info at all
+        }
+
+        std::wstring buildDownloadCommand(const std::wstring& url,
+                                          const DownloadOptions& options,
+                                          const CookieStrategy& cookies) const
         {
             std::wostringstream cmd;
-            cmd << getApp() << L" ";
+            cmd << app() << L" ";
 
             if (options.extractAudio)
             {
-                cmd << L"-x --audio-format " << options.audioFormat << " ";
+                cmd << L"-x --audio-format " << options.audioFormat << L" ";
             }
             else
             {
-                switch (options.quality)
-                {
-                case Quality::BEST:
-                    cmd << L"-f \"bestvideo[ext=mp4]+bestaudio[ext=m4a]/best\" ";
-                    break;
-                case Quality::WORST:
-                    cmd << L"-f worst ";
-                    break;
-                case Quality::P144:
-                    cmd << L"-f \"bestvideo[height<=144][ext=mp4]+bestaudio[ext=m4a]/best[height<=144]\" ";
-                    break;
-                case Quality::P240:
-                    cmd << L"-f \"bestvideo[height<=240][ext=mp4]+bestaudio[ext=m4a]/best[height<=240]\" ";
-                    break;
-                case Quality::P360:
-                    cmd << L"-f \"bestvideo[height<=360][ext=mp4]+bestaudio[ext=m4a]/best[height<=360]\" ";
-                    break;
-                case Quality::P480:
-                    cmd << L"-f \"bestvideo[height<=480][ext=mp4]+bestaudio[ext=m4a]/best[height<=480]\" ";
-                    break;
-                case Quality::P720:
-                    cmd << L"-f \"bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720]\" ";
-                    break;
-                case Quality::P1080:
-                    cmd << L"-f \"bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[height<=1080]\" ";
-                    break;
-                case Quality::P1440:
-                    cmd << L"-f \"bestvideo[height<=1440][ext=mp4]+bestaudio[ext=m4a]/best[height<=1440]\" ";
-                    break;
-                case Quality::P2160:
-                    cmd << L"-f \"bestvideo[height<=2160][ext=mp4]+bestaudio[ext=m4a]/best[height<=2160]\" ";
-                    break;
-                }
+                cmd << L"-f " << quote(buildFormatSelector(options.quality)) << L" ";
 
                 switch (options.format)
                 {
@@ -169,106 +162,44 @@ namespace ytdl
                     cmd << L"--merge-output-format mkv ";
                     break;
                 case Format::AUDIO_ONLY:
-                    cmd << L"-f bestaudio --extract-audio --audio-format " << options.audioFormat << " ";
+                    cmd << L"-f bestaudio --extract-audio --audio-format "
+                        << options.audioFormat << L" ";
                     break;
                 }
             }
-            
-            cmd << L"--cookies-from-browser firefox ";
 
-            if (false) 
+            // Cookie source for this attempt. The caller walks the list built by
+            // BuildCookieStrategies until one of them produces a file.
+            switch (cookies.source)
             {
-                cmd << L"--user-agent \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36\" ";
+            case CookieSource::Browser:
+                cmd << L"--cookies-from-browser " << quote(cookies.argument) << L" ";
+                break;
+            case CookieSource::File:
+                cmd << L"--cookies " << quote(cookies.argument) << L" ";
+                break;
+            case CookieSource::None:
+            default:
+                break;
             }
 
-            if (false) 
-            {
-                cmd << L"--force-ipv6 ";
-            }
+            // A URL copied from a browser usually carries a list= parameter.
+            // Without this the whole playlist lands in the temp directory and the
+            // caller cannot tell which file it asked for.
+            cmd << L"--no-playlist ";
 
-            if (false) 
-            {
-                cmd << L"--sleep-interval " << 5 << " ";
-            }
-            
-            cmd << L"-o \"" << options.outputPath << L"/" << options.outputTemplate << L"\" ";
+            // Both tools travel inside the package next to yt-dlp.exe. ffmpeg
+            // merges the separate video and audio streams; QuickJS executes the
+            // JavaScript that YouTube's stream URLs are signed with, without
+            // which extraction fails with "The page needs to be reloaded".
+            cmd << L"--ffmpeg-location " << quote(m_dir) << L" ";
+            cmd << L"--no-js-runtimes --js-runtimes "
+                << quote(L"quickjs:" + m_dir + L"\\qjs.exe") << L" ";
 
-            cmd << L"\"" << url << L"\"";
+            cmd << L"-o " << quote(options.outputPath + L"/" + options.outputTemplate) << L" ";
+            cmd << quote(url);
 
             return cmd.str();
-        }
-
-        std::string executeCommand(const std::wstring& command)
-        {
-            std::array<char, 128> buffer;
-            std::string result;
-
-            FILE* pipe = _wpopen(command.c_str(), L"r");
-            if (!pipe) {
-                throw std::runtime_error("Failed to execute command.");
-            }
-
-            while (fgets(buffer.data(), buffer.size(), pipe) != nullptr) {
-                result += buffer.data();
-            }
-
-            _pclose(pipe);
-            return result;
-        }
-
-        VideoInfo parseVideoInfo(const std::string& jsonOutput)
-        {
-            VideoInfo info;
-            info.title = extractJsonField(jsonOutput, "title");
-            info.duration = extractJsonField(jsonOutput, "duration");
-            info.uploader = extractJsonField(jsonOutput, "uploader");
-            info.viewCount = extractJsonField(jsonOutput, "view_count");
-            info.description = extractJsonField(jsonOutput, "description");
-            return info;
-        }
-
-        std::string extractJsonField(const std::string& json, const std::string& field)
-        {
-            std::string search = "\"" + field + "\":";
-            size_t pos = json.find(search);
-            if (pos == std::string::npos) return "";
-
-            pos += search.length();
-            while (pos < json.length() && (json[pos] == ' ' || json[pos] == '"')) pos++;
-
-            size_t endPos = pos;
-            bool inString = json[pos - 1] == '"';
-
-            if (inString)
-            {
-                endPos = json.find('"', pos);
-            }
-            else
-            {
-                while (endPos < json.length() && json[endPos] != ',' && json[endPos] != '}')
-                {
-                    endPos++;
-                }
-            }
-
-            return json.substr(pos, endPos - pos);
-        }
-
-        std::vector<std::string> parseFormats(const std::string& output)
-        {
-            std::vector<std::string> formats;
-            std::istringstream stream(output);
-            std::string line;
-
-            while (std::getline(stream, line))
-            {
-                if (!line.empty() && line.find("format code") == std::string::npos)
-                {
-                    formats.push_back(line);
-                }
-            }
-
-            return formats;
         }
     };
 }
