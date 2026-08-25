@@ -29,7 +29,22 @@
     <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\translate.h">
+    <ClInclude Include="src\browser_cookies.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\failure_reason.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\output_name.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\browser_login.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\yt_downloader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\external_process_with_childs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

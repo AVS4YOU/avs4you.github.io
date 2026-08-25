@@ -47,6 +47,10 @@ namespace ytdl
         std::wstring outputPath = L"./";
         std::wstring outputTemplate = L"%(title)s.%(ext)s";
 
+        // When the UI has inspected a URL, it supplies its exact selector
+        // here instead of one of the fixed Quality presets.
+        std::wstring formatSelector;
+
         bool extractAudio = false;
         std::wstring audioFormat = L"mp3";
     };
@@ -70,6 +74,12 @@ namespace ytdl
                       const CookieStrategy& cookies = CookieStrategy())
         {
             m_manager.Start(buildDownloadCommand(url, options, cookies), {});
+        }
+
+        /** Ask yt-dlp for the formats it can see without downloading anything. */
+        void listFormats(const std::wstring& url, const CookieStrategy& cookies = CookieStrategy())
+        {
+            m_manager.Start(buildListFormatsCommand(url, cookies), {});
         }
 
         void stop()
@@ -140,7 +150,7 @@ namespace ytdl
                                           const CookieStrategy& cookies) const
         {
             std::wostringstream cmd;
-            cmd << app() << L" ";
+            cmd << app() << L" --encoding utf-8 ";
 
             if (options.extractAudio)
             {
@@ -148,7 +158,9 @@ namespace ytdl
             }
             else
             {
-                cmd << L"-f " << quote(buildFormatSelector(options.quality)) << L" ";
+                const std::wstring selector = options.formatSelector.empty()
+                    ? buildFormatSelector(options.quality) : options.formatSelector;
+                cmd << L"-f " << quote(selector) << L" ";
 
                 switch (options.format)
                 {
@@ -199,6 +211,33 @@ namespace ytdl
             cmd << L"-o " << quote(options.outputPath + L"/" + options.outputTemplate) << L" ";
             cmd << quote(url);
 
+            return cmd.str();
+        }
+
+        std::wstring buildListFormatsCommand(const std::wstring& url,
+                                             const CookieStrategy& cookies) const
+        {
+            std::wostringstream cmd;
+            cmd << app() << L" --encoding utf-8 --list-formats --no-playlist --print "
+                << quote(L"__YT_TITLE__:%(title)s") << L" ";
+
+            switch (cookies.source)
+            {
+            case CookieSource::Browser:
+                cmd << L"--cookies-from-browser " << quote(cookies.argument) << L" ";
+                break;
+            case CookieSource::File:
+                cmd << L"--cookies " << quote(cookies.argument) << L" ";
+                break;
+            case CookieSource::None:
+            default:
+                break;
+            }
+
+            cmd << L"--ffmpeg-location " << quote(m_dir) << L" ";
+            cmd << L"--no-js-runtimes --js-runtimes "
+                << quote(L"quickjs:" + m_dir + L"\\qjs.exe") << L" ";
+            cmd << quote(url);
             return cmd.str();
         }
     };

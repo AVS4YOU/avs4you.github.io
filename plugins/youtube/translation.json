@@ -1,6 +1,7 @@
 {
     "en-US": {
         "Youtube": "Youtube",
+        "Check": "Check", "Checking formats...": "Checking formats...", "Best available": "Best available", "Video + audio": "Video + audio", "Video only": "Video only", "Audio only": "Audio only", "Single stream": "Single stream", "Any video codec": "Any video codec",
         "Download": "Download",
         "About": "About",
         "OK": "OK",
@@ -21,6 +22,7 @@
     },
     "cs-CZ": {
         "Youtube": "Youtube",
+        "Check": "Zkontrolovat", "Checking formats...": "Kontrola formátů...", "Best available": "Nejlepší dostupná", "Video + audio": "Video + zvuk", "Video only": "Pouze video", "Audio only": "Pouze zvuk", "Single stream": "Jeden stream", "Any video codec": "Libovolný video kodek",
         "Download": "Stáhnout",
         "About": "O programu",
         "OK": "OK",
@@ -41,6 +43,7 @@
     },
     "de-DE": {
         "Youtube": "Youtube",
+        "Check": "Prüfen", "Checking formats...": "Formate werden geprüft...", "Best available": "Beste verfügbare", "Video + audio": "Video + Audio", "Video only": "Nur Video", "Audio only": "Nur Audio", "Single stream": "Einzelner Stream", "Any video codec": "Beliebiger Videocodec",
         "Download": "Herunterladen",
         "About": "Über",
         "OK": "OK",
@@ -61,6 +64,7 @@
     },
     "es-ES": {
         "Youtube": "Youtube",
+        "Check": "Comprobar", "Checking formats...": "Comprobando formatos...", "Best available": "Mejor disponible", "Video + audio": "Vídeo + audio", "Video only": "Solo vídeo", "Audio only": "Solo audio", "Single stream": "Flujo único", "Any video codec": "Cualquier códec de vídeo",
         "Download": "Descargar",
         "About": "Acerca de",
         "OK": "Aceptar",
@@ -81,6 +85,7 @@
     },
     "fr-FR": {
         "Youtube": "Youtube",
+        "Check": "Vérifier", "Checking formats...": "Vérification des formats...", "Best available": "Meilleure qualité disponible", "Video + audio": "Vidéo + audio", "Video only": "Vidéo uniquement", "Audio only": "Audio uniquement", "Single stream": "Flux unique", "Any video codec": "N’importe quel codec vidéo",
         "Download": "Télécharger",
         "About": "À propos",
         "OK": "OK",
@@ -101,6 +106,7 @@
     },
     "it-IT": {
         "Youtube": "Youtube",
+        "Check": "Verifica", "Checking formats...": "Verifica dei formati...", "Best available": "Migliore disponibile", "Video + audio": "Video + audio", "Video only": "Solo video", "Audio only": "Solo audio", "Single stream": "Flusso singolo", "Any video codec": "Qualsiasi codec video",
         "Download": "Scarica",
         "About": "Informazioni",
         "OK": "OK",
@@ -121,6 +127,7 @@
     },
     "pt-BR": {
         "Youtube": "Youtube",
+        "Check": "Verificar", "Checking formats...": "Verificando formatos...", "Best available": "Melhor disponível", "Video + audio": "Vídeo + áudio", "Video only": "Somente vídeo", "Audio only": "Somente áudio", "Single stream": "Fluxo único", "Any video codec": "Qualquer codec de vídeo",
         "Download": "Baixar",
         "About": "Sobre",
         "OK": "OK",
@@ -141,6 +148,7 @@
     },
     "ru-RU": {
         "Youtube": "Youtube",
+        "Check": "Проверить", "Checking formats...": "Проверка форматов...", "Best available": "Лучшее доступное", "Video + audio": "Видео + аудио", "Video only": "Только видео", "Audio only": "Только аудио", "Single stream": "Единый поток", "Any video codec": "Любой видеокодек",
         "Download": "Скачать",
         "About": "О плагине",
         "OK": "ОК",
@@ -161,6 +169,7 @@
     },
     "sq-AL": {
         "Youtube": "Youtube",
+        "Check": "Kontrollo", "Checking formats...": "Po kontrollohen formatet...", "Best available": "Më i miri i disponueshëm", "Video + audio": "Video + audio", "Video only": "Vetëm video", "Audio only": "Vetëm audio", "Single stream": "Transmetim i vetëm", "Any video codec": "Çdo kodek video",
         "Download": "Shkarko",
         "About": "Rreth",
         "OK": "OK",
@@ -181,6 +190,7 @@
     },
     "sr-Cyrl-RS": {
         "Youtube": "Youtube",
+        "Check": "Провери", "Checking formats...": "Провера формата...", "Best available": "Најбољи доступан", "Video + audio": "Видео + аудио", "Video only": "Само видео", "Audio only": "Само аудио", "Single stream": "Један ток", "Any video codec": "Било који видео-кодек",
         "Download": "Преузми",
         "About": "О додатку",
         "OK": "ОК",
@@ -201,6 +211,7 @@
     },
     "sr-Latn-RS": {
         "Youtube": "Youtube",
+        "Check": "Proveri", "Checking formats...": "Provera formata...", "Best available": "Najbolji dostupan", "Video + audio": "Video + audio", "Video only": "Samo video", "Audio only": "Samo audio", "Single stream": "Jedan tok", "Any video codec": "Bilo koji video-kodek",
         "Download": "Preuzmi",
         "About": "O dodatku",
         "OK": "OK",
@@ -221,6 +232,7 @@
     },
     "zh-CN": {
         "Youtube": "Youtube",
+        "Check": "检查", "Checking formats...": "正在检查格式...", "Best available": "最佳可用", "Video + audio": "视频 + 音频", "Video only": "仅视频", "Audio only": "仅音频", "Single stream": "单一流", "Any video codec": "任意视频编解码器",
         "Download": "下载",
         "About": "关于",
         "OK": "确定",
@@ -241,6 +253,7 @@
     },
     "ja-JP": {
         "Youtube": "Youtube",
+        "Check": "確認", "Checking formats...": "フォーマットを確認中...", "Best available": "利用可能な最高品質", "Video + audio": "動画 + 音声", "Video only": "動画のみ", "Audio only": "音声のみ", "Single stream": "単一ストリーム", "Any video codec": "任意の動画コーデック",
         "Download": "ダウンロード",
         "About": "バージョン情報",
         "OK": "OK",
@@ -261,6 +274,7 @@
     },
     "ar-SA": {
         "Youtube": "Youtube",
+        "Check": "تحقق", "Checking formats...": "جارٍ التحقق من التنسيقات...", "Best available": "أفضل جودة متاحة", "Video + audio": "فيديو + صوت", "Video only": "فيديو فقط", "Audio only": "صوت فقط", "Single stream": "تدفق واحد", "Any video codec": "أي برنامج ترميز فيديو",
         "Download": "تنزيل",
         "About": "حول",
         "OK": "موافق",
