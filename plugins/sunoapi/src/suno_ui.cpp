@@ -1156,7 +1156,14 @@ LRESULT CALLBACK Proc(HWND w, UINT m, WPARAM wp, LPARAM lp)
 	}
 	if (m == WM_APP + 7)
 	{
+		CSunoApiPlugin *plugin = s->p;
 		DestroyWindow(w);
+		ReleaseActivationContext(plugin);
+		return 0;
+	}
+	if (m == WM_SYSCOMMAND && (wp & 0xFFF0) == SC_CLOSE)
+	{
+		PostMessageW(w, WM_CLOSE, 0, 0);
 		return 0;
 	}
 	if (m == WM_CLOSE)
@@ -1166,16 +1173,16 @@ LRESULT CALLBACK Proc(HWND w, UINT m, WPARAM wp, LPARAM lp)
 			MessageBoxW(w, Tr(L"Wait for the current task to finish.").c_str(), L"Suno API", MB_OK | MB_ICONINFORMATION);
 			return 0;
 		}
+		CSunoApiPlugin *plugin = s->p;
 		DestroyWindow(w);
+		ReleaseActivationContext(plugin);
 		return 0;
 	}
 	if (m == WM_NCDESTROY)
 	{
-		CSunoApiPlugin *plugin = s->p;
-		plugin->window = nullptr;
+		s->p->window = nullptr;
 		delete s;
 		SetWindowLongPtrW(w, GWLP_USERDATA, 0);
-		ReleaseActivationContext(plugin);
 	}
 	return DefWindowProcW(w, m, wp, lp);
 }
