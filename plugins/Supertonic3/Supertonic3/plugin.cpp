@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "plugin.h"
 #include "resource.h"
 #include "../../../sdk/translate/translate.h"
@@ -204,7 +204,7 @@ void SupertonicPlugin::StartDownload()
             L"voice_styles/F1.json", L"voice_styles/F2.json", L"voice_styles/F3.json",
             L"voice_styles/F4.json", L"voice_styles/F5.json", L"voice_styles/M1.json",
             L"voice_styles/M2.json", L"voice_styles/M3.json", L"voice_styles/M4.json",
-            L"voice_styles/M5.json"
+            L"voice_styles/M5.json", L"LICENSE"
         };
 
         InternetHandle session{WinHttpOpen(L"AVS Supertonic3 Plugin/1.0",
