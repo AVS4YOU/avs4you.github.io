@@ -1,0 +1,116 @@
+THIRD-PARTY SOFTWARE NOTICES AND INFORMATION
+
+This file contains notices for third-party components used by the Supertonic3
+plugin. These notices are provided for informational purposes and do not modify
+the licenses of the respective components.
+
+===============================================================================
+Supertonic sample/source code
+===============================================================================
+
+Project: Supertonic
+Copyright (c) 2025 Supertone Inc.
+Source: https://github.com/supertone-inc/supertonic
+License: MIT License
+
+MIT License
+
+Copyright (c) 2025 Supertone Inc.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+===============================================================================
+Microsoft ONNX Runtime 1.22.1
+===============================================================================
+
+Copyright (c) Microsoft Corporation.
+Source: https://github.com/microsoft/onnxruntime
+License: MIT License
+
+MIT License
+
+Copyright (c) Microsoft Corporation
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+===============================================================================
+JSON for Modern C++ (nlohmann/json) 3.12.0
+===============================================================================
+
+Copyright (c) 2013-2025 Niels Lohmann
+Source: https://github.com/nlohmann/json/tree/v3.12.0
+License: MIT License
+
+MIT License
+
+Copyright (c) 2013-2025 Niels Lohmann
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+===============================================================================
+Supertonic 3 model
+===============================================================================
+
+Model provider: Supertone Inc.
+Model page: https://huggingface.co/Supertone/supertonic-3
+License: OpenRAIL-M (BigScience Open RAIL-M License)
+Full license: https://huggingface.co/Supertone/supertonic-3/blob/main/LICENSE
+
+The Supertonic3 plugin distribution does not include the model files. At the
+user's request, the plugin downloads them directly from the model provider.
+Before downloading, the user is shown the model-license notice and must accept
+the license. The complete model license is downloaded as models/LICENSE and is
+available through the License button in the plugin UI.
+
+Use of the model and generated output is subject to the complete OpenRAIL-M
+license, including its use-based restrictions. Generated audio must be treated
+and disclosed as AI-generated where required. Users are responsible for lawful
+use and for obtaining any required consent for a person's voice or likeness.
