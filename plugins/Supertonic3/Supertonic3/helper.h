@@ -78,11 +78,11 @@ class TextToSpeech {
 public:
     TextToSpeech(
         const Config& cfgs,
-        UnicodeProcessor* text_processor,
-        Ort::Session* dp_ort,
-        Ort::Session* text_enc_ort,
-        Ort::Session* vector_est_ort,
-        Ort::Session* vocoder_ort
+        std::unique_ptr<UnicodeProcessor> text_processor,
+        std::unique_ptr<Ort::Session> dp_ort,
+        std::unique_ptr<Ort::Session> text_enc_ort,
+        std::unique_ptr<Ort::Session> vector_est_ort,
+        std::unique_ptr<Ort::Session> vocoder_ort
     );
     
     struct SynthesisResult {
@@ -121,11 +121,11 @@ private:
         float speed = 1.05f
     );
     Config cfgs_;
-    UnicodeProcessor* text_processor_;
-    Ort::Session* dp_ort_;
-    Ort::Session* text_enc_ort_;
-    Ort::Session* vector_est_ort_;
-    Ort::Session* vocoder_ort_;
+    std::unique_ptr<UnicodeProcessor> text_processor_;
+    std::unique_ptr<Ort::Session> dp_ort_;
+    std::unique_ptr<Ort::Session> text_enc_ort_;
+    std::unique_ptr<Ort::Session> vector_est_ort_;
+    std::unique_ptr<Ort::Session> vocoder_ort_;
     int sample_rate_;
     int base_chunk_size_;
     int chunk_compress_factor_;

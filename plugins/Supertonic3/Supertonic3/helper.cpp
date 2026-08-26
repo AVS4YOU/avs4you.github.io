@@ -1,4 +1,4 @@
-﻿#include "helper.h"
+#include "helper.h"
 #ifdef _WIN32
 #define NOMINMAX
 #include <windows.h>
@@ -407,17 +407,17 @@ Style::Style(const std::vector<float>& ttl_data, const std::vector<int64_t>& ttl
 
 TextToSpeech::TextToSpeech(
     const Config& cfgs,
-    UnicodeProcessor* text_processor,
-    Ort::Session* dp_ort,
-    Ort::Session* text_enc_ort,
-    Ort::Session* vector_est_ort,
-    Ort::Session* vocoder_ort
+    std::unique_ptr<UnicodeProcessor> text_processor,
+    std::unique_ptr<Ort::Session> dp_ort,
+    std::unique_ptr<Ort::Session> text_enc_ort,
+    std::unique_ptr<Ort::Session> vector_est_ort,
+    std::unique_ptr<Ort::Session> vocoder_ort
 ) : cfgs_(cfgs),
-    text_processor_(text_processor),
-    dp_ort_(dp_ort),
-    text_enc_ort_(text_enc_ort),
-    vector_est_ort_(vector_est_ort),
-    vocoder_ort_(vocoder_ort) {
+    text_processor_(std::move(text_processor)),
+    dp_ort_(std::move(dp_ort)),
+    text_enc_ort_(std::move(text_enc_ort)),
+    vector_est_ort_(std::move(vector_est_ort)),
+    vocoder_ort_(std::move(vocoder_ort)) {
     
     sample_rate_ = cfgs.ae.sample_rate;
     base_chunk_size_ = cfgs.ae.base_chunk_size;
@@ -927,24 +927,14 @@ std::unique_ptr<TextToSpeech> loadTextToSpeech(
     auto models = loadOnnxAll(env, onnx_dir, opts);
     auto text_processor = loadTextProcessor(onnx_dir);
     
-    // Transfer ownership to TextToSpeech (use raw pointers internally)
-    auto tts = std::make_unique<TextToSpeech>(
+    return std::make_unique<TextToSpeech>(
         cfgs,
-        text_processor.get(),
-        models.dp.get(),
-        models.text_enc.get(),
-        models.vector_est.get(),
-        models.vocoder.get()
+        std::move(text_processor),
+        std::move(models.dp),
+        std::move(models.text_enc),
+        std::move(models.vector_est),
+        std::move(models.vocoder)
     );
-    
-    // Keep the models and processor alive by storing them
-    // (In production, you'd want better lifetime management)
-    static OnnxModels static_models;
-    static std::unique_ptr<UnicodeProcessor> static_text_processor;
-    static_models = std::move(models);
-    static_text_processor = std::move(text_processor);
-    
-    return tts;
 }
 
 // ============================================================================

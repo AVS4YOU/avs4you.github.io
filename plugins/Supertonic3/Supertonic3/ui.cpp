@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "ui.h"
 #include "export_utils.h"
 #include "../../../sdk/ui/winapi/ui.h"
@@ -42,19 +42,26 @@ std::wstring Tr(const wchar_t* text)
     auto* manager = CTranslate::GetInstance().GetManager();
     return manager ? manager->Translate(text) : std::wstring(text);
 }
-void ReleaseUiActivationContext(SupertonicPlugin* plugin)
+bool ReleaseUiActivationContext(SupertonicPlugin* plugin)
 {
     if (!plugin)
-        return;
+        return false;
+
+    if (plugin->activationContext == INVALID_HANDLE_VALUE)
+        return true;
 
     if (plugin->activationCookie)
-        DeactivateActCtx(0, plugin->activationCookie);
-    if (plugin->activationContext != INVALID_HANDLE_VALUE)
-        ReleaseActCtx(plugin->activationContext);
+    {
+        if (plugin->activationThreadId != GetCurrentThreadId() ||
+            !DeactivateActCtx(0, plugin->activationCookie))
+            return false;
+    }
 
+    ReleaseActCtx(plugin->activationContext);
     plugin->activationContext = INVALID_HANDLE_VALUE;
     plugin->activationCookie = 0;
     plugin->activationThreadId = 0;
+    return true;
 }
 
 void CenterWindow(HWND window, HWND preferredParent)
@@ -305,14 +312,32 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lPa
 
                 if (status->success && status->outputReady && plugin->callback)
                 {
-                    ReleaseUiActivationContext(plugin);
-                    plugin->callback(ExportString(L"Supertonic3.plugin"),
-                        ExportString(plugin->lastOutput.c_str()), 0, plugin->callbackContext);
-                    DestroyWindow(window);
+                    if (ReleaseUiActivationContext(plugin))
+                    {
+                        plugin->callback(ExportString(L"Supertonic3.plugin"),
+                            ExportString(plugin->lastOutput.c_str()), 0, plugin->callbackContext);
+                        PostMessageW(window, WM_APP + 7, 0, 0);
+                    }
                 }
             }
         }
         return 0;
+
+    case WM_APP + 7:
+        {
+            SupertonicPlugin* closingPlugin = plugin;
+            DestroyWindow(window);
+            ReleaseUiActivationContext(closingPlugin);
+        }
+        return 0;
+
+    case WM_SYSCOMMAND:
+        if ((wParam & 0xFFF0) == SC_CLOSE)
+        {
+            PostMessageW(window, WM_CLOSE, 0, 0);
+            return 0;
+        }
+        break;
 
     case WM_CLOSE:
         if (plugin && plugin->busy)
@@ -321,10 +346,11 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lPa
                 AVS::Label_SetText(controls->status, Tr(L"Wait for the current operation to finish.").c_str());
             return 0;
         }
-        // Release the UI-thread activation context before the parent receives
-        // any synchronous notification caused by window destruction.
-        ReleaseUiActivationContext(plugin);
-        DestroyWindow(window);
+        {
+            SupertonicPlugin* closingPlugin = plugin;
+            DestroyWindow(window);
+            ReleaseUiActivationContext(closingPlugin);
+        }
         return 0;
 
     case WM_NCDESTROY:
@@ -332,7 +358,6 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lPa
         {
             plugin->window = nullptr;
             plugin->Join();
-            ReleaseUiActivationContext(plugin);
 
         }
         delete controls;
