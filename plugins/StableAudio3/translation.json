@@ -31,7 +31,15 @@
                   "Starting generation...":  "Starting generation...",
                   "Enter a prompt before generation.":  "Enter a prompt before generation.",
                   "Duration must be greater than zero.":  "Duration must be greater than zero.",
-                  "Model files are missing. Click Download model first.":  "Model files are missing. Click Download model first."
+                  "Model files are missing. Click Download model first.":  "Model files are missing. Click Download model first.",
+                  "Licence":  "Licence",
+                  "Model license agreement":  "Model license agreement",
+                  "Age confirmation":  "Age confirmation",
+                  "Accept":  "Accept",
+                  "Confirm age":  "Confirm age",
+                  "License files will be downloaded with the model.":  "License files will be downloaded with the model.",
+                  "Stable Audio 3 model weights are licensed under the Stability AI Community License. The text encoder is subject to the Gemma Terms of Use. Review and accept these terms before downloading the model.":  "Stable Audio 3 model weights are licensed under the Stability AI Community License. The text encoder is subject to the Gemma Terms of Use. Review and accept these terms before downloading the model.",
+                  "I confirm that I am at least 18 years old and meet the minimum age required in my country or region.":  "I confirm that I am at least 18 years old and meet the minimum age required in my country or region."
               },
     "cs-CZ":  {
                   "Save":  "Uložit",
@@ -201,7 +209,15 @@
                   "Starting generation...":  "Запуск генерации...",
                   "Enter a prompt before generation.":  "Введите промпт перед генерацией.",
                   "Duration must be greater than zero.":  "Длительность должна быть больше нуля.",
-                  "Model files are missing. Click Download model first.":  "Файлы модели отсутствуют. Сначала нажмите «Скачать модель»."
+                  "Model files are missing. Click Download model first.":  "Файлы модели отсутствуют. Сначала нажмите «Скачать модель».",
+                  "Licence":  "Лицензия",
+                  "Model license agreement":  "Лицензионное соглашение модели",
+                  "Age confirmation":  "Подтверждение возраста",
+                  "Accept":  "Принять",
+                  "Confirm age":  "Подтвердить возраст",
+                  "License files will be downloaded with the model.":  "Файлы лицензий будут загружены вместе с моделью.",
+                  "Stable Audio 3 model weights are licensed under the Stability AI Community License. The text encoder is subject to the Gemma Terms of Use. Review and accept these terms before downloading the model.":  "Веса модели Stable Audio 3 распространяются по лицензии Stability AI Community License. На текстовый энкодер распространяются условия Gemma Terms of Use. Ознакомьтесь с условиями и примите их перед загрузкой модели.",
+                  "I confirm that I am at least 18 years old and meet the minimum age required in my country or region.":  "Я подтверждаю, что мне исполнилось 18 лет и я достиг минимального возраста, установленного в моей стране или регионе."
               },
     "zh-CN":  {
                   "Save":  "保存",

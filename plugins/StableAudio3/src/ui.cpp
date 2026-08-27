@@ -7,6 +7,7 @@
 #include <cmath>
 #include <commctrl.h>
 #include <memory>
+#include <shellapi.h>
 #include <string>
 #include <vector>
 
@@ -22,6 +23,14 @@ namespace {
 	constexpr int ID_DOWNLOAD = 114;
 	constexpr int ID_ACTION = 115;
 	constexpr int ID_SETTINGS = 116;
+	constexpr int ID_LICENCE = 117;
+	constexpr int ID_LICENSE_ACCEPTED = 118;
+	constexpr int ID_AGE_ACCEPTED = 119;
+	constexpr int ID_CONFIRM_ACCEPT = 301;
+	constexpr int ID_CONFIRM_CANCEL = 302;
+	constexpr int ID_CONFIRM_VIEW_LICENSE = 303;
+	constexpr wchar_t LICENSE_WINDOW_CLASS[] = L"StableAudio3LicenseWindowClass";
+	constexpr wchar_t AGE_WINDOW_CLASS[] = L"StableAudio3AgeWindowClass";
 	constexpr int ID_SETTINGS_SAVE = 201;
 	constexpr int ID_SETTINGS_CANCEL = 202;
 	constexpr int ID_SETTINGS_KEEP = 203;
@@ -47,6 +56,7 @@ namespace {
 		HWND duration = nullptr;
 		HWND download = nullptr;
 		HWND settingsButton = nullptr;
+		HWND licence = nullptr;
 		HWND action = nullptr;
 		HWND progress = nullptr;
 		HWND status = nullptr;
@@ -65,6 +75,11 @@ namespace {
 		HWND keepModels = nullptr;
 	};
 
+
+	struct ConfirmationWindow {
+		HWND owner = nullptr;
+		bool ageConfirmation = false;
+	};
 	void CenterWindow(HWND hwnd) {
 		RECT windowRect{};
 		GetWindowRect(hwnd, &windowRect);
@@ -166,6 +181,7 @@ namespace {
 		EnableWindow(controls->download, !busy);
 		EnableWindow(controls->settingsButton, !busy);
 		const bool enableInputs = !busy || !lockInputs;
+		EnableWindow(controls->licence, !busy);
 		EnableWindow(controls->model, enableInputs);
 		EnableWindow(controls->encoding, enableInputs);
 		EnableWindow(controls->device, enableInputs);
@@ -177,6 +193,154 @@ namespace {
 			busy ? Translate(L"Cancel").c_str() : Translate(L"Generate").c_str());
 	}
 
+	bool OpenDownloadedLicense(HWND owner) {
+		auto* plugin = reinterpret_cast<CStableAudio3Plugin*>(
+			GetWindowLongPtrW(owner, GWLP_USERDATA));
+		if (!plugin)
+			return false;
+		auto* controls = reinterpret_cast<Controls*>(
+			GetPropW(owner, L"StableAudio3.Controls"));
+		const auto path = plugin->workDirectory / L"models" / L"LICENSES.txt";
+		if (!std::filesystem::is_regular_file(path)) {
+			std::wstring error;
+			if (controls) {
+				ShowWindow(controls->progress, SW_SHOW);
+				AVS::ProgressBar_SetPos(controls->progress, 0);
+				UpdateWindow(owner);
+			}
+			const bool downloaded = DownloadModelLicenses(*plugin,
+				controls ? AVS::ComboBox_GetCurrentText(controls->model) : L"medium",
+				[controls](const std::wstring& text, int progress) {
+					if (controls) {
+						AVS::Label_SetText(controls->status, text.c_str());
+						AVS::ProgressBar_SetPos(controls->progress, progress);
+					}
+				}, error);
+			if (controls)
+				ShowWindow(controls->progress, SW_HIDE);
+			if (!downloaded) {
+				if (controls)
+					AVS::Label_SetText(controls->status, error.c_str());
+				return false;
+			}
+		}
+		std::wstring arguments = L"\"" + path.wstring() + L"\"";
+		return reinterpret_cast<INT_PTR>(ShellExecuteW(owner, L"open", L"notepad.exe",
+			arguments.c_str(), path.parent_path().c_str(), SW_SHOWNORMAL)) > 32;
+	}
+
+	void CloseConfirmationWindow(HWND hwnd, ConfirmationWindow* state,
+		bool accepted) {
+		const HWND owner = state ? state->owner : nullptr;
+		const bool ageConfirmation = state && state->ageConfirmation;
+		DestroyWindow(hwnd);
+		if (owner && IsWindow(owner)) {
+			EnableWindow(owner, TRUE);
+			SetForegroundWindow(owner);
+			if (accepted)
+				PostMessageW(owner, WM_COMMAND,
+					ageConfirmation ? ID_AGE_ACCEPTED : ID_LICENSE_ACCEPTED, 0);
+		}
+	}
+
+	LRESULT CALLBACK ConfirmationWindowProc(HWND hwnd, UINT message,
+		WPARAM wParam, LPARAM lParam) {
+		auto* state = reinterpret_cast<ConfirmationWindow*>(
+			GetWindowLongPtrW(hwnd, GWLP_USERDATA));
+		if (message == WM_NCCREATE) {
+			auto* create = reinterpret_cast<CREATESTRUCTW*>(lParam);
+			state = reinterpret_cast<ConfirmationWindow*>(create->lpCreateParams);
+			SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(state));
+			return TRUE;
+		}
+		switch (message) {
+		case WM_CREATE: {
+			const bool age = state && state->ageConfirmation;
+			CreateLabel(hwnd,
+				Translate(age ? L"Age confirmation" : L"Model license agreement").c_str(),
+				18, 15, 564, 28, AVS::LabelType::Enabled);
+			CreateLabel(hwnd,
+				Translate(age
+					? L"I confirm that I am at least 18 years old and meet the minimum age required in my country or region."
+					: L"Stable Audio 3 model weights are licensed under the Stability AI Community License. The text encoder is subject to the Gemma Terms of Use. Review and accept these terms before downloading the model.").c_str(),
+				18, 52, 564, age ? 82 : 112, AVS::LabelType::Enabled,
+				DT_LEFT | DT_TOP | DT_WORDBREAK);
+			if (!age)
+				AVS::CreateButton(hwnd,
+					reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_CONFIRM_VIEW_LICENSE)),
+					g_module, Translate(L"Licence").c_str(), 18, 178, 130, 34,
+					AVS::ButtonSettings::Create(AVS::Buttons::Default));
+			AVS::CreateButton(hwnd,
+				reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_CONFIRM_CANCEL)),
+				g_module, Translate(L"Cancel").c_str(), 322, 178, 120, 34,
+				AVS::ButtonSettings::Create(AVS::Buttons::Default));
+			AVS::CreateButton(hwnd,
+				reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_CONFIRM_ACCEPT)),
+				g_module, Translate(age ? L"Confirm age" : L"Accept").c_str(),
+				452, 178, 130, 34,
+				AVS::ButtonSettings::Create(AVS::Buttons::Primary));
+			return 0;
+		}
+		case WM_COMMAND:
+			switch (LOWORD(wParam)) {
+			case ID_CONFIRM_VIEW_LICENSE:
+				if (state)
+					OpenDownloadedLicense(state->owner);
+				return 0;
+			case ID_CONFIRM_ACCEPT:
+				CloseConfirmationWindow(hwnd, state, true);
+				return 0;
+			case ID_CONFIRM_CANCEL:
+				CloseConfirmationWindow(hwnd, state, false);
+				return 0;
+			}
+			break;
+		case WM_CLOSE:
+			CloseConfirmationWindow(hwnd, state, false);
+			return 0;
+		case WM_NCDESTROY:
+			delete state;
+			SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);
+			return DefWindowProcW(hwnd, message, wParam, lParam);
+		}
+		return DefWindowProcW(hwnd, message, wParam, lParam);
+	}
+
+	void ShowConfirmationWindow(HWND owner, bool ageConfirmation) {
+		const wchar_t* className = ageConfirmation ? AGE_WINDOW_CLASS : LICENSE_WINDOW_CLASS;
+		WNDCLASSEXW existing{ sizeof(existing) };
+		if (!GetClassInfoExW(g_module, className, &existing)) {
+			WNDCLASSEXW windowClass{ sizeof(windowClass) };
+			windowClass.lpfnWndProc = ConfirmationWindowProc;
+			windowClass.hInstance = g_module;
+			windowClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
+			windowClass.hIcon =
+				reinterpret_cast<HICON>(SendMessageW(owner, WM_GETICON, ICON_BIG, 0));
+			windowClass.hIconSm =
+				reinterpret_cast<HICON>(SendMessageW(owner, WM_GETICON, ICON_SMALL, 0));
+			AVS::Color background = AVS::Color::GetDefaultWindowBackground();
+			windowClass.hbrBackground =
+				CreateSolidBrush(RGB(background.R, background.G, background.B));
+			windowClass.lpszClassName = className;
+			RegisterClassExW(&windowClass);
+		}
+		auto* state = new ConfirmationWindow{ owner, ageConfirmation };
+		const DWORD style = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU;
+		RECT rect{ 0, 0, 600, 230 };
+		AdjustWindowRectEx(&rect, style, FALSE, 0);
+		HWND window = CreateWindowExW(0, className,
+			Translate(ageConfirmation ? L"Age confirmation" : L"Model license agreement").c_str(),
+			style, CW_USEDEFAULT, CW_USEDEFAULT, rect.right - rect.left,
+			rect.bottom - rect.top, owner, nullptr, g_module, state);
+		if (!window) {
+			delete state;
+			return;
+		}
+		EnableWindow(owner, FALSE);
+		CenterWindow(window);
+		ShowWindow(window, SW_SHOW);
+		UpdateWindow(window);
+	}
 	void CloseSettings(HWND hwnd) {
 		auto* state = reinterpret_cast<SettingsWindow*>(
 			GetWindowLongPtrW(hwnd, GWLP_USERDATA));
@@ -398,8 +562,12 @@ namespace {
 				hwnd, instance, 15, 529, 730, 22, AVS::ProgressBarSettings::Create());
 			AVS::ProgressBar_SetRange(controls->progress, 0, 100);
 			controls->status =
-				CreateLabel(hwnd, Translate(L"Ready").c_str(), 15, 562, 480, 28,
+				CreateLabel(hwnd, Translate(L"Ready").c_str(), 15, 562, 365, 28,
 					AVS::LabelType::Enabled, DT_LEFT | DT_TOP | DT_WORDBREAK);
+			controls->licence = AVS::CreateButton(
+				hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_LICENCE)),
+				instance, Translate(L"Licence").c_str(), 395, 560, 105, 30,
+				AVS::ButtonSettings::Create(AVS::Buttons::Default));
 			controls->settingsButton = AVS::CreateButton(
 				hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_SETTINGS)),
 				instance, Translate(L"Settings").c_str(), 515, 560, 105, 30,
@@ -422,9 +590,19 @@ namespace {
 				if (!plugin->busy)
 					ShowSettingsWindow(hwnd, controls);
 				return 0;
+			case ID_LICENCE:
+				if (!plugin->busy)
+					OpenDownloadedLicense(hwnd);
+				return 0;
 			case ID_DOWNLOAD:
 				if (plugin->busy)
 					return 0;
+				ShowConfirmationWindow(hwnd, false);
+				return 0;
+			case ID_LICENSE_ACCEPTED:
+				ShowConfirmationWindow(hwnd, true);
+				return 0;
+			case ID_AGE_ACCEPTED:
 				AVS::ProgressBar_SetPos(controls->progress, 0);
 				SetBusy(controls, true, false);
 				AVS::Label_SetText(controls->status,
@@ -616,6 +794,14 @@ void ShowStableAudioWindow(CStableAudio3Plugin* plugin) {
 				IsDialogMessageW(settings, &message))
 				continue;
 
+
+			HWND license = FindWindowW(LICENSE_WINDOW_CLASS, nullptr);
+			if (license && IsWindow(license) && IsDialogMessageW(license, &message))
+				continue;
+
+			HWND age = FindWindowW(AGE_WINDOW_CLASS, nullptr);
+			if (age && IsWindow(age) && IsDialogMessageW(age, &message))
+				continue;
 			if (!IsDialogMessageW(hwnd, &message)) {
 				TranslateMessage(&message);
 				DispatchMessageW(&message);

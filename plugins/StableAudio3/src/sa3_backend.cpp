@@ -168,8 +168,17 @@ bool GenerateAudio(
 	return ok;
 }
 struct MF {
-	std::wstring repo, name;
+	std::wstring repo, name, localName;
 };
+
+static std::vector<MF> licenseFiles(const std::wstring& model) {
+	return {
+		{L"thepatch/stable-audio-3-" + model + L"-GGUF", L"LICENSE.md",
+		 L"STABILITY_AI_COMMUNITY_LICENSE.txt"},
+		{L"thepatch/t5gemma-b-b-ul2-GGUF", L"LICENSE.md",
+		 L"GEMMA_TERMS_OF_USE.txt"},
+		{L"thepatch/t5gemma-b-b-ul2-GGUF", L"NOTICE", L"GEMMA_NOTICE.txt"} };
+}
 static std::vector<MF> files(const std::wstring& m, const std::wstring& e) {
 	auto enc = e == L"f32" ? L"F32" : L"F16";
 	bool med = m == L"medium";
@@ -345,8 +354,68 @@ namespace {
 		}
 		return true;
 	}
+
+	bool WriteLicenseBundle(const std::filesystem::path& directory,
+		std::wstring& error) {
+		const auto noticePath = directory / L"NOTICE.txt";
+		std::ofstream notice(noticePath, std::ios::binary | std::ios::trunc);
+		if (!notice) {
+			error = L"Cannot create license notice: " + noticePath.wstring();
+			return false;
+		}
+		notice << "This Stability AI Model is licensed under the Stability AI Community "
+			"License, Copyright \xC2\xA9 Stability AI Ltd. All Rights Reserved.\r\n\r\n"
+			"Gemma is provided under and subject to the Gemma Terms of Use found at "
+			"https://ai.google.dev/gemma/terms\r\n";
+		notice.close();
+
+		const auto bundlePath = directory / L"LICENSES.txt";
+		std::ofstream bundle(bundlePath, std::ios::binary | std::ios::trunc);
+		if (!bundle) {
+			error = L"Cannot create combined license file: " + bundlePath.wstring();
+			return false;
+		}
+		const std::pair<const char*, std::filesystem::path> sections[] = {
+			{"STABILITY AI COMMUNITY LICENSE\r\n================================\r\n\r\n", directory / L"STABILITY_AI_COMMUNITY_LICENSE.txt"},
+			{"\r\n\r\nGEMMA TERMS OF USE\r\n==================\r\n\r\n", directory / L"GEMMA_TERMS_OF_USE.txt"},
+			{"\r\n\r\nGEMMA NOTICE\r\n============\r\n\r\n", directory / L"GEMMA_NOTICE.txt"},
+			{"\r\n\r\nPLUGIN NOTICE\r\n=============\r\n\r\n", noticePath} };
+		for (const auto& section : sections) {
+			bundle << section.first;
+			std::ifstream input(section.second, std::ios::binary);
+			if (!input) {
+				error = L"Cannot read license file: " + section.second.wstring();
+				return false;
+			}
+			bundle << input.rdbuf();
+		}
+		return !!bundle;
+	}
 } // namespace
 
+bool DownloadModelLicenses(
+	CStableAudio3Plugin& plugin, const std::wstring& model,
+	const std::function<void(const std::wstring&, int)>& progress,
+	std::wstring& error) {
+	const auto directory = plugin.workDirectory / L"models";
+	std::error_code filesystemError;
+	std::filesystem::create_directories(directory, filesystemError);
+	const auto licenses = licenseFiles(model);
+	for (size_t index = 0; index < licenses.size(); ++index) {
+		const auto& file = licenses[index];
+		const auto destination = directory / file.localName;
+		if (!std::filesystem::exists(destination)) {
+			const std::wstring url =
+				L"https://huggingface.co/" + file.repo + L"/resolve/main/" + file.name;
+			if (!DownloadFile(plugin, url, destination, static_cast<int>(index),
+				static_cast<int>(licenses.size()), progress, error))
+				return false;
+		}
+		progress(L"License ready: " + file.localName,
+			static_cast<int>((index + 1) * 100 / licenses.size()));
+	}
+	return WriteLicenseBundle(directory, error);
+}
 bool DownloadModelSet(
 	CStableAudio3Plugin& plugin, const std::wstring& model,
 	const std::wstring& encoding,
@@ -355,7 +424,9 @@ bool DownloadModelSet(
 	const auto directory = plugin.workDirectory / L"models";
 	std::error_code filesystemError;
 	std::filesystem::create_directories(directory, filesystemError);
-	const auto modelFiles = files(model, encoding);
+	auto modelFiles = licenseFiles(model);
+	const auto weights = files(model, encoding);
+	modelFiles.insert(modelFiles.end(), weights.begin(), weights.end());
 
 	for (size_t index = 0; index < modelFiles.size(); ++index) {
 		if (plugin.cancel) {
@@ -363,7 +434,8 @@ bool DownloadModelSet(
 			return false;
 		}
 		const auto& file = modelFiles[index];
-		const auto destination = directory / file.name;
+		const auto destination = directory /
+			(file.localName.empty() ? file.name : file.localName);
 		if (std::filesystem::exists(destination)) {
 			progress(L"Already present: " + file.name,
 				static_cast<int>((index + 1) * 100 / modelFiles.size()));
@@ -377,5 +449,5 @@ bool DownloadModelSet(
 		progress(L"Downloaded: " + file.name,
 			static_cast<int>((index + 1) * 100 / modelFiles.size()));
 	}
-	return true;
+	return WriteLicenseBundle(directory, error);
 }

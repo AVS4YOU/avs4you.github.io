@@ -11,5 +11,9 @@ bool DownloadModelSet(
 	const std::wstring& encoding,
 	const std::function<void(const std::wstring&, int)>& progress,
 	std::wstring& error);
+bool DownloadModelLicenses(
+	CStableAudio3Plugin& plugin, const std::wstring& model,
+	const std::function<void(const std::wstring&, int)>& progress,
+	std::wstring& error);
 bool IsModelSetPresent(const std::filesystem::path& models,
 	const std::wstring& model, const std::wstring& encoding);
