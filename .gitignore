@@ -1,7 +1,10 @@
 **/.qtcreator
 **/.vs
 **/PreviewGenerator/build
+**/Supertonic3/packages
 **/StableAudio3/out
+**/sa3-cpp-gpu/*
+**/sa3-cpp-cpu/*
 **/Release
 **/Debug
 *.vcxproj.user
