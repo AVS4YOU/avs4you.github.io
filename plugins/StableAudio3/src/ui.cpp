@@ -193,6 +193,20 @@ namespace {
 			busy ? Translate(L"Cancel").c_str() : Translate(L"Generate").c_str());
 	}
 
+	bool OpenModelLicenseUrl(HWND owner) {
+		auto* plugin = reinterpret_cast<CStableAudio3Plugin*>(
+			GetWindowLongPtrW(owner, GWLP_USERDATA));
+		if (!plugin)
+			return false;
+		auto* controls = reinterpret_cast<Controls*>(
+			GetPropW(owner, L"StableAudio3.Controls"));
+		const std::wstring model =
+			controls ? AVS::ComboBox_GetCurrentText(controls->model) : L"medium";
+		const std::wstring url = L"https://huggingface.co/thepatch/stable-audio-3-" +
+			model + L"-GGUF/blob/main/LICENSE.md";
+		return reinterpret_cast<INT_PTR>(ShellExecuteW(owner, L"open", url.c_str(),
+			nullptr, nullptr, SW_SHOWNORMAL)) > 32;
+	}
 	bool OpenDownloadedLicense(HWND owner) {
 		auto* plugin = reinterpret_cast<CStableAudio3Plugin*>(
 			GetWindowLongPtrW(owner, GWLP_USERDATA));
@@ -202,33 +216,15 @@ namespace {
 			GetPropW(owner, L"StableAudio3.Controls"));
 		const auto path = plugin->workDirectory / L"models" / L"LICENSES.txt";
 		if (!std::filesystem::is_regular_file(path)) {
-			std::wstring error;
-			if (controls) {
-				ShowWindow(controls->progress, SW_SHOW);
-				AVS::ProgressBar_SetPos(controls->progress, 0);
-				UpdateWindow(owner);
-			}
-			const bool downloaded = DownloadModelLicenses(*plugin,
-				controls ? AVS::ComboBox_GetCurrentText(controls->model) : L"medium",
-				[controls](const std::wstring& text, int progress) {
-					if (controls) {
-						AVS::Label_SetText(controls->status, text.c_str());
-						AVS::ProgressBar_SetPos(controls->progress, progress);
-					}
-				}, error);
 			if (controls)
-				ShowWindow(controls->progress, SW_HIDE);
-			if (!downloaded) {
-				if (controls)
-					AVS::Label_SetText(controls->status, error.c_str());
-				return false;
-			}
+				AVS::Label_SetText(controls->status,
+					Translate(L"License files will be downloaded with the model.").c_str());
+			return false;
 		}
-		std::wstring arguments = L"\"" + path.wstring() + L"\"";
+		const std::wstring arguments = L"\"" + path.wstring() + L"\"";
 		return reinterpret_cast<INT_PTR>(ShellExecuteW(owner, L"open", L"notepad.exe",
 			arguments.c_str(), path.parent_path().c_str(), SW_SHOWNORMAL)) > 32;
 	}
-
 	void CloseConfirmationWindow(HWND hwnd, ConfirmationWindow* state,
 		bool accepted) {
 		const HWND owner = state ? state->owner : nullptr;
@@ -285,7 +281,7 @@ namespace {
 			switch (LOWORD(wParam)) {
 			case ID_CONFIRM_VIEW_LICENSE:
 				if (state)
-					OpenDownloadedLicense(state->owner);
+					OpenModelLicenseUrl(state->owner);
 				return 0;
 			case ID_CONFIRM_ACCEPT:
 				CloseConfirmationWindow(hwnd, state, true);
@@ -328,14 +324,27 @@ namespace {
 		const DWORD style = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU;
 		RECT rect{ 0, 0, 600, 230 };
 		AdjustWindowRectEx(&rect, style, FALSE, 0);
-		HWND window = CreateWindowExW(0, className,
-			Translate(ageConfirmation ? L"Age confirmation" : L"Model license agreement").c_str(),
+		const wchar_t* windowTitle = ageConfirmation
+			? L"StableAudio3 - Age confirmation"
+			: L"StableAudio3 - Model license agreement";
+		HWND window = CreateWindowExW(0, className, windowTitle,
 			style, CW_USEDEFAULT, CW_USEDEFAULT, rect.right - rect.left,
 			rect.bottom - rect.top, owner, nullptr, g_module, state);
 		if (!window) {
 			delete state;
 			return;
 		}
+		SetWindowTextW(window, windowTitle);
+		HICON largeIcon = reinterpret_cast<HICON>(
+			SendMessageW(owner, WM_GETICON, ICON_BIG, 0));
+		HICON smallIcon = reinterpret_cast<HICON>(
+			SendMessageW(owner, WM_GETICON, ICON_SMALL, 0));
+		if (!largeIcon)
+			largeIcon = reinterpret_cast<HICON>(GetClassLongPtrW(owner, GCLP_HICON));
+		if (!smallIcon)
+			smallIcon = reinterpret_cast<HICON>(GetClassLongPtrW(owner, GCLP_HICONSM));
+		SendMessageW(window, WM_SETICON, ICON_BIG, reinterpret_cast<LPARAM>(largeIcon));
+		SendMessageW(window, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(smallIcon));
 		EnableWindow(owner, FALSE);
 		CenterWindow(window);
 		ShowWindow(window, SW_SHOW);
@@ -476,14 +485,26 @@ namespace {
 		const DWORD style = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU;
 		RECT rect{ 0, 0, 650, 205 };
 		AdjustWindowRectEx(&rect, style, FALSE, 0);
+		const wchar_t* windowTitle = L"StableAudio3 - Settings";
 		HWND window = CreateWindowExW(
-			0, className, Translate(L"Stable Audio 3 Settings").c_str(), style, CW_USEDEFAULT,
+			0, className, windowTitle, style, CW_USEDEFAULT,
 			CW_USEDEFAULT, rect.right - rect.left, rect.bottom - rect.top, owner,
 			nullptr, GetModuleHandleW(nullptr), state);
 		if (!window) {
 			delete state;
 			return;
 		}
+		SetWindowTextW(window, windowTitle);
+		HICON largeIcon = reinterpret_cast<HICON>(
+			SendMessageW(owner, WM_GETICON, ICON_BIG, 0));
+		HICON smallIcon = reinterpret_cast<HICON>(
+			SendMessageW(owner, WM_GETICON, ICON_SMALL, 0));
+		if (!largeIcon)
+			largeIcon = reinterpret_cast<HICON>(GetClassLongPtrW(owner, GCLP_HICON));
+		if (!smallIcon)
+			smallIcon = reinterpret_cast<HICON>(GetClassLongPtrW(owner, GCLP_HICONSM));
+		SendMessageW(window, WM_SETICON, ICON_BIG, reinterpret_cast<LPARAM>(largeIcon));
+		SendMessageW(window, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(smallIcon));
 		EnableWindow(owner, FALSE);
 		CenterWindow(window);
 		ShowWindow(window, SW_SHOW);
@@ -643,9 +664,10 @@ namespace {
 					if (durationSeconds > maximumDuration) {
 						AVS::Label_SetText(
 							controls->status,
-							L"Maximum duration for " + options.model + L" is " +
+							Translate(L"Maximum duration for ") + options.model +
+							Translate(L" is ") +
 							std::to_wstring(static_cast<int>(maximumDuration)) +
-							L" seconds.");
+							Translate(L" seconds."));
 						return 0;
 					}
 					constexpr double sampleRate = 44100.0;
