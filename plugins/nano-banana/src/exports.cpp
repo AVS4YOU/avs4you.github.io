@@ -141,7 +141,7 @@ extern "C" {
 
 	wchar_t* __stdcall PluginInfo(PluginHandle plugin)
 	{
-		std::wstring info = L"Generate and edit images with Nano Banana models through the Gemini API.";
+		std::wstring info = CTranslate::GetInstance().GetManager()->Translate(L"Generate and edit images with Nano Banana models through the Gemini API.");
 		return export_str(info.c_str());
 	}
 }

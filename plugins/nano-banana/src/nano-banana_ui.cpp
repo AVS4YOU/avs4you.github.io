@@ -204,17 +204,18 @@ namespace NSUI
 
 	static std::wstring GetModeDescription(int mode)
 	{
+		CTranslateManager* tr = CTranslate::GetInstance().GetManager();
 		if (mode == static_cast<int>(WmMainWindowCommands::ButtonImageEdit))
-			return L"Provide an image and use text prompts to add, remove, or modify elements, change the style, or adjust the color grading.";
+			return tr->Translate(L"Provide an image and use text prompts to add, remove, or modify elements, change the style, or adjust the color grading.");
 		if (mode == static_cast<int>(WmMainWindowCommands::ButtonMultiTurn))
-			return L"Make changes and improvements to previously generated images.";
+			return tr->Translate(L"Make changes and improvements to previously generated images.");
 		if (mode == static_cast<int>(WmMainWindowCommands::ButtonGoogleSearch))
-			return L"Use the Google Search tool to generate images based on real-time information, such as weather forecasts, stock charts, or recent events.";
+			return tr->Translate(L"Use the Google Search tool to generate images based on real-time information, such as weather forecasts, stock charts, or recent events.");
 		if (mode == static_cast<int>(WmMainWindowCommands::ButtonImageSearch))
-			return L"Grounding with Google Image Search allows models to use web images retrieved via Google Image Search as visual context for image generation.";
+			return tr->Translate(L"Grounding with Google Image Search allows models to use web images retrieved via Google Image Search as visual context for image generation.");
 		if (mode == static_cast<int>(WmMainWindowCommands::ButtonVideoToImage))
-			return L"Video-to-image generation allows you to generate new images using a video's context as a multimodal reference. This is useful for creating video thumbnails, cinematic posters, summary infographics, or artwork inspired by a video scene.";
-		return L"Image generation (text-to-image)";
+			return tr->Translate(L"Video-to-image generation allows you to generate new images using a video's context as a multimodal reference. This is useful for creating video thumbnails, cinematic posters, summary infographics, or artwork inspired by a video scene.");
+		return tr->Translate(L"Image generation (text-to-image)");
 	}
 
 	static std::vector<std::wstring> WrapModeDescription(const std::wstring& text)
