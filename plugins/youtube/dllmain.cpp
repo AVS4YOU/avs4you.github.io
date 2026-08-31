@@ -1333,7 +1333,9 @@ namespace NSUI
 
         case WM_DESTROY:
             plugin->Stop();
-            PostQuitMessage(0);
+            // Wake the local plugin message loop without posting WM_QUIT to
+            // the host application's UI thread.
+            PostThreadMessageW(GetCurrentThreadId(), WM_NULL, 0, 0);
             break;
 
         default:
@@ -1380,20 +1382,59 @@ namespace NSUI
         RECT rc = { 0, 0, 500, 90 };
         AdjustWindowRectEx(&rc, dwStyle, FALSE, 0);
 
-        HWND hwnd = CreateWindowEx(0, wc.lpszClassName, titleWindow.c_str(),
+        HWND hostWindow = GetActiveWindow();
+        if (!hostWindow)
+        {
+            HWND foregroundWindow = GetForegroundWindow();
+            DWORD processId = 0;
+
+            if (foregroundWindow)
+                GetWindowThreadProcessId(foregroundWindow, &processId);
+
+            if (processId == GetCurrentProcessId())
+                hostWindow = foregroundWindow;
+        }
+
+        if (hostWindow)
+            hostWindow = GetAncestor(hostWindow, GA_ROOT);
+
+        const bool hostWasEnabled = hostWindow && IsWindowEnabled(hostWindow);
+
+        HWND hwnd = CreateWindowExW(0, wc.lpszClassName, titleWindow.c_str(),
             dwStyle,
             CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top,
-            NULL, NULL, GetModuleHandle(NULL), plugin);
+            hostWindow, nullptr, GetModuleHandleW(nullptr), plugin);
 
-        CenterWindow(hwnd);
-        ShowWindow(hwnd, SW_SHOW);
-        UpdateWindow(hwnd);
-
-        MSG msg;
-        while (GetMessage(&msg, NULL, 0, 0))
+        if (hwnd)
         {
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
+            if (hostWasEnabled)
+                EnableWindow(hostWindow, FALSE);
+
+            CenterWindow(hwnd);
+            ShowWindow(hwnd, SW_SHOW);
+            UpdateWindow(hwnd);
+
+            MSG msg{};
+            while (IsWindow(hwnd))
+            {
+                const BOOL messageResult = GetMessageW(&msg, nullptr, 0, 0);
+                if (messageResult <= 0)
+                    break;
+
+                if (!IsDialogMessageW(hwnd, &msg))
+                {
+                    TranslateMessage(&msg);
+                    DispatchMessageW(&msg);
+                }
+            }
+        }
+
+        // Restore the host in one common exit path, including message-loop
+        // errors. The host is never enabled if it was disabled beforehand.
+        if (hostWasEnabled && hostWindow && IsWindow(hostWindow))
+        {
+            EnableWindow(hostWindow, TRUE);
+            SetForegroundWindow(hostWindow);
         }
 
         if (hActCtx != INVALID_HANDLE_VALUE) {
