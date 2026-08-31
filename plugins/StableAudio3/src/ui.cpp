@@ -759,6 +759,18 @@ namespace {
 } // namespace
 
 void ShowStableAudioWindow(CStableAudio3Plugin* plugin) {
+	HWND hostWindow = GetActiveWindow();
+	if (!hostWindow) {
+		HWND foreground = GetForegroundWindow();
+		DWORD processId = 0;
+		if (foreground)
+			GetWindowThreadProcessId(foreground, &processId);
+		if (processId == GetCurrentProcessId())
+			hostWindow = foreground;
+	}
+	if (hostWindow)
+		hostWindow = GetAncestor(hostWindow, GA_ROOT);
+	const bool hostWasEnabled = hostWindow && IsWindowEnabled(hostWindow);
 	ACTCTXW activation{ sizeof(activation) };
 	activation.dwFlags =
 		ACTCTX_FLAG_RESOURCE_NAME_VALID | ACTCTX_FLAG_HMODULE_VALID;
@@ -801,9 +813,11 @@ void ShowStableAudioWindow(CStableAudio3Plugin* plugin) {
 	AdjustWindowRectEx(&rect, style, FALSE, 0);
 	HWND hwnd = CreateWindowExW(
 		0, className, L"StableAudio3", style, CW_USEDEFAULT, CW_USEDEFAULT,
-		rect.right - rect.left, rect.bottom - rect.top, nullptr, nullptr,
+		rect.right - rect.left, rect.bottom - rect.top, hostWindow, nullptr,
 		GetModuleHandleW(nullptr), plugin);
 	if (hwnd) {
+		if (hostWasEnabled)
+			EnableWindow(hostWindow, FALSE);
 		SetWindowTextW(hwnd, L"StableAudio3");
 		CenterWindow(hwnd);
 		ShowWindow(hwnd, SW_SHOW);
@@ -829,6 +843,11 @@ void ShowStableAudioWindow(CStableAudio3Plugin* plugin) {
 				DispatchMessageW(&message);
 			}
 		}
+	}
+
+	if (hostWasEnabled && hostWindow && IsWindow(hostWindow)) {
+		EnableWindow(hostWindow, TRUE);
+		SetForegroundWindow(hostWindow);
 	}
 
 	if (activationActive)
