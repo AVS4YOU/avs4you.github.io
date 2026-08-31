@@ -44,6 +44,38 @@ struct Controls
 struct ModelLicenseDialogState
 {
     HWND owner = nullptr;
+    bool ownerWasEnabled = false;
+};
+
+struct OwnerModalState
+{
+    HWND owner = nullptr;
+    bool ownerWasEnabled = false;
+    bool ownerDisabled = false;
+
+    void DisableOwner()
+    {
+        if (ownerWasEnabled && owner && IsWindow(owner))
+        {
+            EnableWindow(owner, FALSE);
+            ownerDisabled = true;
+        }
+    }
+
+    void RestoreOwner()
+    {
+        if (ownerDisabled && owner && IsWindow(owner))
+        {
+            EnableWindow(owner, TRUE);
+            SetForegroundWindow(owner);
+        }
+        ownerDisabled = false;
+    }
+
+    ~OwnerModalState()
+    {
+        RestoreOwner();
+    }
 };
 std::wstring Tr(const wchar_t* text)
 {
@@ -171,14 +203,15 @@ void OpenModelLicenseUrl(HWND owner)
 void CloseModelLicenseDialog(HWND window, ModelLicenseDialogState* state, bool accepted)
 {
     const HWND owner = state ? state->owner : nullptr;
+    const bool ownerWasEnabled = state && state->ownerWasEnabled;
     DestroyWindow(window);
-    if (owner && IsWindow(owner))
+    if (ownerWasEnabled && owner && IsWindow(owner))
     {
         EnableWindow(owner, TRUE);
         SetForegroundWindow(owner);
-        if (accepted)
-            PostMessageW(owner, WM_COMMAND, ID_DOWNLOAD_MODEL_ACCEPTED, 0);
     }
+    if (accepted && owner && IsWindow(owner))
+        PostMessageW(owner, WM_COMMAND, ID_DOWNLOAD_MODEL_ACCEPTED, 0);
 }
 
 LRESULT CALLBACK ModelLicenseWindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam)
@@ -254,6 +287,7 @@ void ShowModelLicenseWindow(HWND owner)
     }
     auto* state = new ModelLicenseDialogState();
     state->owner = owner;
+    state->ownerWasEnabled = owner && IsWindow(owner) && IsWindowEnabled(owner);
     const DWORD style = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU;
     RECT rectangle{0, 0, 600, 270};
     AdjustWindowRectEx(&rectangle, style, FALSE, 0);
@@ -265,7 +299,7 @@ void ShowModelLicenseWindow(HWND owner)
         delete state;
         return;
     }
-    if (owner)
+    if (state->ownerWasEnabled)
         EnableWindow(owner, FALSE);
     CenterWindow(dialog, owner);
     ShowWindow(dialog, SW_SHOW);
@@ -339,7 +373,7 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lPa
         const std::wstring initialStatus = plugin->modelDirectory.empty()
             ? Tr(L"Press Download Model.")
             : (plugin->voiceStyles.empty() ? Tr(L"No voice styles were found.") : Tr(L"Ready"));
-        controls->status = CreateLabel(window, initialStatus.c_str(), 15, 338, 320, 68,
+        controls->status = CreateLabel(window, initialStatus.c_str(), 15, 338, 320, 34,
             AVS::LabelType::Enabled, DT_LEFT | DT_TOP | DT_WORDBREAK);
         controls->download = AVS::CreateButton(window,
             reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_DOWNLOAD_MODEL)), g_module,
@@ -552,6 +586,23 @@ void ShowSupertonicWindow(SupertonicPlugin* plugin)
     INITCOMMONCONTROLSEX commonControls{sizeof(commonControls), ICC_STANDARD_CLASSES | ICC_PROGRESS_CLASS};
     InitCommonControlsEx(&commonControls);
 
+    HWND hostWindow = GetActiveWindow();
+    if (!hostWindow)
+    {
+        HWND foreground = GetForegroundWindow();
+        DWORD processId = 0;
+        if (foreground)
+            GetWindowThreadProcessId(foreground, &processId);
+        if (processId == GetCurrentProcessId())
+            hostWindow = foreground;
+    }
+    if (hostWindow)
+        hostWindow = GetAncestor(hostWindow, GA_ROOT);
+
+    const bool hostWasEnabled =
+        hostWindow && IsWindow(hostWindow) && IsWindowEnabled(hostWindow);
+    OwnerModalState modalState{hostWindow, hostWasEnabled};
+
     static const wchar_t* className = L"Supertonic3MainWindowClass";
     WNDCLASSEXW existing{sizeof(existing)};
     if (!GetClassInfoExW(g_module, className, &existing))
@@ -578,7 +629,7 @@ void ShowSupertonicWindow(SupertonicPlugin* plugin)
     HWND window = CreateWindowExW(0, className, windowTitle.c_str(), style,
         CW_USEDEFAULT, CW_USEDEFAULT,
         rectangle.right - rectangle.left, rectangle.bottom - rectangle.top,
-        plugin->parentWindow, nullptr, g_module, plugin);
+        hostWindow, nullptr, g_module, plugin);
     if (!window)
     {
         if (plugin->activationCookie)
@@ -593,10 +644,33 @@ void ShowSupertonicWindow(SupertonicPlugin* plugin)
         }
         return;
     }
+    modalState.DisableOwner();
     SetWindowTextW(window, windowTitle.c_str());
-    CenterWindow(window, plugin->parentWindow);
+    CenterWindow(window, hostWindow);
     ShowWindow(window, SW_SHOW);
     UpdateWindow(window);
+
+    MSG message{};
+    while (IsWindow(window))
+    {
+        const BOOL result = GetMessageW(&message, nullptr, 0, 0);
+        if (result <= 0)
+            break;
+        HWND childDialog = FindWindowW(L"Supertonic3ModelLicenseWindowClass", nullptr);
+        if (childDialog && IsWindow(childDialog) &&
+            IsDialogMessageW(childDialog, &message))
+            continue;
+        if (!IsDialogMessageW(window, &message))
+        {
+            TranslateMessage(&message);
+            DispatchMessageW(&message);
+        }
+    }
+
+    if (IsWindow(window))
+        DestroyWindow(window);
+    ReleaseUiActivationContext(plugin);
+    modalState.RestoreOwner();
 }
 
 
