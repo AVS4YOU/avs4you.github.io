@@ -1093,7 +1093,7 @@
     const initialAppFilter = typeAppFilter[typeParam] || "all";
     const state = {
       isApp: typeParam === "app" || initialAppFilter !== "all",
-      appPlatform: X86_ONLY ? "x86" : (params.get("platform") === "x64" ? "x64" : "x86"),
+      appPlatform: params.get("platform") === "x64" ? "x64" : "x86",
       category: "all",
       app: initialAppFilter,
       search: "",
@@ -1274,7 +1274,7 @@
     function makeCard(plugin) {
       const activePlatform = state.isApp
         ? state.appPlatform
-        : (state.platform[plugin.slug] || state.appPlatform);
+        : (X86_ONLY ? "x86" : (state.platform[plugin.slug] || state.appPlatform));
       const href = getHref(plugin, activePlatform);
       const card = document.createElement("article");
       card.className = "plugin-card";
