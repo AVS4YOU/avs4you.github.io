@@ -1,0 +1,14 @@
+{
+  "slug": "stableaudio3",
+  "name": "Stable Audio 3 Generator",
+  "desc": "Generate audio locally with Stable Audio 3 using CPU or NVIDIA CUDA acceleration.",
+  "apps": [ "Audio Editor", "Video Editor" ],
+  "version": "v1.0.0",
+  "type": "content",
+  "typeLabel": "Content Plugin",
+  "aiPowered": true,
+  "requiresKey": false,
+  "tint": "linear-gradient(135deg,#6B5CE7,#2E9CCA)",
+  "media": "icon.ico",
+  "download": "build/x86/StableAudio3.avsp"
+}

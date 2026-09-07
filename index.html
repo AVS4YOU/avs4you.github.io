@@ -910,6 +910,25 @@
     "basePath": "plugins/heygen"
   },
   {
+    "slug": "nano-banana",
+    "name": "Nano Banana Image Generator",
+    "desc": "Generate, edit, ground, and iterate images with Google Nano Banana models through the Gemini API.",
+    "apps": [
+      "Video Converter",
+      "Video Editor",
+      "Photo Editor"
+    ],
+    "version": "v1.0.0",
+    "type": "content",
+    "typeLabel": "Content Plugin",
+    "aiPowered": true,
+    "requiresKey": true,
+    "tint": "linear-gradient(135deg,#FFD33D,#22B8A8)",
+    "media": "plugins/nano-banana/icon.ico",
+    "download": "plugins/nano-banana/build/x86/NanoBanana.avsp",
+    "basePath": "plugins/nano-banana"
+  },
+  {
     "slug": "sora2",
     "name": "Sora2 Video Generator",
     "desc": "AI-powered video generation using OpenAI's Sora 2 API. Create high-quality videos from text directly in your AVS workflow.",
@@ -928,6 +947,62 @@
     "basePath": "plugins/sora2"
   },
   {
+    "slug": "stableaudio3",
+    "name": "Stable Audio 3 Generator",
+    "desc": "Generate audio locally with Stable Audio 3 using CPU or NVIDIA CUDA acceleration.",
+    "apps": [
+      "Audio Editor",
+      "Video Editor"
+    ],
+    "version": "v1.0.0",
+    "type": "content",
+    "typeLabel": "Content Plugin",
+    "aiPowered": true,
+    "requiresKey": false,
+    "tint": "linear-gradient(135deg,#6B5CE7,#2E9CCA)",
+    "media": "plugins/StableAudio3/icon.ico",
+    "download": "plugins/StableAudio3/build/x86/StableAudio3.avsp",
+    "basePath": "plugins/StableAudio3"
+  },
+  {
+    "slug": "sunoapi",
+    "name": "Suno API Music Generator",
+    "desc": "Generate songs, lyrics and sounds, extend or transform audio with Suno API.",
+    "apps": [
+      "Audio Editor",
+      "Audio Converter",
+      "Video Editor",
+      "Video Converter"
+    ],
+    "version": "v1.0.0",
+    "type": "content",
+    "typeLabel": "Content Plugin",
+    "aiPowered": true,
+    "requiresKey": true,
+    "tint": "linear-gradient(135deg,#7C3AED,#EC4899)",
+    "media": "plugins/sunoapi/icon.ico",
+    "download": "plugins/sunoapi/build/x86/SunoApi.avsp",
+    "basePath": "plugins/sunoapi"
+  },
+  {
+    "slug": "supertonic3",
+    "name": "Supertonic 3 Text to Speech",
+    "desc": "Generate natural multilingual speech locally with Supertonic 3 and ONNX Runtime directly in AVS Audio Editor and AVS Video Editor.",
+    "apps": [
+      "Audio Editor",
+      "Video Editor"
+    ],
+    "version": "v1.0.0",
+    "type": "content",
+    "typeLabel": "Content Plugin",
+    "aiPowered": true,
+    "requiresKey": false,
+    "tint": "linear-gradient(135deg,#7756E8,#3478F6)",
+    "media": "plugins/Supertonic3/icon.ico",
+    "download": "plugins/Supertonic3/build/x86/Supertonic3.avsp",
+    "basePath": "plugins/Supertonic3"
+  },
+  {
     "slug": "veo3",
     "name": "Veo3 Video Generator",
     "desc": "AI-powered video creation with Google Veo 3. Turn your ideas into polished, cinematic clips from simple text prompts inside your AVS workflow.",
@@ -944,6 +1019,24 @@
     "media": "plugins/veo3/icon.ico",
     "download": "plugins/veo3/build/x86/Veo3.avsp",
     "basePath": "plugins/veo3"
+  },
+  {
+    "slug": "youtube",
+    "name": "YouTube Video Downloader",
+    "desc": "Download video and audio from YouTube, Twitch and other sites supported by yt-dlp directly into your AVS workflow.",
+    "apps": [
+      "Video Converter",
+      "Video Editor"
+    ],
+    "version": "v1.0.0",
+    "type": "content",
+    "typeLabel": "Content Plugin",
+    "aiPowered": false,
+    "requiresKey": false,
+    "tint": "linear-gradient(135deg,#FF0000,#CC0000)",
+    "media": "plugins/youtube/icon.ico",
+    "download": "plugins/youtube/build/x86/youtube.avsp",
+    "basePath": "plugins/youtube"
   }
 ]
 </script>
@@ -999,7 +1092,7 @@
     const initialAppFilter = typeAppFilter[typeParam] || "all";
     const state = {
       isApp: typeParam === "app" || initialAppFilter !== "all",
-      appPlatform: X86_ONLY ? "x86" : (params.get("platform") === "x64" ? "x64" : "x86"),
+      appPlatform: params.get("platform") === "x64" ? "x64" : "x86",
       category: "all",
       app: initialAppFilter,
       search: "",
@@ -1180,7 +1273,7 @@
     function makeCard(plugin) {
       const activePlatform = state.isApp
         ? state.appPlatform
-        : (state.platform[plugin.slug] || state.appPlatform);
+        : (X86_ONLY ? "x86" : (state.platform[plugin.slug] || state.appPlatform));
       const href = getHref(plugin, activePlatform);
       const card = document.createElement("article");
       card.className = "plugin-card";

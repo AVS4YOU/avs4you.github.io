@@ -12,6 +12,14 @@ Plugins that provide menu items, UI elements, and context-specific functionality
 ### [Effect Plugins](EffectPlugin-README.md)
 Plugins that provide various effects for image or video processing. Effect plugins can apply filters, transformations, and other visual effects to media content in AVS4YOU applications.
 
+## Guides
+
+### [Effect Plugin Recipes](EffectPlugin-Recipes.md)
+How to write an animated effect that actually looks right: temporal coherence
+(making an animation continuous from frame to frame instead of random per
+frame), resolution scaling rules, making an overlay read on any footage,
+performance budgets, and the build/preview/verify pipeline.
+
 ## Getting Started
 
 1. Choose the plugin type that matches your needs

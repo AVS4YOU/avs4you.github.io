@@ -1,0 +1,30 @@
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "windows-x86-cpu",
+      "generator": "Visual Studio 16 2019",
+      "architecture": "Win32",
+      "binaryDir": "${sourceDir}/out/x86-cpu",
+      "cacheVariables": { "STABLEAUDIO3_BACKEND": "CPU" }
+    },
+    {
+      "name": "windows-cpu",
+      "generator": "Visual Studio 16 2019",
+      "architecture": "x64",
+      "binaryDir": "${sourceDir}/out/cpu",
+      "cacheVariables": { "STABLEAUDIO3_BACKEND": "CPU" }
+    },
+    {
+      "name": "windows-cuda",
+      "inherits": "windows-cpu",
+      "binaryDir": "${sourceDir}/out/cuda",
+      "cacheVariables": { "STABLEAUDIO3_BACKEND": "CUDA", "CMAKE_CUDA_ARCHITECTURES": "75;80;86;89" }
+    }
+  ],
+  "buildPresets": [
+    { "name": "x86-cpu-release", "configurePreset": "windows-x86-cpu", "configuration": "Release" },
+    { "name": "cpu-release", "configurePreset": "windows-cpu", "configuration": "Release" },
+    { "name": "cuda-release", "configurePreset": "windows-cuda", "configuration": "Release" }
+  ]
+}

@@ -1,0 +1,238 @@
+// dllmain.cpp : Defines the entry point for the DLL application.
+//
+// {{NAME}} - {{DESC}}
+//
+// The animation below is a closed-form function of NSEffect::CClock time, so
+// every particle keeps its identity from frame to frame instead of being
+// re-randomised each call. See docs/EffectPlugin-Recipes.md before changing
+// how motion is computed.
+
+#define PLUGIN_EXPORTS
+
+#define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
+// Windows Header Files
+#include <windows.h>
+#include "../../sdk/include/CEffectPluginIntf.h"
+#include "../../sdk/include/AVSConsts.h"
+#include "../../sdk/effects/effect_common.h"
+
+#include <cmath>
+#include <new>
+
+using namespace NSEffect;
+
+// ---------------------------------------------------------------------------
+// Tuning
+// ---------------------------------------------------------------------------
+
+namespace
+{
+    // Author against a 1280x720 reference frame, then scale: counts by area,
+    // sizes by height. A 320x180 preview then looks like a downscaled 1080p
+    // render instead of a different effect.
+    const float REF_W = 1280.0f;
+    const float REF_H = 720.0f;
+
+    // TODO: number of particles on a reference frame at intensity 1.0.
+    const float PARTICLES_REFERENCE = 900.0f;
+
+    struct EffectParams
+    {
+        float intensity;  // overall strength, 0..2
+        float speed;      // motion speed multiplier
+        float density;    // multiplier on the particle budget
+
+        EffectParams()
+            : intensity(1.0f), speed(1.0f), density(1.0f)
+        {
+        }
+    };
+
+    // Per-instance state handed back to us through **effectData. Keep it small:
+    // it exists to carry the clock, not to accumulate positions.
+    class CEffectState
+    {
+    public:
+        CClock clock;
+    };
+}
+
+// ---------------------------------------------------------------------------
+// Rendering
+// ---------------------------------------------------------------------------
+
+namespace
+{
+    void Draw(const CSurface& s, const EffectParams& p, float time)
+    {
+        const float fw = (float)s.Width();
+        const float fh = (float)s.Height();
+
+        const float sizeScale = fh / REF_H;
+        const float areaScale = (fw * fh) / (REF_W * REF_H);
+
+        const int count = (int)(PARTICLES_REFERENCE * areaScale * p.density
+                                * Clampf(p.intensity, 0.0f, 2.0f) + 0.5f);
+
+        for (int i = 0; i < count; ++i)
+        {
+            // Fixed identity of this particle. Same seed every frame, so its
+            // lane, phase and speed never change - only `time` moves.
+            const unsigned int seed = HashU32(0x9e3779b9U + (unsigned int)i * 0x9e3779b9U);
+
+            const float lane = Rand01(seed);
+            const float phase0 = Rand01(seed ^ 0xa1b2c3d4U);
+            const float ownSpeed = p.speed * RandRange(seed ^ 0x1f83d9abU, 0.8f, 1.25f);
+            const float radius = RandRange(seed ^ 0x5be0cd19U, 1.0f, 2.5f) * sizeScale;
+
+            // TODO: replace with the motion this effect needs. The rule is that
+            // position must be a pure function of `time` - never `pos += step`.
+            const float cycle = 1.0f / (ownSpeed + 0.0001f);   // seconds per pass
+            const float phase = Fract(phase0 + time / cycle);
+
+            const float x = lane * fw;
+            const float y = phase * fh;
+
+            s.SplatBlend(x, y, (radius < 0.5f) ? 0.5f : radius,
+                         250.0f, 250.0f, 250.0f, 0.35f);
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Plugin exports
+// ---------------------------------------------------------------------------
+
+extern "C" {
+
+    PLUGIN_API void __stdcall ReleasePluginString(wchar_t* ptr)
+    {
+        ReleaseString(ptr);
+    }
+
+    PLUGIN_API Plugins::PluginType __stdcall PluginType()
+    {
+        return Plugins::PluginType::ImageEffect;
+    }
+
+    PLUGIN_API wchar_t* __stdcall PluginId()
+    {
+        return ExportString(L"{{PLUGIN_ID}}");
+    }
+
+    PLUGIN_API wchar_t* __stdcall PluginName()
+    {
+        return ExportString(L"{{EFFECT_NAME}}");
+    }
+
+    PLUGIN_API wchar_t* __stdcall PluginVersion()
+    {
+        return ExportString(L"1.0.0");
+    }
+
+    PLUGIN_API wchar_t* __stdcall PluginIcon()
+    {
+        return ExportString(L"");
+    }
+
+    PLUGIN_API bool __stdcall IsApplicationSupported(int id)
+    {
+        switch (id)
+        {
+{{APP_CASES}}
+            return true;
+        default:
+            break;
+        }
+
+        return false;
+    }
+
+    PLUGIN_API int __stdcall GetEffectsCount()
+    {
+        return 1;
+    }
+
+    PLUGIN_API wchar_t* __stdcall GetEffectName(int)
+    {
+        return ExportString(L"{{EFFECT_NAME}}");
+    }
+
+    // Hosts in the field do not consume the parameter schema yet, so this
+    // matches the other shipped effects and returns nothing. ApplyEffect below
+    // still reads positional parameters when a host does supply them.
+    PLUGIN_API wchar_t* __stdcall GetEffectParams(int)
+    {
+        return NULL;
+    }
+
+    PLUGIN_API HRESULT __stdcall ApplyEffect(BYTE* pPixels, int w, int h, double dCompleteness,
+                                             int nParamCount, const BSTR* sParams, void** pEffectData)
+    {
+        if (!pPixels || w <= 0 || h <= 0)
+            return E_INVALIDARG;
+
+        CEffectState* state = NULL;
+
+        if (pEffectData)
+        {
+            if (*pEffectData == NULL)
+            {
+                state = new (std::nothrow) CEffectState();
+                if (!state)
+                    return E_OUTOFMEMORY;
+
+                *pEffectData = state;
+            }
+            else
+            {
+                state = (CEffectState*)(*pEffectData);
+            }
+        }
+
+        // A host that does not keep state still gets a usable still frame.
+        CEffectState fallback;
+        if (!state)
+            state = &fallback;
+
+        state->clock.Tick(dCompleteness);
+        const float time = (float)state->clock.Time();
+
+        EffectParams params;
+        params.intensity = Clampf(ParamFloat(nParamCount, sParams, 0, params.intensity), 0.0f, 2.0f);
+        params.speed = Clampf(ParamFloat(nParamCount, sParams, 1, params.speed), 0.05f, 5.0f);
+        params.density = Clampf(ParamFloat(nParamCount, sParams, 2, params.density), 0.1f, 3.0f);
+
+        const CSurface surface(pPixels, w, h);
+        Draw(surface, params, time);
+
+        return S_OK;
+    }
+
+    PLUGIN_API void __stdcall ReleaseEffectData(void* data)
+    {
+        if (NULL == data)
+            return;
+
+        delete (CEffectState*)data;
+    }
+}
+
+BOOL APIENTRY DllMain(HMODULE hModule,
+                      DWORD  ul_reason_for_call,
+                      LPVOID lpReserved)
+{
+    UNREFERENCED_PARAMETER(hModule);
+    UNREFERENCED_PARAMETER(lpReserved);
+
+    switch (ul_reason_for_call)
+    {
+    case DLL_PROCESS_ATTACH:
+    case DLL_THREAD_ATTACH:
+    case DLL_THREAD_DETACH:
+    case DLL_PROCESS_DETACH:
+        break;
+    }
+
+    return TRUE;
+}
