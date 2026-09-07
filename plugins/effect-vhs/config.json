@@ -9,6 +9,5 @@
   "aiPowered": false,
   "requiresKey": false,
   "tint": "linear-gradient(135deg,#E0398E,#7C2BD6)",
-  "media": "Effect VHS.gif",
-  "download": "build/x86/effect-vhs.avsp"
+  "media": "Effect VHS.gif"
 }

@@ -9,6 +9,5 @@
   "aiPowered": true,
   "requiresKey": true,
   "tint": "linear-gradient(135deg,#7C3AED,#EC4899)",
-  "media": "icon.ico",
-  "download": "build/x86/SunoApi.avsp"
+  "media": "icon.ico"
 }

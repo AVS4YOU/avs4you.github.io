@@ -9,6 +9,5 @@
   "aiPowered": true,
   "requiresKey": true,
   "tint": "linear-gradient(135deg,#FF9A2E,#F2552E)",
-  "media": "res/icons/app-icon.ico",
-  "download": "build/x86/Heygen.avsp"
+  "media": "res/icons/app-icon.ico"
 }

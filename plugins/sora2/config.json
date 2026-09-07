@@ -9,6 +9,5 @@
   "aiPowered": true,
   "requiresKey": true,
   "tint": "linear-gradient(135deg,#0FB5C9,#1577E0)",
-  "media": "icon.ico",
-  "download": "build/x86/Sora2.avsp"
+  "media": "icon.ico"
 }

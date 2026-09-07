@@ -9,3 +9,5 @@
 **/Debug
 *.vcxproj.user
 *.bak
+**/build
+__pycache__/

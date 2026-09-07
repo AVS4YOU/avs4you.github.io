@@ -9,6 +9,5 @@
   "aiPowered": false,
   "requiresKey": false,
   "tint": "linear-gradient(135deg,#FF0000,#CC0000)",
-  "media": "icon.ico",
-  "download": "build/x86/youtube.avsp"
+  "media": "icon.ico"
 }

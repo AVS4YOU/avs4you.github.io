@@ -9,6 +9,5 @@
   "aiPowered": false,
   "requiresKey": false,
   "tint": "linear-gradient(135deg,#3B4FE0,#7C5CFF)",
-  "media": "Effect Spiral.gif",
-  "download": "/build/x86/effect-spiral.avsp"
+  "media": "Effect Spiral.gif"
 }

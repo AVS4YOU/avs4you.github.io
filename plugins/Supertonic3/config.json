@@ -12,6 +12,5 @@
   "aiPowered": true,
   "requiresKey": false,
   "tint": "linear-gradient(135deg,#7756E8,#3478F6)",
-  "media": "icon.ico",
-  "download": "build/x86/Supertonic3.avsp"
+  "media": "icon.ico"
 }

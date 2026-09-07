@@ -9,6 +9,5 @@
   "aiPowered": true,
   "requiresKey": true,
   "tint": "linear-gradient(135deg,#FFD33D,#22B8A8)",
-  "media": "icon.ico",
-  "download": "build/x86/NanoBanana.avsp"
+  "media": "icon.ico"
 }

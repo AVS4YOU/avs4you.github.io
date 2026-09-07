@@ -1,7 +1,10 @@
 ﻿from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
+
+from release import ARCHS, asset_url
 
 ROOT = Path(__file__).resolve().parent
 PLUGINS_DIR = ROOT / "plugins"
@@ -42,7 +45,19 @@ def load_plugins() -> list[dict]:
         base_path = to_url(plugin_dir)
         config["basePath"] = base_path
         config["media"] = join_plugin_path(base_path, config.get("media"))
-        config["download"] = join_plugin_path(base_path, config.get("download"))
+
+        # Packages are served from GitHub releases, never from Pages: Pages does
+        # not resolve Git LFS pointers and large .avsp files would be handed to
+        # the user as a 134-byte text file. release.py publishes the assets under
+        # exactly these names.
+        slug = str(config.get("slug") or "").strip()
+        version = str(config.get("version") or "").strip()
+        if not slug or not version:
+            sys.exit(f"error: {to_url(config_path)} needs both 'slug' and 'version'")
+
+        config["downloads"] = {
+            arch: asset_url(slug, version, arch) for arch in ARCHS
+        }
         plugins.append(config)
 
     return plugins

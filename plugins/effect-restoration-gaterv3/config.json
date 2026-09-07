@@ -9,6 +9,5 @@
   "aiPowered": true,
   "requiresKey": false,
   "tint": "linear-gradient(135deg,#1FA85C,#0FB5C9)",
-  "media": "Effect Restoration Gaterv3.gif",
-  "download": "build/x86/effect-restoration-gaterv3.avsp"
+  "media": "Effect Restoration Gaterv3.gif"
 }

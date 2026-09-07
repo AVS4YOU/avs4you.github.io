@@ -9,6 +9,5 @@
   "aiPowered": true,
   "requiresKey": false,
   "tint": "linear-gradient(135deg,#6B5CE7,#2E9CCA)",
-  "media": "icon.ico",
-  "download": "build/x86/StableAudio3.avsp"
+  "media": "icon.ico"
 }
