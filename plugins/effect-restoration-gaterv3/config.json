@@ -1,5 +1,6 @@
 {
   "slug": "effect-restoration-gaterv3",
+  "pluginId": "EffectGaterv3.plugin",
   "name": "Restoration Gaterv3",
   "desc": "A 1x restoration model for improving image quality, including noise, resizing, JPEG compression and mild blur.",
   "apps": [ "Image Converter", "Video Converter", "Video Editor" ],

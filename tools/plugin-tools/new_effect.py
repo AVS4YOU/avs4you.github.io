@@ -89,6 +89,16 @@ def main() -> None:
     display_name = args.name or f"Effect {effect_name}"
     project_name = re.sub(r"[^A-Za-z0-9]", "", bare).lower() or "effect"
     plugin_id = "Effect" + re.sub(r"[^A-Za-z0-9]", "", effect_name.title()) + ".plugin"
+    # the install folder of the plugin: it must not clash with another one (NTFS ignores case)
+    for other in sorted(PLUGINS_DIR.glob("*/config.json")):
+        if other.parent == plugin_dir:
+            continue
+        try:
+            other_id = json.loads(other.read_text(encoding="utf-8")).get("pluginId", "")
+        except (OSError, ValueError):
+            continue
+        if isinstance(other_id, str) and other_id.lower() == plugin_id.lower():
+            fail(f"pluginId {plugin_id} is already used by {other.parent.name} - pass another --effect-name")
     exports_define = "EFFECT" + re.sub(r"[^A-Za-z0-9]", "", bare).upper() + "_EXPORTS"
 
     apps = [a.strip() for a in args.apps.split(",") if a.strip()]
@@ -127,6 +137,7 @@ def main() -> None:
 
     config = {
         "slug": slug,
+        "pluginId": plugin_id,
         "name": display_name,
         "desc": args.desc or f"{effect_name} effect.",
         "apps": apps,
@@ -137,7 +148,6 @@ def main() -> None:
         "requiresKey": False,
         "tint": args.tint,
         "media": f"{display_name}.gif",
-        "download": f"build/x86/{slug}.avsp",
     }
     write(plugin_dir / "config.json",
           json.dumps(config, ensure_ascii=False, indent=2) + "\n")

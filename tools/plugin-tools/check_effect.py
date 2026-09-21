@@ -234,12 +234,28 @@ def main() -> None:
     else:
         ok("PluginType() = ImageEffect")
 
-    for name in ("PluginId", "PluginName", "PluginVersion"):
-        value = effect.wide_string(name)
+    config_path = plugin_dir / "config.json"
+    config = (json.loads(config_path.read_text(encoding="utf-8"))
+              if config_path.exists() else None)
+
+    strings = {name: effect.wide_string(name)
+               for name in ("PluginId", "PluginName", "PluginVersion")}
+    for name, value in strings.items():
         if not value:
             bad(f"{name}() returned an empty string")
         else:
             ok(f"{name}() = {value!r}")
+
+    # The id is the plugin's install folder name. Installers read it from
+    # plugins.json (config.json pluginId) to tell whether it is installed.
+    if config is not None and strings["PluginId"]:
+        if not config.get("pluginId"):
+            bad(f"config.json has no pluginId - set it to {strings['PluginId']!r}")
+        elif config["pluginId"] != strings["PluginId"]:
+            bad(f"PluginId() = {strings['PluginId']!r} but config.json pluginId is "
+                f"{config['pluginId']!r}")
+        else:
+            ok("PluginId() matches config.json pluginId")
 
     count = effect.int_call("GetEffectsCount")
     if not count or count < 1:
@@ -248,9 +264,7 @@ def main() -> None:
         names = [effect.wide_string_at("GetEffectName", i) for i in range(count)]
         ok(f"GetEffectsCount() = {count}, names = {names}")
 
-    config_path = plugin_dir / "config.json"
-    if config_path.exists():
-        config = json.loads(config_path.read_text(encoding="utf-8"))
+    if config is not None:
         for app in config.get("apps", []):
             app_id = APP_IDS.get(app)
             if app_id is None:

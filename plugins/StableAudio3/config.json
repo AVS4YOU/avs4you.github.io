@@ -1,5 +1,6 @@
 {
   "slug": "stableaudio3",
+  "pluginId": "StableAudio3.plugin",
   "name": "Stable Audio 3 Generator",
   "desc": "Generate audio locally with Stable Audio 3 using CPU or NVIDIA CUDA acceleration.",
   "apps": [ "Audio Editor", "Video Editor" ],

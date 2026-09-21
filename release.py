@@ -3,10 +3,13 @@
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 import urllib.error
 import urllib.request
+import zipfile
+import zlib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -42,6 +45,82 @@ def asset_url(slug: str, version: str, arch: str, repo: str = RELEASE_REPO) -> s
 
 class ReleaseError(Exception):
     """A problem the user has to fix before anything is published."""
+
+
+# slug, pluginId and version reach plugins.json, which shipped installers read
+# with a hand-written Pascal parser, and pluginId names the folder a plugin is
+# installed into. So all three stay plain ASCII: no spaces, quotes, commas or
+# path separators. See docs/PluginsManifest.md.
+IDENTITY_RULES = (
+    ("slug", re.compile(r"[a-z0-9][a-z0-9-]{0,63}"),
+     "lowercase letters, digits and '-', at most 64 characters"),
+    ("pluginId", re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*"),
+     "letters, digits, '.', '_' and '-'"),
+    ("version", re.compile(r"[A-Za-z0-9._-]+"), "letters, digits, '.', '_' and '-'"),
+)
+
+# Installers also skip a record whose pluginId does not end in ".plugin",
+# holds ".." or is longer than this, or whose download URL is longer than
+# MAX_URL_LENGTH.
+MAX_PLUGIN_ID_LENGTH = 128
+MAX_URL_LENGTH = 1024
+# ... and any download that is not under this prefix (PLUGINS_DOWNLOAD_PREFIX).
+INSTALLER_URL_PREFIX = "https://github.com/AVS4YOU/"
+
+
+def check_identity(config: dict, where: str) -> dict:
+    """Validate the fields plugins.json consumers key on; return them stripped.
+
+    Uniqueness across plugins is package.py's job - only it sees every config.
+    """
+
+    identity = {}
+    for key, pattern, allowed in IDENTITY_RULES:
+        value = config.get(key)
+        if value is not None and not isinstance(value, str):
+            # str() would quietly turn 1.10 into "1.1" and true into "True"
+            raise ReleaseError(f"{where}: '{key}' must be a string, not {json.dumps(value)}")
+        value = (value or "").strip()
+        if not value:
+            hint = " - the string the plugin DLL's PluginId() returns"
+            raise ReleaseError(f"{where} has no '{key}'" + (hint if key == "pluginId" else ""))
+        if not pattern.fullmatch(value):
+            # ascii() makes a look-alike visible: a Cyrillic "o" prints as \u043e
+            raise ReleaseError(f"{where}: '{key}' {ascii(value)} may only hold {allowed}")
+        identity[key] = value
+
+    plugin_id = identity["pluginId"]
+    if (not plugin_id.endswith(".plugin") or ".." in plugin_id
+            or len(plugin_id) > MAX_PLUGIN_ID_LENGTH):
+        raise ReleaseError(
+            f"{where}: 'pluginId' {plugin_id!r} must end in '.plugin', hold no '..' "
+            f"and be at most {MAX_PLUGIN_ID_LENGTH} characters - installers skip it otherwise"
+        )
+
+    # The version is part of the tag <slug>-<version>, and GitHub will not
+    # create a tag that git check-ref-format rejects.
+    version = identity["version"]
+    if ".." in version or version.endswith((".", ".lock")):
+        raise ReleaseError(
+            f"{where}: 'version' {version!r} is not a valid tag name - it may not "
+            f"hold '..' or end in '.' or '.lock'"
+        )
+
+    for arch in ARCHS:
+        url = asset_url(identity["slug"], identity["version"], arch)
+        if (not url.isascii() or len(url) > MAX_URL_LENGTH
+                or any(char.isspace() or char in "\"'" for char in url)):
+            raise ReleaseError(
+                f"{where}: download URL {url!r} must be ASCII, without spaces or "
+                f"quotes, and at most {MAX_URL_LENGTH} characters"
+            )
+        if not url.startswith(INSTALLER_URL_PREFIX):
+            raise ReleaseError(
+                f"{where}: download URL {url!r} is not under {INSTALLER_URL_PREFIX} - "
+                f"installers only download from there (RELEASE_REPO)"
+            )
+
+    return identity
 
 
 # --- github api -------------------------------------------------------------
@@ -206,27 +285,89 @@ def load_plugin(name: str) -> dict:
     except json.JSONDecodeError as error:
         raise ReleaseError(f"{name}: config.json is not valid JSON ({error})") from error
 
-    slug = str(config.get("slug") or "").strip()
-    if not slug:
-        raise ReleaseError(f"{name}: config.json has no slug")
-
-    version = str(config.get("version") or "").strip()
-    if not version:
-        raise ReleaseError(f"{name}: config.json has no version")
+    identity = check_identity(config, f"plugins/{name}/config.json")
 
     return {
         "folder": name,
         "dir": plugin_dir,
-        "slug": slug,
-        "version": version,
-        "title": str(config.get("name") or slug),
+        "slug": identity["slug"],
+        "pluginId": identity["pluginId"],
+        "version": identity["version"],
+        "title": str(config.get("name") or identity["slug"]),
     }
+
+
+def package_has_plugin_id(package: Path, plugin_id: str) -> bool:
+    """True if one of the DLLs inside the .avsp carries plugin_id.
+
+    PluginId() returns a wide string literal, so the id sits in the DLL as
+    UTF-16LE. Installers find an installed plugin by the pluginId published in
+    plugins.json; if it drifts from the code they look in the wrong folder and
+    offer the plugin again on every run.
+    """
+
+    # the whole NUL-terminated wide string: "VHS.plugin" must not match
+    # "EffectVHS.plugin"
+    needle = plugin_id.encode("utf-16-le") + b"\x00\x00"
+    id_bytes = frozenset(
+        b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-")
+
+    def holds_id(data: bytes) -> bool:
+        index = data.find(needle)
+        while index >= 0:
+            before = data[index - 2:index] if index >= 2 else b""
+            if not (len(before) == 2 and before[1] == 0 and before[0] in id_bytes):
+                return True
+            index = data.find(needle, index + 1)
+        return False
+
+    try:
+        with zipfile.ZipFile(package) as archive:
+            return any(
+                holds_id(archive.read(member))
+                for member in archive.namelist()
+                if member.lower().endswith(".dll")
+            )
+    except (zipfile.BadZipFile, zlib.error, EOFError, OSError, RuntimeError,
+            NotImplementedError) as error:
+        # zipfile does not wrap everything a damaged archive raises: a bad
+        # offset fails in seek() (OSError), a broken member in its decompressor
+        # (zlib.error, EOFError), an encrypted one with RuntimeError and an
+        # unknown compression method with NotImplementedError.
+        raise ReleaseError(f"{package}: not a valid .avsp ({error})") from error
+
+
+def package_is_plain_zip(package: Path) -> bool:
+    """True for the only layout installers accept: a local file header at
+    offset 0 and the end-of-central-directory record exactly 22 bytes before
+    the end - no self-extracting stub, no archive comment."""
+
+    size = package.stat().st_size
+    if size < 64:  # the smallest file installers look at
+        return False
+    with package.open("rb") as stream:
+        head = stream.read(4)
+        stream.seek(size - 22)
+        tail = stream.read(4)
+    return head == b"PK\x03\x04" and tail == b"PK\x05\x06"
 
 
 def resolve_packages(plugin: dict) -> None:
     plugin["packages"] = {
         arch: find_package(plugin["dir"], arch) for arch in ARCHS
     }
+    for arch, package in plugin["packages"].items():
+        if not package_is_plain_zip(package):
+            raise ReleaseError(
+                f"{plugin['folder']}: build/{arch}/{package.name} is not a plain ZIP "
+                f"(an archive comment or a stub) - installers would reject it"
+            )
+        if not package_has_plugin_id(package, plugin["pluginId"]):
+            raise ReleaseError(
+                f"{plugin['folder']}: no DLL in build/{arch}/{package.name} contains "
+                f"pluginId {plugin['pluginId']!r} - config.json disagrees with "
+                f"PluginId(), or the package is stale"
+            )
 
 
 def all_plugin_names() -> list[str]:

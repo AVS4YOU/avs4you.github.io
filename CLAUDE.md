@@ -10,14 +10,18 @@ The **AVS4YOU plugin marketplace**: a static GitHub Pages site
 `index.html` is the whole storefront - a single self-contained page. The plugin
 catalogue is *generated*: `package.py` reads every `plugins/*/config.json` and
 inlines them as a JSON blob into `<script type="application/json"
-id="plugins-data">`. **Never hand-edit that blob** - edit the `config.json` and
-run `python package.py`.
+id="plugins-data">`. The same records also go to `plugins.json` at the site
+root, so anything resolving a download reads that instead of scraping the
+page. **Never hand-edit either** - edit the `config.json` and run
+`python package.py`.
 
 ## Layout
 
 ```
 index.html                 storefront; plugin data is generated into it
-package.py                 config.json x N  ->  index.html
+plugins.json               generated machine-readable catalogue + release URLs
+package.py                 config.json x N  ->  index.html + plugins.json
+release.py                 build/<arch>/*.avsp  ->  GitHub release assets
 docs/                      plugin developer documentation
 sdk/                       shared code for all plugins (see below)
 plugins/<slug>/            one folder per plugin, each with config.json
@@ -59,11 +63,46 @@ tests/content/             same for content plugins
   so an export missing from the `.def` is invisible to the host even with
   `__declspec(dllexport)`. **A new export means editing both** `module.def` and
   the `extern "C"` block.
-- `plugins/*/Release/`, `x64/`, `Debug/` are gitignored. `build/<arch>/*.avsp`
-  and preview media **are** committed - they are what the site serves.
+- `plugins/*/Release/`, `x64/`, `Debug/` and `build/` are gitignored: packages
+  are served from GitHub releases (`release.py`). Preview media are committed.
+  Exception: installers shipped before `plugins.json` support hardcode
+  `plugins/effect-vhs/build/x86/effect-vhs.avsp` and
+  `plugins/sora2/build/x86/Sora2.avsp`, so exactly those two are force-tracked
+  (`git add -f`) and served by Pages. Refresh them when effect-vhs or sora2
+  gets a new version; drop them once those installers are out of circulation.
 - A Build Tools install without the C++ workload has `MSBuild.exe` but no
   `Microsoft.Cpp.props` and fails with MSB4019. `tools/plugin-tools` picks an
   install that has the workload.
+
+## `plugins.json` is a public contract
+
+Besides `index.html`, the manifest is read by AVS4YOU installers: at install
+time they download it and parse it with a hand-written Pascal JSON reader to
+offer sample plugins. Shipped installers are never updated, so treat the file
+like an API. Format and full rules:
+[docs/PluginsManifest.md](docs/PluginsManifest.md).
+
+- Installers need `schema`, and per plugin `slug`, `pluginId`,
+  `downloads.x86` and `downloads.x64`. `pluginId` is the string the DLL's
+  `PluginId()` returns - the plugin's install folder name - and has to match
+  it exactly: `check_effect.py` compares the two, and `release.py` refuses a
+  package whose DLLs do not contain it.
+- ASCII only. `package.py` writes the file with `ensure_ascii=True` and stops,
+  naming the `config.json`, on a missing or malformed slug/pluginId/version
+  (`release.py:check_identity`) or a slug/pluginId repeated ignoring case.
+- `MANIFEST_SCHEMA` (`package.py`): adding a field never bumps it. Renaming,
+  removing or retyping `slug`, `pluginId` or `downloads.x86/x64` does - and
+  every installer in the field then stops offering plugins.
+- Publish order: run `release.py` **before** pushing a version bump. Pages
+  serves the new URLs at once, and until the release exists they are a 404.
+- Never remove or rename a slug that a shipped default list names: today
+  `effect-vhs` and `veo3` (build_tools `defaults`, `<module>-plugins`).
+- Installers download the packages over https with urlmon, which follows
+  GitHub's redirect to the signed asset URL (isxdl cannot: a ~930-character
+  redirect target corrupts its memory). They only accept release URLs under
+  `https://github.com/AVS4YOU/` - keep `RELEASE_REPO` there.
+- The two force-tracked legacy packages (see Build facts) serve installers from
+  before the manifest. Leave them in place while those are in circulation.
 
 ## Working on effect plugins
 

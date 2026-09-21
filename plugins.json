@@ -1,0 +1,253 @@
+{
+  "schema": 1,
+  "site": "https://avs4you.github.io/",
+  "plugins": [
+    {
+      "slug": "effect-restoration-gaterv3",
+      "pluginId": "EffectGaterv3.plugin",
+      "name": "Restoration Gaterv3",
+      "desc": "A 1x restoration model for improving image quality, including noise, resizing, JPEG compression and mild blur.",
+      "apps": [
+        "Image Converter",
+        "Video Converter",
+        "Video Editor"
+      ],
+      "version": "v1.0.0",
+      "type": "effect",
+      "typeLabel": "Image Effect",
+      "aiPowered": true,
+      "requiresKey": false,
+      "tint": "linear-gradient(135deg,#1FA85C,#0FB5C9)",
+      "media": "plugins/effect-restoration-gaterv3/Effect Restoration Gaterv3.gif",
+      "basePath": "plugins/effect-restoration-gaterv3",
+      "downloads": {
+        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/effect-restoration-gaterv3-v1.0.0/effect-restoration-gaterv3-v1.0.0-x86.avsp",
+        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/effect-restoration-gaterv3-v1.0.0/effect-restoration-gaterv3-v1.0.0-x64.avsp"
+      }
+    },
+    {
+      "slug": "effect-spiral",
+      "pluginId": "EffectSpiral.plugin",
+      "name": "Effect Spiral",
+      "desc": "Dynamic spiral distortion with an outward explosion effect. Radial twist and expansion animations for stunning visuals.",
+      "apps": [
+        "Video Converter",
+        "Video Editor"
+      ],
+      "version": "v1.0.1",
+      "type": "effect",
+      "typeLabel": "Image Effect",
+      "aiPowered": false,
+      "requiresKey": false,
+      "tint": "linear-gradient(135deg,#3B4FE0,#7C5CFF)",
+      "media": "plugins/effect-spiral/Effect Spiral.gif",
+      "basePath": "plugins/effect-spiral",
+      "downloads": {
+        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/effect-spiral-v1.0.1/effect-spiral-v1.0.1-x86.avsp",
+        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/effect-spiral-v1.0.1/effect-spiral-v1.0.1-x64.avsp"
+      }
+    },
+    {
+      "slug": "effect-vhs",
+      "pluginId": "EffectVHS.plugin",
+      "name": "Effect VHS",
+      "desc": "Authentic VHS tape effect with noise, color degradation, tracking errors and chromatic aberration for a retro 80s-90s feel.",
+      "apps": [
+        "Video Converter",
+        "Video Editor",
+        "Image Converter"
+      ],
+      "version": "v1.0.1",
+      "type": "effect",
+      "typeLabel": "Image Effect",
+      "aiPowered": false,
+      "requiresKey": false,
+      "tint": "linear-gradient(135deg,#E0398E,#7C2BD6)",
+      "media": "plugins/effect-vhs/Effect VHS.gif",
+      "basePath": "plugins/effect-vhs",
+      "downloads": {
+        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/effect-vhs-v1.0.1/effect-vhs-v1.0.1-x86.avsp",
+        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/effect-vhs-v1.0.1/effect-vhs-v1.0.1-x64.avsp"
+      }
+    },
+    {
+      "slug": "heygen",
+      "pluginId": "heygen.plugin",
+      "name": "HeyGen AI Video Generator",
+      "desc": "The best online AI video generator and creator for professionals and marketers who value ease of use.",
+      "apps": [
+        "Video Converter",
+        "Video Editor"
+      ],
+      "version": "v1.0.0",
+      "type": "content",
+      "typeLabel": "Content Plugin",
+      "aiPowered": true,
+      "requiresKey": true,
+      "tint": "linear-gradient(135deg,#FF9A2E,#F2552E)",
+      "media": "plugins/heygen/res/icons/app-icon.ico",
+      "basePath": "plugins/heygen",
+      "downloads": {
+        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/heygen-v1.0.0/heygen-v1.0.0-x86.avsp",
+        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/heygen-v1.0.0/heygen-v1.0.0-x64.avsp"
+      }
+    },
+    {
+      "slug": "nano-banana",
+      "pluginId": "NanoBanana.plugin",
+      "name": "Nano Banana Image Generator",
+      "desc": "Generate, edit, ground, and iterate images with Google Nano Banana models through the Gemini API.",
+      "apps": [
+        "Video Converter",
+        "Video Editor",
+        "Photo Editor"
+      ],
+      "version": "v1.0.0",
+      "type": "content",
+      "typeLabel": "Content Plugin",
+      "aiPowered": true,
+      "requiresKey": true,
+      "tint": "linear-gradient(135deg,#FFD33D,#22B8A8)",
+      "media": "plugins/nano-banana/icon.ico",
+      "basePath": "plugins/nano-banana",
+      "downloads": {
+        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/nano-banana-v1.0.0/nano-banana-v1.0.0-x86.avsp",
+        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/nano-banana-v1.0.0/nano-banana-v1.0.0-x64.avsp"
+      }
+    },
+    {
+      "slug": "sora2",
+      "pluginId": "Sora2.plugin",
+      "name": "Sora2 Video Generator",
+      "desc": "AI-powered video generation using OpenAI's Sora 2 API. Create high-quality videos from text directly in your AVS workflow.",
+      "apps": [
+        "Video Converter",
+        "Video Editor"
+      ],
+      "version": "v1.0.0",
+      "type": "content",
+      "typeLabel": "Content Plugin",
+      "aiPowered": true,
+      "requiresKey": true,
+      "tint": "linear-gradient(135deg,#0FB5C9,#1577E0)",
+      "media": "plugins/sora2/icon.ico",
+      "basePath": "plugins/sora2",
+      "downloads": {
+        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/sora2-v1.0.0/sora2-v1.0.0-x86.avsp",
+        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/sora2-v1.0.0/sora2-v1.0.0-x64.avsp"
+      }
+    },
+    {
+      "slug": "stableaudio3",
+      "pluginId": "StableAudio3.plugin",
+      "name": "Stable Audio 3 Generator",
+      "desc": "Generate audio locally with Stable Audio 3 using CPU or NVIDIA CUDA acceleration.",
+      "apps": [
+        "Audio Editor",
+        "Video Editor"
+      ],
+      "version": "v1.0.0",
+      "type": "content",
+      "typeLabel": "Content Plugin",
+      "aiPowered": true,
+      "requiresKey": false,
+      "tint": "linear-gradient(135deg,#6B5CE7,#2E9CCA)",
+      "media": "plugins/StableAudio3/icon.ico",
+      "basePath": "plugins/StableAudio3",
+      "downloads": {
+        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/stableaudio3-v1.0.0/stableaudio3-v1.0.0-x86.avsp",
+        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/stableaudio3-v1.0.0/stableaudio3-v1.0.0-x64.avsp"
+      }
+    },
+    {
+      "slug": "sunoapi",
+      "pluginId": "SunoApi.plugin",
+      "name": "Suno API Music Generator",
+      "desc": "Generate songs, lyrics and sounds, extend or transform audio with Suno API.",
+      "apps": [
+        "Audio Editor",
+        "Audio Converter",
+        "Video Editor",
+        "Video Converter"
+      ],
+      "version": "v1.0.0",
+      "type": "content",
+      "typeLabel": "Content Plugin",
+      "aiPowered": true,
+      "requiresKey": true,
+      "tint": "linear-gradient(135deg,#7C3AED,#EC4899)",
+      "media": "plugins/sunoapi/icon.ico",
+      "basePath": "plugins/sunoapi",
+      "downloads": {
+        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/sunoapi-v1.0.0/sunoapi-v1.0.0-x86.avsp",
+        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/sunoapi-v1.0.0/sunoapi-v1.0.0-x64.avsp"
+      }
+    },
+    {
+      "slug": "supertonic3",
+      "pluginId": "Supertonic3.plugin",
+      "name": "Supertonic 3 Text to Speech",
+      "desc": "Generate natural multilingual speech locally with Supertonic 3 and ONNX Runtime directly in AVS Audio Editor and AVS Video Editor.",
+      "apps": [
+        "Audio Editor",
+        "Video Editor"
+      ],
+      "version": "v1.0.0",
+      "type": "content",
+      "typeLabel": "Content Plugin",
+      "aiPowered": true,
+      "requiresKey": false,
+      "tint": "linear-gradient(135deg,#7756E8,#3478F6)",
+      "media": "plugins/Supertonic3/icon.ico",
+      "basePath": "plugins/Supertonic3",
+      "downloads": {
+        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/supertonic3-v1.0.0/supertonic3-v1.0.0-x86.avsp",
+        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/supertonic3-v1.0.0/supertonic3-v1.0.0-x64.avsp"
+      }
+    },
+    {
+      "slug": "veo3",
+      "pluginId": "Veo3.plugin",
+      "name": "Veo3 Video Generator",
+      "desc": "AI-powered video creation with Google Veo 3. Turn your ideas into polished, cinematic clips from simple text prompts inside your AVS workflow.",
+      "apps": [
+        "Video Converter",
+        "Video Editor"
+      ],
+      "version": "v1.0.0",
+      "type": "content",
+      "typeLabel": "Content Plugin",
+      "aiPowered": true,
+      "requiresKey": true,
+      "tint": "linear-gradient(135deg,#0FB5C9,#1577E0)",
+      "media": "plugins/veo3/icon.ico",
+      "basePath": "plugins/veo3",
+      "downloads": {
+        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/veo3-v1.0.0/veo3-v1.0.0-x86.avsp",
+        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/veo3-v1.0.0/veo3-v1.0.0-x64.avsp"
+      }
+    },
+    {
+      "slug": "youtube",
+      "pluginId": "Youtube.plugin",
+      "name": "YouTube Video Downloader",
+      "desc": "Download video and audio from YouTube, Twitch and other sites supported by yt-dlp directly into your AVS workflow.",
+      "apps": [
+        "Video Converter",
+        "Video Editor"
+      ],
+      "version": "v1.0.0",
+      "type": "content",
+      "typeLabel": "Content Plugin",
+      "aiPowered": false,
+      "requiresKey": false,
+      "tint": "linear-gradient(135deg,#FF0000,#CC0000)",
+      "media": "plugins/youtube/icon.ico",
+      "basePath": "plugins/youtube",
+      "downloads": {
+        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/youtube-v1.0.0/youtube-v1.0.0-x86.avsp",
+        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/youtube-v1.0.0/youtube-v1.0.0-x64.avsp"
+      }
+    }
+  ]
+}

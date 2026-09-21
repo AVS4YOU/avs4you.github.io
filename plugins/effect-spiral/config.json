@@ -1,5 +1,6 @@
 {
   "slug": "effect-spiral",
+  "pluginId": "EffectSpiral.plugin",
   "name": "Effect Spiral",
   "desc": "Dynamic spiral distortion with an outward explosion effect. Radial twist and expansion animations for stunning visuals.",
   "apps": [ "Video Converter", "Video Editor" ],

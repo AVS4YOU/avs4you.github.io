@@ -22,6 +22,11 @@ mentions an API, a key, a prompt or a URL.
 
 If it is genuinely both, prefer the effect plugin and say so.
 
+Content plugins have no scaffolder: write their `config.json` by hand, and
+include `pluginId` - exactly the string the DLL's `PluginId()` returns, e.g.
+`Sora2.plugin`. `package.py` refuses a config without it. For effect plugins
+`new_effect.py` fills it in.
+
 State which type you picked and why in one line, then build it: scaffold,
 implement, build x86 + x64, package the `.avsp`, render the preview, verify, and
 run `package.py` so it appears in `index.html`. Report the result with the paths

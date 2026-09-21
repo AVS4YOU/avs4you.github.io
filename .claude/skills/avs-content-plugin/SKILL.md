@@ -85,11 +85,22 @@ with zipfile.ZipFile("plugins/<slug>/build/x86/<Name>.avsp", "w", zipfile.ZIP_DE
     z.write("plugins/<slug>/Release/<Name>.dll", "<Name>.dll")
 PY
 
-python package.py     # refresh index.html from every plugins/*/config.json
+python package.py     # refresh index.html and plugins.json from every plugins/*/config.json
 ```
 
-`config.json` needs `"type": "content"`, `"typeLabel": "Content Plugin"`, and
-`media` pointing at the icon (content plugins use `icon.ico`, not a GIF).
+To ship a new build, bump `version` in `config.json`, run `python release.py <folder>`
+to publish the packages, then `python package.py`, and push only after the release
+exists. For sora2 the rebuild also overwrites the force-tracked
+`plugins/sora2/build/x86/Sora2.avsp`, which Pages serves to installers from before
+`plugins.json` (see CLAUDE.md, Build facts) - commit it together with the release.
+
+`config.json` needs `slug`, `pluginId`, `version`, `"type": "content"`,
+`"typeLabel": "Content Plugin"`, and `media` pointing at the icon (content
+plugins use `icon.ico`, not a GIF). `pluginId` is exactly the string
+`PluginId()` returns: installers read it from `plugins.json` to find the
+installed plugin, `package.py` refuses a config without it, and `release.py`
+refuses a package whose DLL does not contain it. There is no scaffolder for
+content plugins, so add it by hand - see `docs/PluginsManifest.md`.
 
 Debug builds of several plugins set `OutDir` to
 `%APPDATA%\AVS4YOU\Plugins\<Name>.plugin` so the host loads them directly -

@@ -335,9 +335,9 @@ Verify the hash, copy over `resources/x86/yt-dlp.exe`, then rebuild and repack
 `build/x86/youtube.avsp` with the DLL plus both bundled executables. The `.avsp`
 is a plain ZIP.
 
-## Not published yet
+## Publishing
 
-There is no `config.json` in this folder, so `package.py` skips the plugin and it
-does not appear on the marketplace page. Add one (`"type": "content"`,
-`"media": "icon.ico"`, `"download": "build/x86/youtube.avsp"`) and run
-`python package.py` when it should ship.
+The storefront entry comes from `config.json` (`pluginId` must stay
+`Youtube.plugin`, the string `PluginId()` returns). After a rebuild, bump
+`version`, run `python release.py youtube` to publish the packages and then
+`python package.py`.

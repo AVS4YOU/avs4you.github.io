@@ -21,6 +21,10 @@ Adjust the look of an existing effect plugin: **$ARGUMENTS**
 5. Extract a few frames from the new GIF and look at them before declaring it
    done. Send the GIF to the user.
 
+Shipping the tuned build needs a `version` bump and `python release.py <slug>`
+before the push. For effect-vhs the rebuild also overwrites the force-tracked
+`build/x86/effect-vhs.avsp` that Pages serves to old installers.
+
 Do not change the animation model while tuning: positions stay closed-form in
 `CClock` time, identity stays hash-derived. See
 [docs/EffectPlugin-Recipes.md](docs/EffectPlugin-Recipes.md). Do not commit

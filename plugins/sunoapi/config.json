@@ -1,5 +1,6 @@
 {
   "slug": "sunoapi",
+  "pluginId": "SunoApi.plugin",
   "name": "Suno API Music Generator",
   "desc": "Generate songs, lyrics and sounds, extend or transform audio with Suno API.",
   "apps": [ "Audio Editor", "Audio Converter", "Video Editor", "Video Converter" ],

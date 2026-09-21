@@ -10,4 +10,6 @@
 *.vcxproj.user
 *.bak
 **/build
+# Two exceptions are force-tracked (git add -f): plugins/effect-vhs/build/x86/
+# effect-vhs.avsp and plugins/sora2/build/x86/Sora2.avsp - see CLAUDE.md.
 __pycache__/

@@ -1,5 +1,6 @@
 {
   "slug": "sora2",
+  "pluginId": "Sora2.plugin",
   "name": "Sora2 Video Generator",
   "desc": "AI-powered video generation using OpenAI's Sora 2 API. Create high-quality videos from text directly in your AVS workflow.",
   "apps": [ "Video Converter", "Video Editor" ],

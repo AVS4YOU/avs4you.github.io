@@ -1,5 +1,6 @@
 {
   "slug": "supertonic3",
+  "pluginId": "Supertonic3.plugin",
   "name": "Supertonic 3 Text to Speech",
   "desc": "Generate natural multilingual speech locally with Supertonic 3 and ONNX Runtime directly in AVS Audio Editor and AVS Video Editor.",
   "apps": [

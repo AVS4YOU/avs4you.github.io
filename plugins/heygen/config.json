@@ -1,5 +1,6 @@
 {
   "slug": "heygen",
+  "pluginId": "heygen.plugin",
   "name": "HeyGen AI Video Generator",
   "desc": "The best online AI video generator and creator for professionals and marketers who value ease of use.",
   "apps": [ "Video Converter", "Video Editor" ],

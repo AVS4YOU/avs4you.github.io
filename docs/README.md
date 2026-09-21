@@ -20,6 +20,11 @@ How to write an animated effect that actually looks right: temporal coherence
 frame), resolution scaling rules, making an overlay read on any footage,
 performance budgets, and the build/preview/verify pipeline.
 
+### [Plugin Manifest](PluginsManifest.md)
+The format of `plugins.json`, the machine-readable catalogue AVS4YOU installers
+download to offer sample plugins: required fields, what `pluginId` must match,
+when the schema changes, and the order to publish a new plugin version in.
+
 ## Getting Started
 
 1. Choose the plugin type that matches your needs

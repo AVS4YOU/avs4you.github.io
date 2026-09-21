@@ -1,5 +1,6 @@
 {
   "slug": "veo3",
+  "pluginId": "Veo3.plugin",
   "name": "Veo3 Video Generator",
   "desc": "AI-powered video creation with Google Veo 3. Turn your ideas into polished, cinematic clips from simple text prompts inside your AVS workflow.",
   "apps": [ "Video Converter", "Video Editor" ],

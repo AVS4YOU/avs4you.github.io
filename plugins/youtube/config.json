@@ -1,5 +1,6 @@
 {
   "slug": "youtube",
+  "pluginId": "Youtube.plugin",
   "name": "YouTube Video Downloader",
   "desc": "Download video and audio from YouTube, Twitch and other sites supported by yt-dlp directly into your AVS workflow.",
   "apps": [ "Video Converter", "Video Editor" ],

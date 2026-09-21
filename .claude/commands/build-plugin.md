@@ -23,6 +23,11 @@ with the `v142` toolset, re-zip the `.avsp` with the DLL plus any bundled
 runtime files it already contains (check the existing archive first so nothing
 is dropped), and run `python package.py`.
 
+Rebuilding effect-vhs or sora2 overwrites a force-tracked legacy package
+(`build/x86/effect-vhs.avsp`, `build/x86/Sora2.avsp`) that Pages serves to old
+installers. To ship any rebuild: bump `version`, run `python release.py <folder>`,
+then `python package.py`, and push after the release exists.
+
 If anything fails, diagnose and fix it rather than reporting the raw error.
 Report the artefact paths and, for effects, the coherence and ms/frame numbers.
 Send the preview GIF if it was regenerated. Do not commit unless asked.

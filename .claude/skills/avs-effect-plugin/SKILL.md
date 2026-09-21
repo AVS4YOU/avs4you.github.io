@@ -117,8 +117,8 @@ python tools/plugin-tools/check_effect.py effect-snow
 ```
 
 Loads the DLL in-process and checks exports, `PluginType`, the info strings,
-`IsApplicationSupported` against `config.json`, determinism, motion direction,
-**temporal coherence**, and ms per 1080p frame.
+`PluginId` and `IsApplicationSupported` against `config.json`, determinism,
+motion direction, **temporal coherence**, and ms per 1080p frame.
 
 Read the output, do not just check the exit code:
 
@@ -129,6 +129,7 @@ Read the output, do not just check the exit code:
 | "no more alike than distant" | nothing is carried between frames |
 | slow warning | see the performance section of the recipes doc |
 | `IsApplicationSupported` disagrees | `config.json` apps and the `switch` differ |
+| `PluginId()` vs config.json pluginId | the literal in `PluginId()` was edited - keep the two identical |
 
 Then **look at the GIF**. Extract a few frames and view them - metrics do not
 catch "it reads as scratches on the lens". A contact sheet of frames 0, 12, 25
@@ -149,11 +150,17 @@ numbers, the design choices made, and which constants are the tuning knobs.
   there affect every effect plugin, so keep them backward compatible.
 - **New export = two edits**: `module.def` and the `extern "C"` block. On Win32
   an export missing from the `.def` is invisible to the host.
-- `plugins/*/Release/`, `x64/`, `Debug/` are gitignored; `build/<arch>/*.avsp`
-  and the preview GIF are committed - they are what the marketplace serves.
+- `plugins/*/Release/`, `x64/`, `Debug/` and `build/` are gitignored - packages
+  are published as GitHub releases by `release.py`. The preview GIF is
+  committed. Exception: two legacy packages are force-tracked for old
+  installers, effect-vhs x86 and Sora2 x86 (see CLAUDE.md, Build facts), so
+  rebuilding effect-vhs changes `plugins/effect-vhs/build/x86/effect-vhs.avsp`.
 - `config.json` drives the marketplace card. `package.py` inlines every
-  `plugins/*/config.json` into `index.html` as JSON, so run it (or let
-  `build_effect.py` run it) after touching one.
+  `plugins/*/config.json` into `index.html` and `plugins.json`, so run it (or
+  let `build_effect.py` run it) after touching one. Required: `slug`,
+  `pluginId` and `version`. `pluginId` must be exactly what `PluginId()`
+  returns - installers use it to find the installed plugin (see
+  `docs/PluginsManifest.md`); `new_effect.py` writes both from one value.
 - Do not commit unless the user asks.
 
 ## Existing plugins worth reading
