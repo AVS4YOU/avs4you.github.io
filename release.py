@@ -59,9 +59,10 @@ IDENTITY_RULES = (
     ("version", re.compile(r"[A-Za-z0-9._-]+"), "letters, digits, '.', '_' and '-'"),
 )
 
-# Installers also skip a record whose pluginId does not end in ".plugin",
-# holds ".." or is longer than this, or whose download URL is longer than
-# MAX_URL_LENGTH.
+# Installers drop a pluginId that does not end in ".plugin", holds ".." or is
+# longer than this - they still install the plugin but cannot tell it is
+# installed, so they reinstall it on every run - and skip a record whose
+# download URL is longer than MAX_URL_LENGTH.
 MAX_PLUGIN_ID_LENGTH = 128
 MAX_URL_LENGTH = 1024
 # ... and any download that is not under this prefix (PLUGINS_DOWNLOAD_PREFIX).
@@ -94,7 +95,8 @@ def check_identity(config: dict, where: str) -> dict:
             or len(plugin_id) > MAX_PLUGIN_ID_LENGTH):
         raise ReleaseError(
             f"{where}: 'pluginId' {plugin_id!r} must end in '.plugin', hold no '..' "
-            f"and be at most {MAX_PLUGIN_ID_LENGTH} characters - installers skip it otherwise"
+            f"and be at most {MAX_PLUGIN_ID_LENGTH} characters - otherwise installers cannot tell "
+            f"it is installed and reinstall it on every run"
         )
 
     # The version is part of the tag <slug>-<version>, and GitHub will not
