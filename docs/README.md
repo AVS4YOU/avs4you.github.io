@@ -22,8 +22,9 @@ performance budgets, and the build/preview/verify pipeline.
 
 ### [Plugin Manifest](PluginsManifest.md)
 The format of `plugins.json`, the machine-readable catalogue AVS4YOU installers
-download to offer sample plugins: required fields, what `pluginId` must match,
-when the schema changes, and the order to publish a new plugin version in.
+read to download their preinstalled plugins: required fields, what `pluginId`
+must match, when the schema changes, and the order to publish a new plugin
+version in.
 
 ## Getting Started
 

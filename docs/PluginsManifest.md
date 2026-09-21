@@ -13,11 +13,11 @@ field, removing a plugin or changing how packages are published.
 
 - **AVS4YOU installers** (Video Converter, Video Editor, Image Converter, Media
   Player, Install Pack). During setup they download the manifest, look up the
-  sample plugins build_tools configured for the product (`<module>-plugins` in
-  build_tools `defaults`, e.g. `effect-vhs, veo3`) and download the package
-  for their own architecture. They parse the file with a small hand-written
-  JSON reader in Inno Setup Pascal, and an installer that has shipped is never
-  updated - whatever it expects has to keep working.
+  preinstalled plugins build_tools configured for the product
+  (`<module>-plugins` in build_tools `defaults`, e.g. `effect-vhs, veo3`) and
+  download the package for their own architecture. They parse the file with a
+  small hand-written JSON reader in Inno Setup Pascal, and an installer that
+  has shipped is never updated - whatever it expects has to keep working.
 - **The storefront** carries the same records inline in `index.html` and does
   not fetch this file.
 - Anything else that needs a download link should read this file instead of
@@ -92,7 +92,7 @@ field, removing a plugin or changing how packages are published.
 ## What installers do with it
 
 The installer side lives in app-main-2010,
-`Common/InnoSetup/plugin-samples-code.iss`.
+`Common/InnoSetup/plugin-preinstalled-code.iss`.
 
 - `schema` other than `1`: no downloads; packages already in the installer's
   cache are still installed.

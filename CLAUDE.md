@@ -78,8 +78,8 @@ tests/content/             same for content plugins
 
 Besides `index.html`, the manifest is read by AVS4YOU installers: at install
 time they download it and parse it with a hand-written Pascal JSON reader to
-offer sample plugins. Shipped installers are never updated, so treat the file
-like an API. Format and full rules:
+get the download links of their preinstalled plugins. Shipped installers are
+never updated, so treat the file like an API. Format and full rules:
 [docs/PluginsManifest.md](docs/PluginsManifest.md).
 
 - Installers need `schema`, and per plugin `slug`, `pluginId`,

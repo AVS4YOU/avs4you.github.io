@@ -23,8 +23,8 @@ SITE_URL = "https://avs4you.github.io/"
 # already in the field then stop offering plugins.
 MANIFEST_SCHEMA = 1
 
-# What the installers' parser takes (app-main-2010 Common/InnoSetup/plugin-samples-code.iss,
-# PSJ_MAX_TEXT / PSJ_MAX_LEAVES / PSJ_MAX_DEPTH). A bigger manifest is rejected whole and
+# What the installers' parser takes (app-main Common/InnoSetup/plugin-preinstalled-code.iss,
+# PPJ_MAX_TEXT / PPJ_MAX_LEAVES / PPJ_MAX_DEPTH). A bigger manifest is rejected whole and
 # every shipped installer stops offering plugins.
 MANIFEST_MAX_CHARS = 1048576
 MANIFEST_MAX_VALUES = 16384
