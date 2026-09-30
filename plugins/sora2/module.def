@@ -15,3 +15,4 @@ GetIconById
 ClickMenuItem
 SetCallbackHandler
 CleanTemporaryFiles
+SetParentWindow

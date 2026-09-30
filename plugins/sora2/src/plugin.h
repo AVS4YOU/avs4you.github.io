@@ -18,6 +18,7 @@ public:
 
 	std::wstring m_workDirectory;
 	HWND m_hWindow;
+	HWND m_hParentWindow = NULL;
 
 	// use in call after work
 	AsyncCallback m_callback = nullptr;

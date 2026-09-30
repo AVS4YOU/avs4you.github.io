@@ -1,4 +1,4 @@
-#define WIN32_LEAN_AND_MEAN
+﻿#define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
 #include <wtypes.h>
@@ -45,6 +45,20 @@ static void PrintUsage()
         "  PreviewGenerator.exe effect-spiral.dll input.png output.gif 25 -force-completeness 1\n"
         "  PreviewGenerator.exe effect-spiral.dll input.png comparison.gif -side-by-side 25 -duration 2\n"
         "  PreviewGenerator.exe effect-spiral.dll input.png comparison.gif -side-by-side -ping-pong 25 -duration 2\n";
+}
+
+// stb_image decodes to RGBA and gif.h expects RGBA, but the plugin ABI is BGRA
+// (see CEffectPluginIntf.h). Swap R and B on the way in and on the way out so a
+// plugin that cares about colour previews the same way it renders in the host.
+static void SwapRedBlue(BYTE* pixels, size_t pixelCount)
+{
+    for (size_t i = 0; i < pixelCount; ++i)
+    {
+        BYTE* px = pixels + i * 4;
+        const BYTE tmp = px[0];
+        px[0] = px[2];
+        px[2] = tmp;
+    }
 }
 
 static int GetOutputFrameCount(int frameCount, bool pingPong)
@@ -290,6 +304,8 @@ int main(int argc, char** argv)
         return 1;
     }
 
+    SwapRedBlue(inputPixels, static_cast<size_t>(width) * height);
+
     const int frameCount = std::max(1, static_cast<int>(std::round(fps * durationSeconds)));
     const int outputFrameCount = GetOutputFrameCount(frameCount, pingPong);
     const int delayCs = std::max(1, 100 / fps);    // GIF delay in hundredths of a second
@@ -385,6 +401,8 @@ int main(int argc, char** argv)
                     dividerX
                 );
 
+                SwapRedBlue(frame.data(), static_cast<size_t>(width) * height);
+
                 GifWriteFrame(
                     &writer,
                     frame.data(),
@@ -436,6 +454,8 @@ int main(int argc, char** argv)
                 FreeLibrary(hDll);
                 return 1;
             }
+
+            SwapRedBlue(frame.data(), static_cast<size_t>(width) * height);
 
             GifWriteFrame(
                 &writer,

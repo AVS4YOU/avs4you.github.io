@@ -1,0 +1,17 @@
+EXPORTS
+CreatePlugin
+DeletePlugin
+PluginType
+PluginId
+PluginName
+PluginVersion
+PluginIcon
+IsApplicationSupported
+ReleasePluginString
+SetLanguage
+GetMenuForContext
+GetPluginMenu
+GetIconById
+ClickMenuItem
+SetCallbackHandler
+CleanTemporaryFiles

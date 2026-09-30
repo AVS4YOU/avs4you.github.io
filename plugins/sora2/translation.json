@@ -6,7 +6,7 @@
         "Model": "Model",
         "Orientation": "Orientation",
         "Size": "Size",
-        "Duration": "Duration",
+        "Duration (s)": "Duration (s)",
         "Settings": "Settings",
         "Generate": "Generate"
     },
@@ -17,7 +17,7 @@
         "Model": "Model",
         "Orientation": "Orientace",
         "Size": "Velikost",
-        "Duration": "Trvání",
+        "Duration (s)": "Trvání (s)",
         "Settings": "Nastavení",
         "Generate": "Generovat"
     },
@@ -28,7 +28,7 @@
         "Model": "Modell",
         "Orientation": "Ausrichtung",
         "Size": "Größe",
-        "Duration": "Dauer",
+        "Duration (s)": "Dauer (s)",
         "Settings": "Einstellungen",
         "Generate": "Generieren"
     },
@@ -39,7 +39,7 @@
         "Model": "Modelo",
         "Orientation": "Orientación",
         "Size": "Tamaño",
-        "Duration": "Duración",
+        "Duration (s)": "Duración (s)",
         "Settings": "Configuración",
         "Generate": "Generar"
     },
@@ -50,7 +50,7 @@
         "Model": "Modèle",
         "Orientation": "Orientation",
         "Size": "Taille",
-        "Duration": "Durée",
+        "Duration (s)": "Durée (s)",
         "Settings": "Paramètres",
         "Generate": "Générer"
     },
@@ -61,7 +61,7 @@
         "Model": "Модель",
         "Orientation": "Ориентация",
         "Size": "Размер",
-        "Duration": "Длительность",
+        "Duration (s)": "Длительность (с)",
         "Settings": "Настройки",
         "Generate": "Генерировать"
     },
@@ -72,7 +72,7 @@
         "Model": "模型",
         "Orientation": "方向",
         "Size": "大小",
-        "Duration": "时长",
+        "Duration (s)": "时长 (秒)",
         "Settings": "设置",
         "Generate": "生成"
     },
@@ -83,7 +83,7 @@
         "Model": "Modelo",
         "Orientation": "Orientação",
         "Size": "Tamanho",
-        "Duration": "Duração",
+        "Duration (s)": "Duração (s)",
         "Settings": "Configurações",
         "Generate": "Gerar"
     },
@@ -94,7 +94,7 @@
         "Model": "Модел",
         "Orientation": "Оријентација",
         "Size": "Величина",
-        "Duration": "Трајање",
+        "Duration (s)": "Трајање (с)",
         "Settings": "Подешавања",
         "Generate": "Генериши"
     },
@@ -105,7 +105,7 @@
         "Model": "Model",
         "Orientation": "Orijentacija",
         "Size": "Veličina",
-        "Duration": "Trajanje",
+        "Duration (s)": "Trajanje (s)",
         "Settings": "Podešavanja",
         "Generate": "Generiši"
     },
@@ -116,7 +116,7 @@
         "Model": "モデル",
         "Orientation": "向き",
         "Size": "サイズ",
-        "Duration": "期間",
+        "Duration (s)": "期間 (秒)",
         "Settings": "設定",
         "Generate": "生成"
     },
@@ -127,7 +127,7 @@
         "Model": "Modeli",
         "Orientation": "Orientimi",
         "Size": "Madhësia",
-        "Duration": "Kohëzgjatja",
+        "Duration (s)": "Kohëzgjatja (s)",
         "Settings": "Cilësimet",
         "Generate": "Gjenero"
     },
@@ -138,7 +138,7 @@
         "Model": "Modello",
         "Orientation": "Orientamento",
         "Size": "Dimensione",
-        "Duration": "Durata",
+        "Duration (s)": "Durata (s)",
         "Settings": "Impostazioni",
         "Generate": "Genera"
     },
@@ -149,7 +149,7 @@
         "Model": "النموذج",
         "Orientation": "الاتجاه",
         "Size": "الحجم",
-        "Duration": "المدة",
+        "Duration (s)": "المدة (ث)",
         "Settings": "الإعدادات",
         "Generate": "توليد"
     }

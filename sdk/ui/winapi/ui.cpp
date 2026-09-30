@@ -1296,6 +1296,15 @@ namespace AVS
 		}
 		case WM_NCDESTROY:
 		{
+			if (info->hMouseHook)
+			{
+				UnhookWindowsHookEx(info->hMouseHook);
+				info->hMouseHook = NULL;
+			}
+
+			if (g_OpenComboBoxInfo == info)
+				g_OpenComboBoxInfo = nullptr;
+			
 			if (info->hListBox)
 				DestroyWindow(info->hListBox);
 			delete info;

@@ -63,7 +63,7 @@ PLUGIN_API Plugins::PluginType __stdcall PluginType() {
 }
 
 PLUGIN_API wchar_t* __stdcall PluginId() {
-    return _wcsdup(L"com.example.myplugin");
+    return _wcsdup(L"MyContentPlugin.plugin");
 }
 
 PLUGIN_API wchar_t* __stdcall PluginName() {
@@ -137,9 +137,9 @@ PLUGIN_API Plugins::PluginType __stdcall PluginType()
 ```cpp
 PLUGIN_API wchar_t* __stdcall PluginId()
 ```
-**Description:** Returns the unique plugin identifier.
+**Description:** Returns the unique plugin identifier. It is also the name of the folder the plugin is installed into (`%APPDATA%\AVS4YOU\Plugins\<id>`, `Plugins-x64` for 64-bit hosts), so keep it a plain folder name - ASCII letters, digits, `.`, `_` and `-`, ending in `.plugin` - conventionally `<Name>.plugin`. It must be identical to `pluginId` in the plugin's `config.json`: installers read that field from [plugins.json](PluginsManifest.md) to tell whether the plugin is already installed.
 
-**Returns:** String containing the plugin ID (e.g., "com.company.pluginname").
+**Returns:** String containing the plugin ID (e.g., "Sora2.plugin").
 
 **Note:** Memory must be released using `ReleasePluginString()`.
 

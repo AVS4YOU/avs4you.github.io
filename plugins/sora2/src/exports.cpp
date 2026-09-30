@@ -107,6 +107,12 @@ extern "C" {
 		pluginSora->m_callbackContext = context;
 	}
 
+	void __stdcall SetParentWindow(PluginHandle plugin, void* hwnd)
+	{
+		CSoraPlugin* pluginSora = (CSoraPlugin*)plugin;
+		pluginSora->m_hParentWindow = (HWND)hwnd;
+	}
+
 	void __stdcall CleanTemporaryFiles(PluginHandle plugin)
 	{
 		CSoraPlugin* pluginSora = (CSoraPlugin*)plugin;

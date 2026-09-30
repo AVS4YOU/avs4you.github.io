@@ -1,0 +1,3 @@
+[submodule "plugins/StableAudio3/sa3-cpp"]
+	path = plugins/StableAudio3/sa3-cpp
+	url = https://github.com/betweentwomidnights/sa3.cpp.git
