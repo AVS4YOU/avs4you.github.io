@@ -140,6 +140,9 @@
       <EnableUAC>false</EnableUAC>
       <ModuleDefinitionFile>module.def</ModuleDefinitionFile>
     </Link>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>../../sdk/common</AdditionalIncludeDirectories>
+    </ResourceCompile>
   </ItemDefinitionGroup>
   <PropertyGroup Condition="'$(Platform)'=='Win32'">
     <OutDir>$(ProjectDir)build\x86\</OutDir>
@@ -197,6 +200,10 @@
       <EnableUAC>false</EnableUAC>
       <ModuleDefinitionFile>module.def</ModuleDefinitionFile>
     </Link>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>../../sdk/common</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>RC_X64;_UNICODE;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="src\suno_api.h" />
