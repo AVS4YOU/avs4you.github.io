@@ -148,6 +148,11 @@ if (WIN32)
         PROPERTIES HEADER_FILE_ONLY TRUE
     )
     set(RC_FILE ${CMAKE_CURRENT_SOURCE_DIR}/res/resource.rc)
+    if(TARGET_ARCH STREQUAL "x64")
+        set_property(SOURCE ${RC_FILE} APPEND PROPERTY COMPILE_DEFINITIONS
+            "$<$<CONFIG:Release>:RC_X64>"
+        )
+    endif()
     set(RESOURCE_FILES
         ${RC_FILE}
         ${OTHER_FILES}
