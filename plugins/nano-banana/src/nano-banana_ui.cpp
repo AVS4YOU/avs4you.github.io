@@ -5,7 +5,9 @@
 
 #include <commctrl.h>
 #include <fstream>
+#include <shellapi.h>
 #pragma comment(lib, "comctl32.lib")
+#pragma comment(lib, "shell32.lib")
 
 #include "../../../sdk/ui/winapi/ui.h"
 #include "../../../sdk/common/utils.h"
@@ -54,7 +56,7 @@ namespace NSUI
 
 	LRESULT CALLBACK SettingsWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	{
-		static HWND hEdit, hBtnOK, hBtnCancel, hBtnDelete;
+		static HWND hEdit, hBtnOK, hBtnCancel, hBtnDelete, hBtnGetApiKey;
 
 		if (msg == WM_NCCREATE)
 		{
@@ -82,16 +84,17 @@ namespace NSUI
 		{
 		case WM_CREATE:
 		{
-			hEdit = AVS::CreateTextEditMultiline(hwnd, GetModuleHandle(NULL), 15, 15, 330, 25, AVS::TextEditSettings::Create());
+			hEdit = AVS::CreateTextEditMultiline(hwnd, GetModuleHandle(NULL), 15, 15, 530, 25, AVS::TextEditSettings::Create());
 
 			std::wstring keyValue = NSSystemUtils::ReadWStringFromUtf8File(plugin->m_workDirectory + L"\\app.key");
 			if (!keyValue.empty())
 				SetWindowText(hEdit, keyValue.c_str());
 
 			CTranslateManager* tr = CTranslate::GetInstance().GetManager();
-			hBtnOK = AVS::CreateButton(hwnd, (HMENU)0x8001, GetModuleHandle(NULL), tr->Translate(L"Save").c_str(), 265, 55, 80, 25, AVS::ButtonSettings::Create(AVS::Buttons::Primary));
-			hBtnCancel = AVS::CreateButton(hwnd, (HMENU)0x8002, GetModuleHandle(NULL), tr->Translate(L"Cancel").c_str(), 175, 55, 80, 25, AVS::ButtonSettings::Create(AVS::Buttons::Default));
-			hBtnDelete = AVS::CreateButton(hwnd, (HMENU)0x8003, GetModuleHandle(NULL), tr->Translate(L"Delete API-key").c_str(), 15, 55, 120, 25, AVS::ButtonSettings::Create(AVS::Buttons::Default));
+			hBtnGetApiKey = AVS::CreateButton(hwnd, (HMENU)0x8004, GetModuleHandle(NULL), tr->Translate(L"Get API-key").c_str(), 15, 55, 115, 25, AVS::ButtonSettings::Create(AVS::Buttons::Default));
+			hBtnDelete = AVS::CreateButton(hwnd, (HMENU)0x8003, GetModuleHandle(NULL), tr->Translate(L"Delete API-key").c_str(), 135, 55, 150, 25, AVS::ButtonSettings::Create(AVS::Buttons::Default));
+			hBtnCancel = AVS::CreateButton(hwnd, (HMENU)0x8002, GetModuleHandle(NULL), tr->Translate(L"Cancel").c_str(), 330, 55, 100, 25, AVS::ButtonSettings::Create(AVS::Buttons::Default));
+			hBtnOK = AVS::CreateButton(hwnd, (HMENU)0x8001, GetModuleHandle(NULL), tr->Translate(L"Save").c_str(), 445, 55, 100, 25, AVS::ButtonSettings::Create(AVS::Buttons::Primary));
 
 			SetFocus(hEdit);
 			break;
@@ -119,6 +122,9 @@ namespace NSUI
 			case 0x8003:
 				NSSystemUtils::RemoveFile(plugin->m_workDirectory + L"\\app.key");
 				SetWindowText(hEdit, L"");
+				break;
+			case 0x8004:
+				ShellExecuteW(hwnd, L"open", L"https://ai.google.dev/gemini-api/docs/api-key", NULL, NULL, SW_SHOWNORMAL);
 				break;
 			default:
 				break;
@@ -161,7 +167,7 @@ namespace NSUI
 		DWORD dwStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU;
 		std::wstring titleWindow = CTranslate::GetInstance().GetManager()->Translate(L"Settings");
 
-		RECT rc = { 0, 0, 360, 95 };
+		RECT rc = { 0, 0, 560, 95 };
 		AdjustWindowRectEx(&rc, dwStyle, FALSE, 0);
 		HWND hwnd = CreateWindowEx(0, className, titleWindow.c_str(), dwStyle, CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top, hwndParent, NULL, GetModuleHandle(NULL), plugin);
 
