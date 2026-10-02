@@ -135,6 +135,10 @@
       <EnableUAC>false</EnableUAC>
       <OutputFile>../build/x86/$(TargetName)$(TargetExt)</OutputFile>
     </Link>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>../../../sdk/common</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_UNICODE;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -159,6 +163,10 @@
       <EnableUAC>false</EnableUAC>
       <OutputFile>../build/x64/$(TargetName)$(TargetExt)</OutputFile>
     </Link>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>../../../sdk/common</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>RC_X64;_UNICODE;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="backend.h" />
