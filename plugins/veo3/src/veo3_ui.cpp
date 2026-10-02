@@ -1,10 +1,12 @@
-﻿#include "veo3_ui.h"
+#include "veo3_ui.h"
 #include "export_utils.h"
 #include "exports.h"
 #include "sha256.h"
 
 #include <commctrl.h>
+#include <shellapi.h>
 #pragma comment(lib, "comctl32.lib")
+#pragma comment(lib, "shell32.lib")
 
 #include "../../../sdk/ui/winapi/ui.h"
 #include "../../../sdk/common/utils.h"
@@ -83,7 +85,7 @@ namespace NSUI
 	// ====================================== SETTINGS WINDOW ======================================
 	LRESULT CALLBACK SettingsWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	{
-		static HWND hEdit, hBtnOK, hBtnCancel, hBtnDelete;
+		static HWND hEdit, hBtnOK, hBtnCancel, hBtnDelete, hBtnGetApiKey;
 
 		if (msg == WM_NCCREATE)
 		{
@@ -111,7 +113,7 @@ namespace NSUI
 		{
 		case WM_CREATE:
 		{
-			hEdit = AVS::CreateTextEditMultiline(hwnd, GetModuleHandle(NULL), 15, 15, 330, 25, AVS::TextEditSettings::Create());
+			hEdit = AVS::CreateTextEditMultiline(hwnd, GetModuleHandle(NULL), 15, 15, 530, 25, AVS::TextEditSettings::Create());
 
 			std::wstring keyValue = NSSystemUtils::ReadWStringFromUtf8File(plugin->m_workDirectory + L"\\app.key");
 			if (!keyValue.empty())
@@ -121,20 +123,25 @@ namespace NSUI
 
 			CTranslateManager* tr = CTranslate::GetInstance().GetManager();
 
-			hBtnOK = AVS::CreateButton(hwnd, (HMENU)0x8001, GetModuleHandle(NULL), tr->Translate(L"Save").c_str(),
-				265, 55, 80, 25,
-				AVS::ButtonSettings::Create(AVS::Buttons::Primary));
-
-			hBtnCancel = AVS::CreateButton(hwnd, (HMENU)0x8002, GetModuleHandle(NULL), tr->Translate(L"Cancel").c_str(),
-				175, 55, 80, 25,
+			hBtnGetApiKey = AVS::CreateButton(hwnd, (HMENU)0x8004, GetModuleHandle(NULL), tr->Translate(L"Get API-key").c_str(),
+				15, 55, 115, 25,
 				AVS::ButtonSettings::Create(AVS::Buttons::Default));
 
 			hBtnDelete = AVS::CreateButton(hwnd, (HMENU)0x8003, GetModuleHandle(NULL), tr->Translate(L"Delete API-key").c_str(),
-				15, 55, 120, 25,
+				145, 55, 150, 25,
 				AVS::ButtonSettings::Create(AVS::Buttons::Default));
 
+			hBtnCancel = AVS::CreateButton(hwnd, (HMENU)0x8002, GetModuleHandle(NULL), tr->Translate(L"Cancel").c_str(),
+				330, 55, 100, 25,
+				AVS::ButtonSettings::Create(AVS::Buttons::Default));
+
+			hBtnOK = AVS::CreateButton(hwnd, (HMENU)0x8001, GetModuleHandle(NULL), tr->Translate(L"Save").c_str(),
+				445, 55, 100, 25,
+				AVS::ButtonSettings::Create(AVS::Buttons::Primary));
+
 			SetWindowPos(hEdit, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
-			SetWindowPos(hBtnDelete, hEdit, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+			SetWindowPos(hBtnGetApiKey, hEdit, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+			SetWindowPos(hBtnDelete, hBtnGetApiKey, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 			SetWindowPos(hBtnCancel, hBtnDelete, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 			SetWindowPos(hBtnOK, hBtnCancel, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 			SetFocus(hEdit);
@@ -163,6 +170,11 @@ namespace NSUI
 			case 0x8002: // Cancel
 			{
 				closeWindow();
+				break;
+			}
+			case 0x8004: // Get API-key
+			{
+				ShellExecuteW(hwnd, L"open", L"https://ai.google.dev/gemini-api/docs/api-key", NULL, NULL, SW_SHOWNORMAL);
 				break;
 			}
 			case 0x8003: // Delete
@@ -221,7 +233,7 @@ namespace NSUI
 		DWORD dwStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU;
 		std::wstring titleWindow = CTranslate::GetInstance().GetManager()->Translate(L"Settings");
 
-		RECT rc = { 0, 0, 360, 95 };
+		RECT rc = { 0, 0, 560, 95 };
 		AdjustWindowRectEx(&rc, dwStyle, FALSE, 0);
 
 		HWND hwnd = CreateWindowEx(0, className, titleWindow.c_str(), dwStyle, CW_USEDEFAULT, CW_USEDEFAULT,
