@@ -60,7 +60,8 @@
     "Ready (Credits left: API key required)": "Ready (Credits left: API key required)",
     "Ready (Credits left: ": "Ready (Credits left: ",
     "Ready (Credits left: unavailable)": "Ready (Credits left: unavailable)",
-    "Ready (Credits left: loading...)": "Ready (Credits left: loading...)"
+    "Ready (Credits left: loading...)": "Ready (Credits left: loading...)",
+    "Get API-key": "Get API key"
   },
   "ru-RU": {
     "Mode": "Режим",
@@ -123,7 +124,8 @@
     "Ready (Credits left: API key required)": "Готово (Кредиты: нужен ключ API)",
     "Ready (Credits left: ": "Готово (Кредиты: ",
     "Ready (Credits left: unavailable)": "Готово (Кредиты: недоступны)",
-    "Ready (Credits left: loading...)": "Готово (Кредиты: загрузка...)"
+    "Ready (Credits left: loading...)": "Готово (Кредиты: загрузка...)",
+    "Get API-key": "Получить ключ API"
   },
   "de-DE": {
     "Mode": "Modus",
@@ -186,7 +188,8 @@
     "Ready (Credits left: API key required)": "Bereit (Guthaben: API-Schlüssel nötig)",
     "Ready (Credits left: ": "Bereit (Guthaben: ",
     "Ready (Credits left: unavailable)": "Bereit (Guthaben: nicht verfügbar)",
-    "Ready (Credits left: loading...)": "Bereit (Guthaben: wird geladen...)"
+    "Ready (Credits left: loading...)": "Bereit (Guthaben: wird geladen...)",
+    "Get API-key": "API-Key holen"
   },
   "fr-FR": {
     "Mode": "Mode",
@@ -249,7 +252,8 @@
     "Ready (Credits left: API key required)": "Prêt (Crédits : clé API requise)",
     "Ready (Credits left: ": "Prêt (Crédits : ",
     "Ready (Credits left: unavailable)": "Prêt (Crédits : indisponibles)",
-    "Ready (Credits left: loading...)": "Prêt (Crédits : chargement...)"
+    "Ready (Credits left: loading...)": "Prêt (Crédits : chargement...)",
+    "Get API-key": "Obtenir clé API"
   },
   "es-ES": {
     "Mode": "Modo",
@@ -312,7 +316,8 @@
     "Ready (Credits left: API key required)": "Listo (Créditos: requiere clave API)",
     "Ready (Credits left: ": "Listo (Créditos: ",
     "Ready (Credits left: unavailable)": "Listo (Créditos: no disponibles)",
-    "Ready (Credits left: loading...)": "Listo (Créditos: cargando...)"
+    "Ready (Credits left: loading...)": "Listo (Créditos: cargando...)",
+    "Get API-key": "Obtener clave API"
   },
   "it-IT": {
     "Mode": "Modalità",
@@ -375,7 +380,8 @@
     "Ready (Credits left: API key required)": "Pronto (Crediti: chiave API richiesta)",
     "Ready (Credits left: ": "Pronto (Crediti: ",
     "Ready (Credits left: unavailable)": "Pronto (Crediti: non disponibili)",
-    "Ready (Credits left: loading...)": "Pronto (Crediti: caricamento...)"
+    "Ready (Credits left: loading...)": "Pronto (Crediti: caricamento...)",
+    "Get API-key": "Ottieni chiave API"
   },
   "ja-JP": {
     "Mode": "モード",
@@ -438,7 +444,8 @@
     "Ready (Credits left: API key required)": "準備完了（残高: APIキーが必要）",
     "Ready (Credits left: ": "準備完了（残高: ",
     "Ready (Credits left: unavailable)": "準備完了（残高: 利用不可）",
-    "Ready (Credits left: loading...)": "準備完了（残高: 読込中...）"
+    "Ready (Credits left: loading...)": "準備完了（残高: 読込中...）",
+    "Get API-key": "APIキーを取得"
   },
   "nl-NL": {
     "Mode": "Modus",
@@ -501,7 +508,8 @@
     "Ready (Credits left: API key required)": "Gereed (Tegoed: API-sleutel vereist)",
     "Ready (Credits left: ": "Gereed (Tegoed: ",
     "Ready (Credits left: unavailable)": "Gereed (Tegoed: niet beschikbaar)",
-    "Ready (Credits left: loading...)": "Gereed (Tegoed: laden...)"
+    "Ready (Credits left: loading...)": "Gereed (Tegoed: laden...)",
+    "Get API-key": "API-key ophalen"
   },
   "ko-KR": {
     "Mode": "모드",
@@ -564,7 +572,8 @@
     "Ready (Credits left: API key required)": "준비됨 (잔여 크레딧: API 키 필요)",
     "Ready (Credits left: ": "준비됨 (잔여 크레딧: ",
     "Ready (Credits left: unavailable)": "준비됨 (잔여 크레딧: 사용 불가)",
-    "Ready (Credits left: loading...)": "준비됨 (잔여 크레딧: 로딩 중...)"
+    "Ready (Credits left: loading...)": "준비됨 (잔여 크레딧: 로딩 중...)",
+    "Get API-key": "API 키 받기"
   },
   "pt-BR": {
     "Mode": "Modo",
@@ -627,7 +636,8 @@
     "Ready (Credits left: API key required)": "Pronto (Créditos: chave API necessária)",
     "Ready (Credits left: ": "Pronto (Créditos: ",
     "Ready (Credits left: unavailable)": "Pronto (Créditos: indisponíveis)",
-    "Ready (Credits left: loading...)": "Pronto (Créditos: carregando...)"
+    "Ready (Credits left: loading...)": "Pronto (Créditos: carregando...)",
+    "Get API-key": "Obter chave API"
   },
   "pl-PL": {
     "Mode": "Tryb",
@@ -690,7 +700,8 @@
     "Ready (Credits left: API key required)": "Gotowe (Kredyty: wymagany klucz API)",
     "Ready (Credits left: ": "Gotowe (Kredyty: ",
     "Ready (Credits left: unavailable)": "Gotowe (Kredyty: niedostępne)",
-    "Ready (Credits left: loading...)": "Gotowe (Kredyty: ładowanie...)"
+    "Ready (Credits left: loading...)": "Gotowe (Kredyty: ładowanie...)",
+    "Get API-key": "Pobierz klucz API"
   },
   "da-DK": {
     "Mode": "Tilstand",
@@ -753,7 +764,8 @@
     "Ready (Credits left: API key required)": "Klar (Kredit: API-nøgle påkrævet)",
     "Ready (Credits left: ": "Klar (Kredit: ",
     "Ready (Credits left: unavailable)": "Klar (Kredit: ikke tilgængelig)",
-    "Ready (Credits left: loading...)": "Klar (Kredit: indlæser...)"
+    "Ready (Credits left: loading...)": "Klar (Kredit: indlæser...)",
+    "Get API-key": "Hent API-nøgle"
   },
   "zh-CN": {
     "Mode": "模式",
@@ -816,6 +828,7 @@
     "Ready (Credits left: API key required)": "就绪（余额：需要 API 密钥）",
     "Ready (Credits left: ": "就绪（余额：",
     "Ready (Credits left: unavailable)": "就绪（余额：不可用）",
-    "Ready (Credits left: loading...)": "就绪（余额：加载中...）"
+    "Ready (Credits left: loading...)": "就绪（余额：加载中...）",
+    "Get API-key": "获取 API 密钥"
   }
 }
