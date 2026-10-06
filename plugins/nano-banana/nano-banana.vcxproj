@@ -121,6 +121,9 @@
       <ModuleDefinitionFile>module.def</ModuleDefinitionFile>
       <OutputFile>$(OutDir)NanoBanana$(TargetExt)</OutputFile>
     </Link>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>../../sdk/common</AdditionalIncludeDirectories>
+    </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -158,6 +161,12 @@
       <ModuleDefinitionFile>module.def</ModuleDefinitionFile>
       <OutputFile>$(OutDir)NanoBanana$(TargetExt)</OutputFile>
     </Link>
+    <ResourceCompile>
+      <UndefinePreprocessorDefinitions>
+      </UndefinePreprocessorDefinitions>
+      <AdditionalIncludeDirectories>../../sdk/common</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>RC_X64;_UNICODE;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="src\exports.h" />
