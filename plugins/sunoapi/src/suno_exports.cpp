@@ -47,7 +47,7 @@ extern "C"
 
 	bool __stdcall IsApplicationSupported(int id)
 	{
-		return id == AVS_AUDIO_EDITOR || id == AVS_AUDIO_CONVERTER;
+		return id == AVS_AUDIO_EDITOR || id == AVS_AUDIO_CONVERTER || id == AVS_VIDEO_EDITOR;
 	}
 
 	void __stdcall ReleasePluginString(wchar_t *p)
