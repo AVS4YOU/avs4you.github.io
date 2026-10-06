@@ -2,6 +2,7 @@
     "en-US": {
         "Save": "Save",
         "Cancel": "Cancel",
+        "Get API-key": "Get API-key",
         "Delete API-key": "Delete API-key",
         "Model": "Model",
         "Orientation": "Orientation",
@@ -35,6 +36,7 @@
     "cs-CZ": {
         "Save": "Uložit",
         "Cancel": "Zrušit",
+        "Get API-key": "Získat API klíč",
         "Delete API-key": "Smazat API klíč",
         "Model": "Model",
         "Orientation": "Orientace",
@@ -68,6 +70,7 @@
     "de-DE": {
         "Save": "Speichern",
         "Cancel": "Abbrechen",
+        "Get API-key": "API-Schlüssel erhalten",
         "Delete API-key": "API-Schlüssel löschen",
         "Model": "Modell",
         "Orientation": "Ausrichtung",
@@ -101,6 +104,7 @@
     "es-ES": {
         "Save": "Guardar",
         "Cancel": "Cancelar",
+        "Get API-key": "Obtener clave API",
         "Delete API-key": "Eliminar clave API",
         "Model": "Modelo",
         "Orientation": "Orientación",
@@ -134,6 +138,7 @@
     "fr-FR": {
         "Save": "Enregistrer",
         "Cancel": "Annuler",
+        "Get API-key": "Obtenir la clé API",
         "Delete API-key": "Supprimer la clé API",
         "Model": "Modèle",
         "Orientation": "Orientation",
@@ -167,6 +172,7 @@
     "ru-RU": {
         "Save": "Сохранить",
         "Cancel": "Отмена",
+        "Get API-key": "Получить API-ключ",
         "Delete API-key": "Удалить API-ключ",
         "Model": "Модель",
         "Orientation": "Ориентация",
@@ -200,6 +206,7 @@
     "zh-CN": {
         "Save": "保存",
         "Cancel": "取消",
+        "Get API-key": "获取API密钥",
         "Delete API-key": "删除API密钥",
         "Model": "模型",
         "Orientation": "方向",
@@ -233,6 +240,7 @@
     "pt-BR": {
         "Save": "Salvar",
         "Cancel": "Cancelar",
+        "Get API-key": "Obter chave API",
         "Delete API-key": "Excluir chave API",
         "Model": "Modelo",
         "Orientation": "Orientação",
@@ -266,6 +274,7 @@
     "sr-Cyrl-RS": {
         "Save": "Сачувај",
         "Cancel": "Откажи",
+        "Get API-key": "Преузми API кључ",
         "Delete API-key": "Обриши API кључ",
         "Model": "Модел",
         "Orientation": "Оријентација",
@@ -299,6 +308,7 @@
     "sr-Latn-RS": {
         "Save": "Sačuvaj",
         "Cancel": "Otkaži",
+        "Get API-key": "Preuzmi API ključ",
         "Delete API-key": "Obriši API ključ",
         "Model": "Model",
         "Orientation": "Orijentacija",
@@ -332,6 +342,7 @@
     "ja-JP": {
         "Save": "保存",
         "Cancel": "キャンセル",
+        "Get API-key": "APIキーを取得",
         "Delete API-key": "APIキーを削除",
         "Model": "モデル",
         "Orientation": "向き",
@@ -365,6 +376,7 @@
     "sq-AL": {
         "Save": "Ruaj",
         "Cancel": "Anulo",
+        "Get API-key": "Merr çelësin API",
         "Delete API-key": "Fshi çelësin API",
         "Model": "Modeli",
         "Orientation": "Orientimi",
@@ -398,6 +410,7 @@
     "it-IT": {
         "Save": "Salva",
         "Cancel": "Annulla",
+        "Get API-key": "Ottieni chiave API",
         "Delete API-key": "Elimina chiave API",
         "Model": "Modello",
         "Orientation": "Orientamento",
@@ -431,6 +444,7 @@
     "ar-SA": {
         "Save": "حفظ",
         "Cancel": "إلغاء",
+        "Get API-key": "الحصول على مفتاح API",
         "Delete API-key": "حذف مفتاح API",
         "Model": "النموذج",
         "Orientation": "الاتجاه",
