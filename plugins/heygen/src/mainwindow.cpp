@@ -602,7 +602,7 @@ void MainWindow::btnGenerateClick()
 
 void MainWindow::linkHeygenKeyClick()
 {
-    std::wstring url = L"https://docs.heygen.com/reference/authentication";
+    std::wstring url = L"https://docs.heygen.com/";
     shellOpenUrl(url);
 }
 

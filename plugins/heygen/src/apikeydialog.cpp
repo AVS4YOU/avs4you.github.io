@@ -19,7 +19,7 @@ ApiKeyDialog::ApiKeyDialog(UIWidget *parent, const Rect &rc) :
     });
 
     ui->linkKey->clickSignal.connect([]() {
-        std::wstring url = L"https://docs.heygen.com/reference/authentication";
+        std::wstring url = L"https://app.heygen.com/developers/api";
         ShellExecuteW(NULL, L"open", url.c_str(), L"", NULL, SW_SHOWNORMAL);
     });
 }

@@ -34,6 +34,11 @@ add_library(StableAudio3 SHARED
   module.def)
 target_include_directories(StableAudio3 PRIVATE "${AVS_SDK_ROOT}/include" "${CMAKE_CURRENT_SOURCE_DIR}/sa3-cpp/src")
 target_compile_definitions(StableAudio3 PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN)
+if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+  set_property(SOURCE StableAudio3.rc APPEND PROPERTY COMPILE_DEFINITIONS
+    "$<$<CONFIG:Release>:RC_X64>"
+  )
+endif()
 target_link_libraries(StableAudio3 PRIVATE comctl32 dxgi winhttp shell32)
 if(CMAKE_SIZEOF_VOID_P EQUAL 4)
   set(STABLEAUDIO3_ARCH_DIR "x86")

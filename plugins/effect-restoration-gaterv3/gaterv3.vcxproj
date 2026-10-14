@@ -112,6 +112,9 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ModuleDefinitionFile>module.def</ModuleDefinitionFile>
     </Link>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>../../sdk/common/</AdditionalIncludeDirectories>
+    </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -142,6 +145,10 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ModuleDefinitionFile>module.def</ModuleDefinitionFile>
     </Link>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>../../sdk/common/</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>RC_X64;_UNICODE;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="module.def" />
@@ -151,8 +158,12 @@
     <ClCompile Include="src\onnx.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="resource.h" />
     <ClInclude Include="src\export_utils.h" />
     <ClInclude Include="src\onnx.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Resource.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

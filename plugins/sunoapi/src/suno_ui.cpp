@@ -587,16 +587,17 @@ LRESULT CALLBACK SettingsProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPa
 	switch (message)
 	{
 	case WM_CREATE: {
-		state->edit = Edit(hwnd, 0, 15, 15, 330, 25);
+		state->edit = Edit(hwnd, 0, 15, 15, 530, 25);
 		SendMessageW(state->edit, EM_SETPASSWORDCHAR, 0x25CF, 0);
 		std::wifstream file(state->plugin->workDirectory + L"\\app.key");
 		std::wstring key;
 		std::getline(file, key);
 		Set(state->edit, key);
 
-		AVS::CreateButton(hwnd, (HMENU)0x8201, g_hInst, Tr(L"Save").c_str(), 265, 55, 80, 25, AVS::ButtonSettings::Create(AVS::Buttons::Primary));
-		AVS::CreateButton(hwnd, (HMENU)0x8202, g_hInst, Tr(L"Cancel").c_str(), 175, 55, 80, 25, AVS::ButtonSettings::Create(AVS::Buttons::Default));
-		AVS::CreateButton(hwnd, (HMENU)0x8203, g_hInst, Tr(L"Delete API key").c_str(), 15, 55, 130, 25, AVS::ButtonSettings::Create(AVS::Buttons::Default));
+		AVS::CreateButton(hwnd, (HMENU)0x8204, g_hInst, Tr(L"Get API-key").c_str(), 15, 55, 115, 25, AVS::ButtonSettings::Create(AVS::Buttons::Default));
+		AVS::CreateButton(hwnd, (HMENU)0x8203, g_hInst, Tr(L"Delete API key").c_str(), 145, 55, 150, 25, AVS::ButtonSettings::Create(AVS::Buttons::Default));
+		AVS::CreateButton(hwnd, (HMENU)0x8202, g_hInst, Tr(L"Cancel").c_str(), 330, 55, 100, 25, AVS::ButtonSettings::Create(AVS::Buttons::Default));
+		AVS::CreateButton(hwnd, (HMENU)0x8201, g_hInst, Tr(L"Save").c_str(), 445, 55, 100, 25, AVS::ButtonSettings::Create(AVS::Buttons::Primary));
 		SetFocus(state->edit);
 		return 0;
 	}
@@ -616,6 +617,9 @@ LRESULT CALLBACK SettingsProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPa
 		case 0x8202:
 		case IDCANCEL:
 			closeWindow();
+			return 0;
+		case 0x8204:
+			ShellExecuteW(hwnd, L"open", L"https://sunoapi.org/api-key", nullptr, nullptr, SW_SHOWNORMAL);
 			return 0;
 		case 0x8203:
 			DeleteFileW((state->plugin->workDirectory + L"\\app.key").c_str());
@@ -654,7 +658,7 @@ void ShowSettings(HWND owner, CSunoApiPlugin *plugin)
 	}
 
 	DWORD style = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU;
-	RECT rect{0, 0, 360, 95};
+	RECT rect{0, 0, 560, 95};
 	AdjustWindowRectEx(&rect, style, FALSE, 0);
 	
 	HWND window = CreateWindowExW(0, className,
