@@ -4,7 +4,7 @@
   "name": "Suno API Music Generator",
   "desc": "Generate songs, lyrics and sounds, extend or transform audio with Suno API.",
   "apps": [ "Audio Editor", "Audio Converter", "Video Editor" ],
-  "version": "v1.0.0",
+  "version": "v1.0.1",
   "type": "content",
   "typeLabel": "Content Plugin",
   "aiPowered": true,

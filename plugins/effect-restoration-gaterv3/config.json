@@ -4,7 +4,7 @@
   "name": "Restoration Gaterv3",
   "desc": "A 1x restoration model for improving image quality, including noise, resizing, JPEG compression and mild blur.",
   "apps": [ "Image Converter", "Video Converter", "Video Editor" ],
-  "version": "v1.0.0",
+  "version": "v1.0.1",
   "type": "effect",
   "typeLabel": "Image Effect",
   "aiPowered": true,
