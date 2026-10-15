@@ -94,6 +94,29 @@
       text-transform: uppercase;
     }
 
+    .install-file-wrap {
+      padding: 14px 12px 8px;
+    }
+
+    .install-file-btn {
+      width: 100%;
+      height: 38px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      color: #fff;
+      background: linear-gradient(135deg, #2b9bf4, #1577e0);
+      box-shadow: 0 3px 8px rgba(21, 119, 224, 0.28);
+      font-size: 12.5px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .install-file-wrap[hidden] {
+      display: none;
+    }
+
     .rail-section {
       padding: 6px 12px 0;
     }
@@ -783,6 +806,10 @@
         <div class="brand-subtitle">Plugin Marketplace</div>
       </div>
 
+      <div class="install-file-wrap" id="installFileWrap" hidden>
+        <button class="install-file-btn" id="installFile" type="button">Install from file</button>
+      </div>
+
       <div class="rail-section">
         <div class="rail-title">Categories</div>
         <div id="categories"></div>
@@ -1193,6 +1220,8 @@
 
     const els = {
       brand: document.querySelector(".brand"),
+      installFileWrap: document.getElementById("installFileWrap"),
+      installFile: document.getElementById("installFile"),
       categories: document.getElementById("categories"),
       apps: document.getElementById("apps"),
       plugins: document.getElementById("plugins"),
@@ -1347,6 +1376,19 @@
       }, 2800);
     }
 
+    // the host opens its own file dialog and installs the chosen .avsp
+    function installFromFile() {
+      if (!state.isApp) return;
+
+      try {
+        if (window.chrome && window.chrome.webview) {
+          window.chrome.webview.postMessage("install-from-file");
+        }
+      } catch (error) {
+        // WebView messaging is only available inside the host application.
+      }
+    }
+
     function handleAction(event, href) {
       if (!state.isApp) return;
 
@@ -1470,9 +1512,12 @@
       els.listView.classList.toggle("active", state.view === "list");
       els.footer.hidden = state.isApp;
       els.brand.hidden = state.isApp;
+      els.installFileWrap.hidden = !state.isApp;
       renderFilters();
       renderPlugins();
     }
+
+    els.installFile.addEventListener("click", installFromFile);
 
     els.gridView.addEventListener("click", () => {
       state.view = "grid";
