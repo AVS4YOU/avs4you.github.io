@@ -5,6 +5,11 @@
 **/StableAudio3/out
 # fetched by fetch.py at a pinned commit
 **/StableAudio3/sa3-cpp
+**/ai-subtitles/whisper-cpp
+**/ai-subtitles/out
+**/stem-splitter/demucs-onnx
+**/stem-splitter/out
+**/stem-splitter/packages
 **/sa3-cpp-gpu/*
 **/sa3-cpp-cpu/*
 **/Release

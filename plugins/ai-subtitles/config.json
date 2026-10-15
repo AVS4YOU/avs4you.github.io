@@ -1,0 +1,18 @@
+{
+  "slug": "ai-subtitles",
+  "pluginId": "AiSubtitles.plugin",
+  "name": "AI Subtitles",
+  "desc": "Create subtitles for any video or audio in dozens of languages with Whisper, right on your computer: no account, no API key, nothing uploaded. Saves a ready .srt next to the file, and can translate the speech into English.",
+  "apps": [
+    "Video Editor",
+    "Video Converter",
+    "Audio Editor"
+  ],
+  "version": "v1.0.0",
+  "type": "content",
+  "typeLabel": "Content Plugin",
+  "aiPowered": true,
+  "requiresKey": false,
+  "tint": "linear-gradient(135deg,#1F8CFF,#7C4DFF)",
+  "media": "icon.ico"
+}

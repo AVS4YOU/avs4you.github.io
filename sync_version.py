@@ -54,6 +54,10 @@ VERSION_H = (INTVER, STRVER)
 # Keyed by the folder under plugins/; paths are relative to it. A folder with
 # a config.json but no entry here is reported, not skipped.
 FILES = {
+    "ai-subtitles": {
+        "src/exports.cpp": (PLUGIN_VERSION,),
+        "src/version.h": VERSION_H,
+    },
     "effect-restoration-gaterv3": {
         "src/dllmain.cpp": (PLUGIN_VERSION,),
         "version.h": VERSION_H,
@@ -79,6 +83,10 @@ FILES = {
     "sora2": {
         "src/exports.cpp": (PLUGIN_VERSION,),
         "version.h": VERSION_H,
+    },
+    "stem-splitter": {
+        "src/exports.cpp": (PLUGIN_VERSION,),
+        "src/version.h": VERSION_H,
     },
     "StableAudio3": {
         "src/exports.cpp": (PLUGIN_VERSION,),

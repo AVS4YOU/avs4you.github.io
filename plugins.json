@@ -3,6 +3,29 @@
   "site": "https://avs4you.github.io/",
   "plugins": [
     {
+      "slug": "ai-subtitles",
+      "pluginId": "AiSubtitles.plugin",
+      "name": "AI Subtitles",
+      "desc": "Create subtitles for any video or audio in dozens of languages with Whisper, right on your computer: no account, no API key, nothing uploaded. Saves a ready .srt next to the file, and can translate the speech into English.",
+      "apps": [
+        "Video Editor",
+        "Video Converter",
+        "Audio Editor"
+      ],
+      "version": "v1.0.0",
+      "type": "content",
+      "typeLabel": "Content Plugin",
+      "aiPowered": true,
+      "requiresKey": false,
+      "tint": "linear-gradient(135deg,#1F8CFF,#7C4DFF)",
+      "media": "plugins/ai-subtitles/icon.ico",
+      "basePath": "plugins/ai-subtitles",
+      "downloads": {
+        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/ai-subtitles-v1.0.0/ai-subtitles-v1.0.0-x86.avsp",
+        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/ai-subtitles-v1.0.0/ai-subtitles-v1.0.0-x64.avsp"
+      }
+    },
+    {
       "slug": "effect-restoration-gaterv3",
       "pluginId": "EffectGaterv3.plugin",
       "name": "Restoration Gaterv3",
@@ -157,6 +180,28 @@
       "downloads": {
         "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/stableaudio3-v1.0.2/stableaudio3-v1.0.2-x86.avsp",
         "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/stableaudio3-v1.0.2/stableaudio3-v1.0.2-x64.avsp"
+      }
+    },
+    {
+      "slug": "stem-splitter",
+      "pluginId": "StemSplitter.plugin",
+      "name": "Stem Splitter",
+      "desc": "Split any song into vocals and instrumental, or into 4 or 6 tracks - vocals, drums, bass, guitar, piano and the rest - with Meta's Demucs AI, right on your computer: no account, no API key, nothing uploaded. Make karaoke, remixes and clean voice-overs.",
+      "apps": [
+        "Audio Editor",
+        "Video Editor"
+      ],
+      "version": "v1.0.0",
+      "type": "content",
+      "typeLabel": "Content Plugin",
+      "aiPowered": true,
+      "requiresKey": false,
+      "tint": "linear-gradient(135deg,#FF5F6D,#7C4DFF)",
+      "media": "plugins/stem-splitter/icon.ico",
+      "basePath": "plugins/stem-splitter",
+      "downloads": {
+        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/stem-splitter-v1.0.0/stem-splitter-v1.0.0-x86.avsp",
+        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/stem-splitter-v1.0.0/stem-splitter-v1.0.0-x64.avsp"
       }
     },
     {

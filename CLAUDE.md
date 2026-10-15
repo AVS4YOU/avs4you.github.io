@@ -76,6 +76,11 @@ tests/content/             same for content plugins
 - A Build Tools install without the C++ workload has `MSBuild.exe` but no
   `Microsoft.Cpp.props` and fails with MSB4019. `tools/plugin-tools` and
   `build.py` pick an install that has the workload.
+- GPU builds need their SDK on the build machine: StableAudio3's `fetch.py`
+  CUDA, AI Subtitles' `fetch.py` the Vulkan SDK (for `whisper-cli-vulkan.exe`,
+  x64; found through `VULKAN_SDK` or the newest `C:\VulkanSDK\<version>`).
+  Users need only their GPU driver; without a usable GPU the plugins run on
+  the CPU.
 
 ## Releasing a version
 

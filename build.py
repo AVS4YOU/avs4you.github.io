@@ -190,6 +190,14 @@ def cmake(binary_dir: str, output: str, dll: str, defines: dict[str, str] | None
 # reported, not skipped.
 
 PLUGINS: dict[str, Builder] = {
+    # fetch.py builds whisper-cli for AVX2 CPUs and a compat one; ffmpeg pulls
+    # the audio out of video and is the one the YouTube plugin ships
+    "ai-subtitles": cmake(
+        "build/cmake-{arch}", "build/{arch}/AiSubtitles.dll", "AiSubtitles.dll",
+        extras={"ffmpeg.exe": "../youtube/resources/x86/ffmpeg.exe",
+                "whisper-cli.exe": "build/{arch}/whisper-cli.exe",
+                "whisper-cli-compat.exe": "build/{arch}/whisper-cli-compat.exe",
+                "whisper-cli-vulkan.exe": {"x64": "build/x64/whisper-cli-vulkan.exe"}}),
     "effect-restoration-gaterv3": msbuild(
         "gaterv3.vcxproj", "gaterv3.dll",
         extras={"onnxruntime.dll": "libs/{arch}/onnxruntime.dll",
@@ -201,6 +209,14 @@ PLUGINS: dict[str, Builder] = {
     "sora2": msbuild("Sora2.vcxproj", "Sora2.dll"),
     # Only StableAudio3.dll: STABLEAUDIO3_BACKEND=NONE leaves sa3.cpp out, and
     # fetch.py builds the sa3-cpp-cpu/-gpu backends it loads into build/<arch>
+    # fetch.py builds stems.exe (Demucs on ONNX Runtime) and brings
+    # onnxruntime.dll - 64-bit in both packages, as Demucs does not fit in 32 bits;
+    # ffmpeg decodes the input and writes the tracks
+    "stem-splitter": cmake(
+        "build/cmake-{arch}", "build/{arch}/StemSplitter.dll", "StemSplitter.dll",
+        extras={"ffmpeg.exe": "../youtube/resources/x86/ffmpeg.exe",
+                "stems.exe": "build/x64/stems.exe",
+                "onnxruntime.dll": "build/x64/onnxruntime.dll"}),
     "StableAudio3": cmake(
         "build/cmake-{arch}", "build/{arch}/StableAudio3.dll", "StableAudio3.dll",
         defines={"STABLEAUDIO3_BACKEND": "NONE"},
