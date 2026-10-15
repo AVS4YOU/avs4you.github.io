@@ -568,10 +568,19 @@ namespace {
 				hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_DEVICE)),
 				instance, 135, 333, 95, 28, AVS::ComboBoxSettings::Create(), { L"cpu" });
 #else
-			controls->device = AVS::CreateComboBox(
-				hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_DEVICE)),
-				instance, 135, 333, 95, 28, AVS::ComboBoxSettings::Create(),
-				{ L"cpu", L"gpu" });
+			// GPU is offered, and preselected, only where it can run; elsewhere
+			// the plugin works on the CPU
+			if (GpuBackendReady(plugin->moduleDirectory)) {
+				controls->device = AVS::CreateComboBox(
+					hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_DEVICE)),
+					instance, 135, 333, 95, 28, AVS::ComboBoxSettings::Create(),
+					{ L"cpu", L"gpu" });
+				AVS::ComboBox_SetCurrent(controls->device, 1);
+			}
+			else
+				controls->device = AVS::CreateComboBox(
+					hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_DEVICE)),
+					instance, 135, 333, 95, 28, AVS::ComboBoxSettings::Create(), { L"cpu" });
 #endif
 
 			CreateLabel(hwnd, Translate(L"System resources and available acceleration").c_str(), 15, 379,

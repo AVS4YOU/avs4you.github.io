@@ -12,7 +12,7 @@
         "Video Converter",
         "Video Editor"
       ],
-      "version": "v1.0.1",
+      "version": "v1.0.2",
       "type": "effect",
       "typeLabel": "Image Effect",
       "aiPowered": true,
@@ -21,8 +21,8 @@
       "media": "plugins/effect-restoration-gaterv3/Effect Restoration Gaterv3.gif",
       "basePath": "plugins/effect-restoration-gaterv3",
       "downloads": {
-        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/effect-restoration-gaterv3-v1.0.1/effect-restoration-gaterv3-v1.0.1-x86.avsp",
-        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/effect-restoration-gaterv3-v1.0.1/effect-restoration-gaterv3-v1.0.1-x64.avsp"
+        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/effect-restoration-gaterv3-v1.0.2/effect-restoration-gaterv3-v1.0.2-x86.avsp",
+        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/effect-restoration-gaterv3-v1.0.2/effect-restoration-gaterv3-v1.0.2-x64.avsp"
       }
     },
     {
@@ -34,7 +34,7 @@
         "Video Converter",
         "Video Editor"
       ],
-      "version": "v1.0.2",
+      "version": "v1.0.3",
       "type": "effect",
       "typeLabel": "Image Effect",
       "aiPowered": false,
@@ -43,8 +43,8 @@
       "media": "plugins/effect-spiral/Effect Spiral.gif",
       "basePath": "plugins/effect-spiral",
       "downloads": {
-        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/effect-spiral-v1.0.2/effect-spiral-v1.0.2-x86.avsp",
-        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/effect-spiral-v1.0.2/effect-spiral-v1.0.2-x64.avsp"
+        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/effect-spiral-v1.0.3/effect-spiral-v1.0.3-x86.avsp",
+        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/effect-spiral-v1.0.3/effect-spiral-v1.0.3-x64.avsp"
       }
     },
     {
@@ -57,7 +57,7 @@
         "Video Editor",
         "Image Converter"
       ],
-      "version": "v1.0.2",
+      "version": "v1.0.3",
       "type": "effect",
       "typeLabel": "Image Effect",
       "aiPowered": false,
@@ -66,8 +66,8 @@
       "media": "plugins/effect-vhs/Effect VHS.gif",
       "basePath": "plugins/effect-vhs",
       "downloads": {
-        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/effect-vhs-v1.0.2/effect-vhs-v1.0.2-x86.avsp",
-        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/effect-vhs-v1.0.2/effect-vhs-v1.0.2-x64.avsp"
+        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/effect-vhs-v1.0.3/effect-vhs-v1.0.3-x86.avsp",
+        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/effect-vhs-v1.0.3/effect-vhs-v1.0.3-x64.avsp"
       }
     },
     {
@@ -79,7 +79,7 @@
         "Video Converter",
         "Video Editor"
       ],
-      "version": "v1.0.1",
+      "version": "v1.0.2",
       "type": "content",
       "typeLabel": "Content Plugin",
       "aiPowered": true,
@@ -88,8 +88,8 @@
       "media": "plugins/heygen/res/icons/app-icon.ico",
       "basePath": "plugins/heygen",
       "downloads": {
-        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/heygen-v1.0.1/heygen-v1.0.1-x86.avsp",
-        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/heygen-v1.0.1/heygen-v1.0.1-x64.avsp"
+        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/heygen-v1.0.2/heygen-v1.0.2-x86.avsp",
+        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/heygen-v1.0.2/heygen-v1.0.2-x64.avsp"
       }
     },
     {
@@ -102,7 +102,7 @@
         "Video Editor",
         "Photo Editor"
       ],
-      "version": "v1.0.1",
+      "version": "v1.0.2",
       "type": "content",
       "typeLabel": "Content Plugin",
       "aiPowered": true,
@@ -111,8 +111,8 @@
       "media": "plugins/nano-banana/icon.ico",
       "basePath": "plugins/nano-banana",
       "downloads": {
-        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/nano-banana-v1.0.1/nano-banana-v1.0.1-x86.avsp",
-        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/nano-banana-v1.0.1/nano-banana-v1.0.1-x64.avsp"
+        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/nano-banana-v1.0.2/nano-banana-v1.0.2-x86.avsp",
+        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/nano-banana-v1.0.2/nano-banana-v1.0.2-x64.avsp"
       }
     },
     {
@@ -124,7 +124,7 @@
         "Video Converter",
         "Video Editor"
       ],
-      "version": "v1.0.0",
+      "version": "v1.0.1",
       "type": "content",
       "typeLabel": "Content Plugin",
       "aiPowered": true,
@@ -133,8 +133,8 @@
       "media": "plugins/sora2/icon.ico",
       "basePath": "plugins/sora2",
       "downloads": {
-        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/sora2-v1.0.0/sora2-v1.0.0-x86.avsp",
-        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/sora2-v1.0.0/sora2-v1.0.0-x64.avsp"
+        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/sora2-v1.0.1/sora2-v1.0.1-x86.avsp",
+        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/sora2-v1.0.1/sora2-v1.0.1-x64.avsp"
       }
     },
     {
@@ -146,7 +146,7 @@
         "Audio Editor",
         "Video Editor"
       ],
-      "version": "v1.0.1",
+      "version": "v1.0.2",
       "type": "content",
       "typeLabel": "Content Plugin",
       "aiPowered": true,
@@ -155,8 +155,8 @@
       "media": "plugins/StableAudio3/icon.ico",
       "basePath": "plugins/StableAudio3",
       "downloads": {
-        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/stableaudio3-v1.0.1/stableaudio3-v1.0.1-x86.avsp",
-        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/stableaudio3-v1.0.1/stableaudio3-v1.0.1-x64.avsp"
+        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/stableaudio3-v1.0.2/stableaudio3-v1.0.2-x86.avsp",
+        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/stableaudio3-v1.0.2/stableaudio3-v1.0.2-x64.avsp"
       }
     },
     {
@@ -169,7 +169,7 @@
         "Audio Converter",
         "Video Editor"
       ],
-      "version": "v1.0.1",
+      "version": "v1.0.2",
       "type": "content",
       "typeLabel": "Content Plugin",
       "aiPowered": true,
@@ -178,8 +178,8 @@
       "media": "plugins/sunoapi/icon.ico",
       "basePath": "plugins/sunoapi",
       "downloads": {
-        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/sunoapi-v1.0.1/sunoapi-v1.0.1-x86.avsp",
-        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/sunoapi-v1.0.1/sunoapi-v1.0.1-x64.avsp"
+        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/sunoapi-v1.0.2/sunoapi-v1.0.2-x86.avsp",
+        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/sunoapi-v1.0.2/sunoapi-v1.0.2-x64.avsp"
       }
     },
     {
@@ -191,7 +191,7 @@
         "Audio Editor",
         "Video Editor"
       ],
-      "version": "v1.0.1",
+      "version": "v1.0.2",
       "type": "content",
       "typeLabel": "Content Plugin",
       "aiPowered": true,
@@ -200,8 +200,8 @@
       "media": "plugins/Supertonic3/icon.ico",
       "basePath": "plugins/Supertonic3",
       "downloads": {
-        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/supertonic3-v1.0.1/supertonic3-v1.0.1-x86.avsp",
-        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/supertonic3-v1.0.1/supertonic3-v1.0.1-x64.avsp"
+        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/supertonic3-v1.0.2/supertonic3-v1.0.2-x86.avsp",
+        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/supertonic3-v1.0.2/supertonic3-v1.0.2-x64.avsp"
       }
     },
     {
@@ -213,7 +213,7 @@
         "Video Converter",
         "Video Editor"
       ],
-      "version": "v1.0.1",
+      "version": "v1.0.2",
       "type": "content",
       "typeLabel": "Content Plugin",
       "aiPowered": true,
@@ -222,8 +222,8 @@
       "media": "plugins/veo3/icon.ico",
       "basePath": "plugins/veo3",
       "downloads": {
-        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/veo3-v1.0.1/veo3-v1.0.1-x86.avsp",
-        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/veo3-v1.0.1/veo3-v1.0.1-x64.avsp"
+        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/veo3-v1.0.2/veo3-v1.0.2-x86.avsp",
+        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/veo3-v1.0.2/veo3-v1.0.2-x64.avsp"
       }
     },
     {
@@ -235,7 +235,7 @@
         "Video Converter",
         "Video Editor"
       ],
-      "version": "v1.0.1",
+      "version": "v1.0.2",
       "type": "content",
       "typeLabel": "Content Plugin",
       "aiPowered": false,
@@ -244,8 +244,8 @@
       "media": "plugins/youtube/icon.ico",
       "basePath": "plugins/youtube",
       "downloads": {
-        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/youtube-v1.0.1/youtube-v1.0.1-x86.avsp",
-        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/youtube-v1.0.1/youtube-v1.0.1-x64.avsp"
+        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/youtube-v1.0.2/youtube-v1.0.2-x86.avsp",
+        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/youtube-v1.0.2/youtube-v1.0.2-x64.avsp"
       }
     }
   ]

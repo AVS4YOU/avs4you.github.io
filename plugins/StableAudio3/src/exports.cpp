@@ -13,7 +13,7 @@ extern "C" {
 	}
 	wchar_t* __stdcall PluginId() { return export_str(L"StableAudio3.plugin"); }
 	wchar_t* __stdcall PluginName() { return export_str(Translate(L"Stable Audio 3").c_str()); }
-	wchar_t* __stdcall PluginVersion() { return export_str(L"1.0.0"); }
+	wchar_t* __stdcall PluginVersion() { return export_str(L"1.0.2"); }
 	wchar_t* __stdcall PluginIcon(PluginHandle p) {
 		auto* plugin = static_cast<CStableAudio3Plugin*>(p);
 		return export_str((plugin->workDirectory / L"icon.ico").c_str());

@@ -10,7 +10,7 @@ __declspec(dllexport) void __stdcall DeletePlugin(PluginHandle p) { delete stati
 __declspec(dllexport) Plugins::PluginType __stdcall PluginType() { return Plugins::PluginType::Content; }
 __declspec(dllexport) wchar_t* __stdcall PluginId() { return ExportString(L"Supertonic3.plugin"); }
 __declspec(dllexport) wchar_t* __stdcall PluginName() { return ExportString(CTranslate::GetInstance().GetManager()->Translate(L"Supertonic 3").c_str()); }
-__declspec(dllexport) wchar_t* __stdcall PluginVersion() { return ExportString(L"1.0.0"); }
+__declspec(dllexport) wchar_t* __stdcall PluginVersion() { return ExportString(L"1.0.2"); }
 __declspec(dllexport) wchar_t* __stdcall PluginIcon(PluginHandle p) { auto* plugin = static_cast<SupertonicPlugin*>(p); return plugin ? ExportString((plugin->workDirectory / L"icon.ico").c_str()) : nullptr; }
 __declspec(dllexport) bool __stdcall IsApplicationSupported(int id) { return id == AVS_AUDIO_EDITOR || id == AVS_VIDEO_EDITOR; }
 __declspec(dllexport) void __stdcall ReleasePluginString(wchar_t* p) { ReleaseExportString(p); }

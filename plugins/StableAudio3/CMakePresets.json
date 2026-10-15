@@ -19,12 +19,33 @@
       "name": "windows-cuda",
       "inherits": "windows-cpu",
       "binaryDir": "${sourceDir}/out/cuda",
-      "cacheVariables": { "STABLEAUDIO3_BACKEND": "CUDA", "CMAKE_CUDA_ARCHITECTURES": "75;80;86;89" }
+      "cacheVariables": { "STABLEAUDIO3_BACKEND": "CUDA", "CMAKE_CUDA_ARCHITECTURES": "61;75;80;86;89;120" }
+    },
+    {
+      "name": "compat",
+      "hidden": true,
+      "cacheVariables": {
+        "STABLEAUDIO3_BACKEND_FOLDER": "sa3-cpp-cpu-compat",
+        "GGML_SSE42": "OFF", "GGML_AVX": "OFF", "GGML_AVX2": "OFF", "GGML_AVX_VNNI": "OFF",
+        "GGML_FMA": "OFF", "GGML_F16C": "OFF", "GGML_BMI2": "OFF", "GGML_AVX512": "OFF"
+      }
+    },
+    {
+      "name": "windows-x86-cpu-compat",
+      "inherits": [ "compat", "windows-x86-cpu" ],
+      "binaryDir": "${sourceDir}/out/x86-cpu-compat"
+    },
+    {
+      "name": "windows-cpu-compat",
+      "inherits": [ "compat", "windows-cpu" ],
+      "binaryDir": "${sourceDir}/out/cpu-compat"
     }
   ],
   "buildPresets": [
     { "name": "x86-cpu-release", "configurePreset": "windows-x86-cpu", "configuration": "Release" },
     { "name": "cpu-release", "configurePreset": "windows-cpu", "configuration": "Release" },
-    { "name": "cuda-release", "configurePreset": "windows-cuda", "configuration": "Release" }
+    { "name": "cuda-release", "configurePreset": "windows-cuda", "configuration": "Release" },
+    { "name": "x86-cpu-compat-release", "configurePreset": "windows-x86-cpu-compat", "configuration": "Release" },
+    { "name": "cpu-compat-release", "configurePreset": "windows-cpu-compat", "configuration": "Release" }
   ]
 }

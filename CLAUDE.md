@@ -22,9 +22,12 @@ index.html                 storefront; plugin data is generated into it
 plugins.json               generated machine-readable catalogue + release URLs
 package.py                 config.json x N  ->  index.html + plugins.json
 release.py                 build/<arch>/*.avsp  ->  GitHub release assets
+build.py                   build every plugin x86+x64  ->  build/<arch>/*.avsp
+sync_version.py            config.json "version"  ->  PluginVersion() + version.h
 docs/                      plugin developer documentation
 sdk/                       shared code for all plugins (see below)
 plugins/<slug>/            one folder per plugin, each with config.json
+plugins/<slug>/fetch.py    third-party code git does not hold (NuGet, sa3.cpp)
 tools/PreviewGenerator/    plugin DLL + PNG -> animated preview GIF
 tools/plugin-tools/        scaffold / build / verify scripts for effect plugins
 tests/effect/              minimal host that loads an effect DLL and applies it
@@ -71,8 +74,31 @@ tests/content/             same for content plugins
   (`git add -f`) and served by Pages. Refresh them when effect-vhs or sora2
   gets a new version; drop them once those installers are out of circulation.
 - A Build Tools install without the C++ workload has `MSBuild.exe` but no
-  `Microsoft.Cpp.props` and fails with MSB4019. `tools/plugin-tools` picks an
-  install that has the workload.
+  `Microsoft.Cpp.props` and fails with MSB4019. `tools/plugin-tools` and
+  `build.py` pick an install that has the workload.
+
+## Releasing a version
+
+```bash
+# bump "version" in plugins/<slug>/config.json, then:
+python sync_version.py <slug>       # into PluginVersion() and version.h
+python build.py <slug>              # fetch.py, build x86+x64, pack .avsp
+python release.py <slug>            # GitHub release - before pushing
+python package.py                   # index.html + plugins.json
+```
+
+- `build.py` holds, per plugin, how its own project is built and what goes
+  into the package. Third-party code is not its business: a
+  `plugins/<slug>/fetch.py` gets it (it is passed `--arch` and `--clean`) and
+  leaves alone what it already has. StableAudio3's fetches sa3.cpp at a pinned
+  commit and builds its CPU/CUDA backends, which takes the better part of an
+  hour for CUDA - `--clean` is the only thing that forces that.
+- `build.py` is incremental; `--clean` rebuilds everything. A new plugin needs
+  an entry in `build.py` `PLUGINS` and `sync_version.py` `FILES`; both stop on
+  a plugin folder they do not know.
+- The force-tracked legacy packages (see above) are rebuilt in place by
+  `build.py`, so `git status` shows them modified after any build - commit them
+  only with a version bump of that plugin.
 
 ## `plugins.json` is a public contract
 

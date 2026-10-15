@@ -4,7 +4,7 @@
   "name": "Nano Banana Image Generator",
   "desc": "Generate, edit, ground, and iterate images with Google Nano Banana models through the Gemini API.",
   "apps": [ "Video Converter", "Video Editor", "Photo Editor" ],
-  "version": "v1.0.1",
+  "version": "v1.0.2",
   "type": "content",
   "typeLabel": "Content Plugin",
   "aiPowered": true,

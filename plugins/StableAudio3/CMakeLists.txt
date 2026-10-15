@@ -67,7 +67,23 @@ if(NOT STABLEAUDIO3_BACKEND STREQUAL "NONE")
     set(_sa3_destination "sa3-cpp-cpu")
     set(_sa3_extra_backend "")
   endif()
+  # a CPU backend built for another instruction set lands in a folder of its
+  # own: sa3-cpp-cpu-compat, which the plugin picks on CPUs without AVX2
+  set(STABLEAUDIO3_BACKEND_FOLDER "" CACHE STRING
+    "folder next to StableAudio3.dll the backend lands in (default sa3-cpp-cpu / sa3-cpp-gpu)")
+  if(STABLEAUDIO3_BACKEND_FOLDER)
+    set(_sa3_destination "${STABLEAUDIO3_BACKEND_FOLDER}")
+  endif()
   set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+  # ggml defaults to GGML_NATIVE, i.e. the build machine's CPU: built on an
+  # AVX-512 machine, ggml-cpu.dll dies with an illegal instruction elsewhere.
+  # Off, ggml targets AVX2/FMA/F16C - unless a preset turns those off too, as
+  # the *-compat ones do.
+  set(GGML_NATIVE OFF CACHE BOOL "" FORCE)
+  if(CMAKE_SIZEOF_VOID_P EQUAL 4)
+    # 32-bit MSVC has no _pdep_u64, so the BMI2 path does not link
+    set(GGML_BMI2 OFF CACHE BOOL "" FORCE)
+  endif()
   add_subdirectory(sa3-cpp EXCLUDE_FROM_ALL)
   add_custom_target(sa3_backend ALL DEPENDS sa3_shared)
   add_custom_command(TARGET sa3_backend POST_BUILD
