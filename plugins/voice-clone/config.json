@@ -1,0 +1,17 @@
+{
+  "slug": "voice-clone",
+  "pluginId": "VoiceClone.plugin",
+  "name": "Voice Clone",
+  "desc": "Sing or speak in another voice: give it the vocals of a song and a few seconds of the voice you want, and Seed-VC AI re-sings them in that voice, keeping the melody, the rhythm and the words. Runs on this computer, on the graphics card when there is one: no account, no API key, nothing uploaded. The voice model (1.6 GB) is downloaded once, on first use.",
+  "apps": [
+    "Audio Editor",
+    "Video Editor"
+  ],
+  "version": "v1.0.0",
+  "type": "content",
+  "typeLabel": "Content Plugin",
+  "aiPowered": true,
+  "requiresKey": false,
+  "tint": "linear-gradient(135deg,#7C4DFF,#00BFA5)",
+  "media": "icon.ico"
+}

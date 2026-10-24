@@ -6,9 +6,11 @@
   "apps": [
     "Video Editor",
     "Video Converter",
-    "Audio Editor"
+    "Audio Editor",
+    "Video ReMaker",
+    "Audio Converter"
   ],
-  "version": "v1.0.0",
+  "version": "v1.0.1",
   "type": "content",
   "typeLabel": "Content Plugin",
   "aiPowered": true,

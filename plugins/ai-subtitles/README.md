@@ -1,10 +1,15 @@
 # AI Subtitles
 
-Content plugin for AVS Video Editor, Video Converter and Audio Editor: pick a
-video or audio file, and it writes `<name>.srt` next to it. Speech recognition
+Content plugin for AVS Video Editor, Video Converter, Video ReMaker, Audio
+Editor and Audio Converter: pick a video or audio file, and it writes
+`<name>.srt` next to it. Speech recognition
 is [whisper.cpp](https://github.com/ggml-org/whisper.cpp) (MIT) with the
 Whisper models (MIT) and runs on the user's computer - no account, no API key,
 nothing uploaded.
+
+Called from the context menu of a video or audio file in the host app, the
+window opens with that file already chosen (`ClickMenuItemEx`, see
+`docs/ContentPlugin-README.md`).
 
 ## What it does
 

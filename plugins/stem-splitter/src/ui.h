@@ -12,4 +12,5 @@ struct UiStatus {
 	bool success;
 };
 
-void ShowStemSplitterWindow(CStemSplitterPlugin* plugin);
+// initialFile - media file from the host app (context menu), shown as the selected file
+void ShowStemSplitterWindow(CStemSplitterPlugin* plugin, const std::filesystem::path& initialFile = {});

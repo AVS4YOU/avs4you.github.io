@@ -1,11 +1,16 @@
 # Stem Splitter
 
-Content plugin for AVS Audio Editor and Video Editor: pick a song or a video,
-and it writes separate tracks into `<name> - stems` next to it, and adds them
+Content plugin for AVS Audio Editor, Video Editor, Video Converter, Video
+ReMaker and Audio Converter: pick a song or a video, and it writes separate
+tracks into `<name> - stems` next to it, and adds them
 to the project. Separation is Meta's [Demucs v4](https://github.com/facebookresearch/demucs)
 (MIT) exported to ONNX and run by ONNX Runtime, with the STFT code of
 [demucs.onnx](https://github.com/sevagh/demucs.onnx) (MIT) - on the user's
 computer, no account, no API key, nothing uploaded.
+
+Called from the context menu of an audio or video file in the host app, the
+window opens with that file already chosen (`ClickMenuItemEx`, see
+`docs/ContentPlugin-README.md`).
 
 | Mode | Model | Tracks |
 |---|---|---|

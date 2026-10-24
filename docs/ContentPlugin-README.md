@@ -374,6 +374,34 @@ PLUGIN_API void __stdcall ClickMenuItem(PluginHandle handle, int itemId)
 
 ---
 
+#### `ClickMenuItemEx(PluginHandle handle, int itemId, const wchar_t* params)` (optional)
+```cpp
+PLUGIN_API void __stdcall ClickMenuItemEx(PluginHandle handle, int itemId, const wchar_t* params)
+```
+**Description:** Handles a menu item click event with data from the host app.
+
+**Parameters:**
+- `handle` - handle to the plugin instance
+- `itemId` - menu item identifier
+- `params` - JSON string with host data:
+  ```json
+  { "version": 1, "context": 2, "files": ["D:\\Video\\clip.mp4"] }
+  ```
+  - `context` - `Plugins::ContextType` value of the menu the command was called from
+  - `files` - media files selected in the host app (e.g. a media library item or a timeline object)
+
+**Purpose:** Called instead of `ClickMenuItem` when the host has data for the plugin, e.g. when the
+command is called from the context menu of a media file (`Video`, `Audio`, `Image` contexts).
+The plugin should open its window with the file already selected.
+
+**Notes:**
+- The export is optional. If the plugin doesn't export it, the host calls `ClickMenuItem`.
+- `params` is valid only during the call - copy what you need.
+- Ignore unknown JSON fields: new fields may be added in later versions.
+- Supported by AVSPluginManager.dll since version 0.0.2.
+
+---
+
 ### Callback Management
 
 #### `SetCallbackHandler(PluginHandle handle, AsyncCallback callback, void* userData)`

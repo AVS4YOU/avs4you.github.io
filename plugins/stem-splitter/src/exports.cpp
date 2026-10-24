@@ -6,18 +6,34 @@
 #include "ui.h"
 #include <string>
 
+namespace {
+	// first file of ClickMenuItemEx params: {"version":1,"context":2,"files":["..."]}
+	std::filesystem::path FirstFileFromParams(const wchar_t* params) {
+		if (!params)
+			return {};
+		const nlohmann::json json = nlohmann::json::parse(NSStringUtils::wstring_to_utf8(params), nullptr, false);
+		if (json.is_discarded() || !json.is_object())
+			return {};
+		const auto files = json.find("files");
+		if (files == json.end() || !files->is_array() || files->empty() || !files->front().is_string())
+			return {};
+		return std::filesystem::path(NSStringUtils::utf8_to_wstring(files->front().get<std::string>()));
+	}
+} // namespace
+
 extern "C" {
 	PluginHandle __stdcall CreatePlugin() { return new CStemSplitterPlugin(); }
 	void __stdcall DeletePlugin(PluginHandle plugin) { delete static_cast<CStemSplitterPlugin*>(plugin); }
 	Plugins::PluginType __stdcall PluginType() { return Plugins::PluginType::Content; }
 	wchar_t* __stdcall PluginId() { return export_str(L"StemSplitter.plugin"); }
 	wchar_t* __stdcall PluginName() { return export_str(Translate(L"Stem Splitter").c_str()); }
-	wchar_t* __stdcall PluginVersion() { return export_str(L"1.0.0"); }
+	wchar_t* __stdcall PluginVersion() { return export_str(L"1.0.1"); }
 	wchar_t* __stdcall PluginIcon(PluginHandle plugin) {
 		return export_str((static_cast<CStemSplitterPlugin*>(plugin)->workDirectory / L"icon.ico").c_str());
 	}
 	bool __stdcall IsApplicationSupported(int id) {
-		return id == AVS_AUDIO_EDITOR || id == AVS_VIDEO_EDITOR;
+		return id == AVS_AUDIO_EDITOR || id == AVS_VIDEO_EDITOR || id == AVS_VIDEO_CONVERTER ||
+			id == AVS_VIDEO_REMAKER || id == AVS_AUDIO_CONVERTER;
 	}
 	void __stdcall ReleasePluginString(wchar_t* value) { release_export_ptr(value); }
 	void __stdcall SetLanguage(PluginHandle, const wchar_t* name) {
@@ -41,6 +57,9 @@ extern "C" {
 	wchar_t* __stdcall GetIconById(PluginHandle plugin, int) { return PluginIcon(plugin); }
 	void __stdcall ClickMenuItem(PluginHandle plugin, int) {
 		ShowStemSplitterWindow(static_cast<CStemSplitterPlugin*>(plugin));
+	}
+	void __stdcall ClickMenuItemEx(PluginHandle plugin, int, const wchar_t* params) {
+		ShowStemSplitterWindow(static_cast<CStemSplitterPlugin*>(plugin), FirstFileFromParams(params));
 	}
 	void __stdcall SetCallbackHandler(PluginHandle plugin, AsyncCallback callback, void* context) {
 		auto* splitter = static_cast<CStemSplitterPlugin*>(plugin);

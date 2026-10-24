@@ -11,6 +11,7 @@
 #include "./src/yt_downloader.h"
 #include "./src/failure_reason.h"
 #include "./src/output_name.h"
+#include "./src/output_folder.h"
 #include "resource.h"
 
 #include <cctype>
@@ -50,6 +51,7 @@ namespace NSUI
     // Defined after CYoutubePlugin, called from inside it.
     bool ShowLoginDialog(HWND parent, const std::wstring& workDirectory, const std::wstring& host);
     void ShowAboutDialog(HWND parent);
+    void ShowSettingsDialog(HWND parent, CYoutubePlugin* plugin);
 }
 
 WCHAR* export_str(const WCHAR* ptr)
@@ -98,6 +100,10 @@ public:
     std::wstring m_workDirectory;
     std::wstring m_workDirectoryTemp;
 
+    // Where finished files go: Videos\YouTube or the folder chosen in
+    // Settings (src/output_folder.h).
+    std::wstring m_outputFolder;
+
     std::wstring m_path = L"";
 
     std::wstring m_moduleDirectory;
@@ -119,6 +125,11 @@ public:
     std::wstring                       m_videoTitle;
     bool                               m_done = false;
     bool                               m_downloadInProgress = false;
+
+    // Set when the download worked but the file could not be moved into the
+    // output folder: that is reported as such, not as a failed download.
+    std::wstring                       m_saveFailedFolder;
+    DWORD                              m_saveError = ERROR_SUCCESS;
 
     // A check is a separate yt-dlp operation. Its output is used only to fill
     // the two selectors in the window; it never creates a media file.
@@ -159,6 +170,7 @@ public:
         m_workDirectory += L"\\avs_plugin_youtube";
         CreateDirectoryW(m_workDirectory.c_str(), NULL);
         m_workDirectoryTemp = m_workDirectory + L"\\temp";
+        m_outputFolder = ytdl::LoadOutputFolder(m_workDirectory);
 
         std::wstring iconPath = m_workDirectory + L"\\icon_internal.ico";
         std::wstring iconPathApp = m_workDirectory + L"\\icon.ico";
@@ -211,6 +223,21 @@ public:
     virtual Plugins::PluginType Type() const
     {
         return Plugins::PluginType::Content;
+    }
+
+    const std::wstring& OutputFolder() const
+    {
+        return m_outputFolder;
+    }
+
+    /** Remembers a folder chosen in Settings. False when it could not be stored. */
+    bool SetOutputFolder(const std::wstring& folder)
+    {
+        if (!ytdl::SaveOutputFolder(m_workDirectory, folder))
+            return false;
+
+        m_outputFolder = ytdl::LoadOutputFolder(m_workDirectory);
+        return true;
     }
 
     void SetCaption(const std::wstring& caption)
@@ -296,6 +323,16 @@ public:
                 SetCaption(tr(L"Complete"));
                 if (m_hWnd)
                     PostMessageW(m_hWnd, WM_YT_COMPLETE, 0, 0);
+            }
+            else if (!m_saveFailedFolder.empty())
+            {
+                // Downloaded, but the output folder took nothing. Another cookie
+                // source would only download the same file again.
+                m_done = true;
+                m_downloadInProgress = false;
+                SetCaption(tr(L"Error"));
+                if (m_hWnd)
+                    PostMessageW(m_hWnd, WM_YT_FAILED, 0, 0);
             }
             else if (m_attempt + 1 < m_strategies.size() && NSYoutube::WorthAnotherCookieSource(m_log))
             {
@@ -462,6 +499,26 @@ public:
      */
     void ReportFailure()
     {
+        if (!m_saveFailedFolder.empty())
+        {
+            std::wstring text = tr(L"The video was downloaded but could not be saved to %1.", m_saveFailedFolder);
+
+            wchar_t* reason = NULL;
+            if (::FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
+                                 FORMAT_MESSAGE_IGNORE_INSERTS, NULL, m_saveError, 0, (LPWSTR)&reason, 0, NULL) &&
+                reason)
+            {
+                std::wstring line = reason;
+                ::LocalFree(reason);
+                line.erase(line.find_last_not_of(L" \r\n") + 1);
+                text += L"\n\n" + line;
+            }
+
+            text += L"\n\n" + tr(L"Choose another folder in Settings.");
+            ::MessageBoxW(m_hWnd, text.c_str(), tr(L"Error").c_str(), MB_OK | MB_ICONWARNING);
+            return;
+        }
+
         const std::wstring host = ytdl::TargetHost(m_url);
 
         // Checked before the account case: this one masquerades as an auth
@@ -624,6 +681,8 @@ private:
         m_log.clear();
         m_lastError.clear();
         m_path.clear();
+        m_saveFailedFolder.clear();
+        m_saveError = ERROR_SUCCESS;
 
         ytdl::DownloadOptions options;
         options.format = ytdl::Format::MP4;
@@ -754,7 +813,11 @@ private:
         return false;
     }
 
-    /** Moves the finished download out of the temp directory. Empty if there is none. */
+    /**
+     * Moves the finished download out of the temp directory into the output
+     * folder. Empty if there is none, or if it could not be moved - then
+     * m_saveFailedFolder says where it was meant to go.
+     */
     std::wstring FindDownloadedFile()
     {
         WIN32_FIND_DATAW findData;
@@ -809,11 +872,20 @@ private:
         if (fallback.empty())
             fallback = L"video";
 
-        const std::wstring source = m_workDirectoryTemp + L"\\" + name;
-        const std::wstring target = m_workDirectory + L"\\" +
-                                    NSYoutube::CleanFileStem(stem, fallback) + extension;
+        // Across drives this is a copy, which a long video makes noticeable.
+        SetCaption(tr(L"Saving..."));
 
-        ::MoveFileExW(source.c_str(), target.c_str(), MOVEFILE_REPLACE_EXISTING);
+        // Never over a file that is already there: the folder is the user's own.
+        const std::wstring source = m_workDirectoryTemp + L"\\" + name;
+        const std::wstring folder = m_outputFolder;
+        DWORD error = ERROR_SUCCESS;
+        const std::wstring target = ytdl::MoveIntoFolder(source, folder,
+                                                         NSYoutube::CleanFileStem(stem, fallback), extension, error);
+        if (target.empty())
+        {
+            m_saveFailedFolder = folder;
+            m_saveError = error;
+        }
         return target;
     }
 
@@ -1074,6 +1146,276 @@ namespace NSUI
         ::MessageBoxW(parent, text.c_str(), tr(L"About").c_str(), MB_OK | MB_ICONINFORMATION);
     }
 
+    // ======================================================================
+    // Settings
+    // ----------------------------------------------------------------------
+    // The folder downloads go to, kept on OK; and signing out, done at once.
+    // Signing out forgets the plugin's sign-in profile and cookies.txt, so no
+    // account is used until the next sign-in (src/output_folder.h).
+    // ======================================================================
+
+    struct SettingsContext
+    {
+        CYoutubePlugin* plugin = nullptr;
+        std::wstring    folder;          // shown; stored on OK
+
+        HWND  hFolder = NULL;
+        HWND  hSignOut = NULL;
+        HWND  hSignOutNote = NULL;
+        HFONT font = NULL;
+    };
+
+    /** Folder picker starting at current, or at the nearest folder above it that exists. Empty if cancelled. */
+    std::wstring PickFolder(HWND owner, const std::wstring& current)
+    {
+        std::wstring result;
+        const HRESULT init = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+
+        IFileOpenDialog* dialog = NULL;
+        if (SUCCEEDED(CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&dialog))))
+        {
+            DWORD options = 0;
+            dialog->GetOptions(&options);
+            dialog->SetOptions(options | FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM | FOS_PATHMUSTEXIST);
+            dialog->SetTitle(tr(L"Choose a folder for downloaded files").c_str());
+
+            std::wstring start = current;
+            while (!start.empty() && GetFileAttributesW(start.c_str()) == INVALID_FILE_ATTRIBUTES)
+            {
+                const size_t slash = start.find_last_of(L"\\/");
+                start = (slash == std::wstring::npos) ? std::wstring() : start.substr(0, slash);
+            }
+
+            IShellItem* item = NULL;
+            if (!start.empty() && SUCCEEDED(SHCreateItemFromParsingName(start.c_str(), NULL, IID_PPV_ARGS(&item))))
+            {
+                dialog->SetFolder(item);
+                item->Release();
+                item = NULL;
+            }
+
+            if (SUCCEEDED(dialog->Show(owner)) && SUCCEEDED(dialog->GetResult(&item)))
+            {
+                PWSTR path = NULL;
+                if (SUCCEEDED(item->GetDisplayName(SIGDN_FILESYSPATH, &path)) && path)
+                {
+                    result = path;
+                    CoTaskMemFree(path);
+                }
+                item->Release();
+            }
+            dialog->Release();
+        }
+
+        if (SUCCEEDED(init))
+            CoUninitialize();
+        return result;
+    }
+
+    LRESULT CALLBACK SettingsWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+    {
+        if (msg == WM_NCCREATE)
+        {
+            CREATESTRUCT* cs = (CREATESTRUCT*)lParam;
+            SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)cs->lpCreateParams);
+            return DefWindowProc(hwnd, msg, wParam, lParam);
+        }
+
+        SettingsContext* ctx = (SettingsContext*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+        if (!ctx)
+            return DefWindowProc(hwnd, msg, wParam, lParam);
+
+        switch (msg)
+        {
+        case WM_CREATE:
+        {
+            const HINSTANCE instance = GetModuleHandle(NULL);
+
+            HWND hLabel = CreateWindowW(L"STATIC", tr(L"Save downloaded files to:").c_str(),
+                WS_CHILD | WS_VISIBLE, 16, 14, 428, 18, hwnd, NULL, instance, NULL);
+
+            ctx->hFolder = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", ctx->folder.c_str(),
+                WS_CHILD | WS_VISIBLE | WS_TABSTOP | ES_AUTOHSCROLL | ES_READONLY,
+                16, 34, 330, 24, hwnd, NULL, instance, NULL);
+
+            HWND hBrowse = CreateWindowW(L"BUTTON", tr(L"Browse...").c_str(),
+                WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
+                354, 34, 90, 24, hwnd, (HMENU)3, instance, NULL);
+
+            HWND hLine = CreateWindowW(L"STATIC", NULL, WS_CHILD | WS_VISIBLE | SS_ETCHEDHORZ,
+                16, 72, 428, 2, hwnd, NULL, instance, NULL);
+
+            ctx->hSignOut = CreateWindowW(L"BUTTON", tr(L"Sign out").c_str(),
+                WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
+                16, 86, 120, 26, hwnd, (HMENU)4, instance, NULL);
+
+            const bool accounts = ytdl::HasAccounts(ctx->plugin->m_workDirectory);
+            ctx->hSignOutNote = CreateWindowW(L"STATIC",
+                (accounts ? tr(L"Forget the accounts the plugin signed in to.")
+                          : tr(L"Not signed in to any account.")).c_str(),
+                WS_CHILD | WS_VISIBLE, 146, 86, 298, 34, hwnd, NULL, instance, NULL);
+            EnableWindow(ctx->hSignOut, accounts ? TRUE : FALSE);
+
+            HWND hOk = CreateWindowW(L"BUTTON", tr(L"OK").c_str(),
+                WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_DEFPUSHBUTTON,
+                276, 132, 80, 26, hwnd, (HMENU)IDOK, instance, NULL);
+
+            HWND hCancel = CreateWindowW(L"BUTTON", tr(L"Cancel").c_str(),
+                WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
+                364, 132, 80, 26, hwnd, (HMENU)IDCANCEL, instance, NULL);
+
+            // The shell's message font, as in the sign-in dialog.
+            NONCLIENTMETRICSW metrics;
+            memset(&metrics, 0, sizeof(metrics));
+            metrics.cbSize = sizeof(metrics);
+
+            HFONT font = NULL;
+            if (SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, sizeof(metrics), &metrics, 0))
+                font = CreateFontIndirectW(&metrics.lfMessageFont);
+
+            if (!font)
+                font = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+            else
+                ctx->font = font;
+
+            const HWND controls[] = { hLabel, ctx->hFolder, hBrowse, hLine, ctx->hSignOut, ctx->hSignOutNote, hOk, hCancel };
+            for (size_t i = 0; i < sizeof(controls) / sizeof(controls[0]); ++i)
+                SendMessage(controls[i], WM_SETFONT, (WPARAM)font, TRUE);
+
+            SetFocus(hOk);
+            break;
+        }
+
+        case WM_CTLCOLORSTATIC:
+            // Labels and the read-only path box on the window's own background.
+            SetBkMode((HDC)wParam, TRANSPARENT);
+            return (LRESULT)GetSysColorBrush(COLOR_WINDOW);
+
+        case WM_COMMAND:
+            switch (LOWORD(wParam))
+            {
+            case 3: // Browse
+            {
+                const std::wstring folder = PickFolder(hwnd, ctx->folder);
+                if (!folder.empty())
+                {
+                    ctx->folder = folder;
+                    SetWindowTextW(ctx->hFolder, folder.c_str());
+                }
+                break;
+            }
+            case 4: // Sign out - at once, not on OK
+            {
+                if (MessageBoxW(hwnd, tr(L"Sign out of all accounts the plugin uses?").c_str(),
+                                tr(L"Settings").c_str(), MB_YESNO | MB_ICONQUESTION) != IDYES)
+                    break;
+
+                if (ytdl::SignOut(ctx->plugin->m_workDirectory))
+                {
+                    SetWindowTextW(ctx->hSignOutNote, tr(L"Signed out.").c_str());
+                    EnableWindow(ctx->hSignOut, FALSE);
+                }
+                else
+                {
+                    MessageBoxW(hwnd, tr(L"Could not sign out. Close the browser window used for "
+                                         L"signing in and try again.").c_str(),
+                                tr(L"Error").c_str(), MB_OK | MB_ICONWARNING);
+                }
+                break;
+            }
+            case IDOK:
+                if (ctx->folder != ctx->plugin->OutputFolder() && !ctx->plugin->SetOutputFolder(ctx->folder))
+                {
+                    MessageBoxW(hwnd, tr(L"Could not save the settings.").c_str(), tr(L"Error").c_str(),
+                                MB_OK | MB_ICONWARNING);
+                    break;
+                }
+                DestroyWindow(hwnd);
+                break;
+            case IDCANCEL:
+                DestroyWindow(hwnd);
+                break;
+            default:
+                break;
+            }
+            break;
+
+        case WM_CLOSE:
+            DestroyWindow(hwnd);
+            break;
+
+        case WM_DESTROY:
+            if (ctx->font)
+            {
+                DeleteObject(ctx->font);
+                ctx->font = NULL;
+            }
+            // Wakes the modal loop below; not PostQuitMessage, see the sign-in dialog.
+            PostThreadMessage(GetCurrentThreadId(), WM_NULL, 0, 0);
+            break;
+
+        default:
+            return DefWindowProc(hwnd, msg, wParam, lParam);
+        }
+
+        return 0;
+    }
+
+    /** Modal. */
+    void ShowSettingsDialog(HWND parent, CYoutubePlugin* plugin)
+    {
+        SettingsContext ctx;
+        ctx.plugin = plugin;
+        ctx.folder = plugin->OutputFolder();
+
+        WNDCLASSEXW wc = { 0 };
+        wc.cbSize = sizeof(wc);
+        wc.lpfnWndProc = SettingsWndProc;
+        wc.hInstance = GetModuleHandle(NULL);
+        wc.lpszClassName = L"YoutubeSettingsWindowClass";
+        wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+        wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+
+        const std::wstring iconPath = plugin->m_workDirectory + L"\\icon_internal.ico";
+        wc.hIcon = (HICON)LoadImageW(NULL, iconPath.c_str(), IMAGE_ICON, 32, 32,
+                                     LR_LOADFROMFILE | LR_DEFAULTCOLOR);
+        wc.hIconSm = (HICON)LoadImageW(NULL, iconPath.c_str(), IMAGE_ICON, 16, 16,
+                                       LR_LOADFROMFILE | LR_DEFAULTCOLOR);
+
+        RegisterClassExW(&wc);
+
+        const DWORD style = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU;
+        RECT rc = { 0, 0, 460, 172 };
+        AdjustWindowRectEx(&rc, style, FALSE, 0);
+
+        HWND hwnd = CreateWindowExW(0, wc.lpszClassName, tr(L"Settings").c_str(), style,
+                                    CW_USEDEFAULT, CW_USEDEFAULT,
+                                    rc.right - rc.left, rc.bottom - rc.top,
+                                    parent, NULL, GetModuleHandle(NULL), &ctx);
+        if (!hwnd)
+            return;
+
+        CenterWindow(hwnd);
+        EnableWindow(parent, FALSE);
+        ShowWindow(hwnd, SW_SHOW);
+        UpdateWindow(hwnd);
+
+        // IsDialogMessage gives Tab between the controls, Enter for OK and
+        // Esc for Cancel.
+        MSG msg;
+        while (IsWindow(hwnd) && GetMessage(&msg, NULL, 0, 0))
+        {
+            if (!IsDialogMessageW(hwnd, &msg))
+            {
+                TranslateMessage(&msg);
+                DispatchMessage(&msg);
+            }
+        }
+
+        EnableWindow(parent, TRUE);
+        SetActiveWindow(parent);
+    }
+
     // UI
     void CenterWindow(HWND hwnd)
     {
@@ -1108,7 +1450,7 @@ namespace NSUI
     LRESULT CALLBACK MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     {
         static HWND hEdit;
-        static HWND hAction, hAbout, hQuality, hStream, hCodec;
+        static HWND hAction, hAbout, hSettings, hQuality, hStream, hCodec;
 
         const auto showFormatSelectors = [&]()
         {
@@ -1116,6 +1458,7 @@ namespace NSUI
             ShowWindow(hStream, SW_SHOW);
             ShowWindow(hCodec, SW_SHOW);
             MoveWindow(hAbout, 10, 90, 80, 25, TRUE);
+            MoveWindow(hSettings, 95, 90, 100, 25, TRUE);
             MoveWindow(hAction, 390, 90, 100, 25, TRUE);
             RECT rc = { 0, 0, 500, 125 };
             AdjustWindowRectEx(&rc, WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX, FALSE, 0);
@@ -1129,6 +1472,7 @@ namespace NSUI
             ShowWindow(hStream, SW_HIDE);
             ShowWindow(hCodec, SW_HIDE);
             MoveWindow(hAbout, 10, 55, 80, 25, TRUE);
+            MoveWindow(hSettings, 95, 55, 100, 25, TRUE);
             MoveWindow(hAction, 390, 55, 100, 25, TRUE);
             RECT rc = { 0, 0, 500, 90 };
             AdjustWindowRectEx(&rc, WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX, FALSE, 0);
@@ -1173,10 +1517,18 @@ namespace NSUI
                 WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
                 10, 55, 80, 25, hwnd, (HMENU)5, GetModuleHandle(NULL), NULL);
 
+            // The output folder and signing out. Disabled while a check or a
+            // download runs: the folder is read when the file is saved, and
+            // signing out would delete the profile yt-dlp is reading.
+            hSettings = CreateWindow(L"BUTTON", tr(L"Settings").c_str(),
+                WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+                95, 55, 100, 25, hwnd, (HMENU)9, GetModuleHandle(NULL), NULL);
+
             HFONT font = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
             SendMessage(hEdit, WM_SETFONT, (WPARAM)font, TRUE);
             SendMessage(hAction, WM_SETFONT, (WPARAM)font, TRUE);
             SendMessage(hAbout, WM_SETFONT, (WPARAM)font, TRUE);
+            SendMessage(hSettings, WM_SETFONT, (WPARAM)font, TRUE);
             SendMessage(hQuality, WM_SETFONT, (WPARAM)font, TRUE);
             SendMessage(hStream, WM_SETFONT, (WPARAM)font, TRUE);
             SendMessage(hCodec, WM_SETFONT, (WPARAM)font, TRUE);
@@ -1201,6 +1553,7 @@ namespace NSUI
                 {
                     plugin->Stop();
                     EnableWindow(hEdit, TRUE);
+                    EnableWindow(hSettings, TRUE);
                     SetWindowTextW(hAction, tr(L"Download").c_str());
                     break;
                 }
@@ -1217,6 +1570,7 @@ namespace NSUI
                         SetWindowTextW(hAction, tr(L"Check").c_str());
                         EnableWindow(hEdit, FALSE);
                         EnableWindow(hAction, FALSE);
+                        EnableWindow(hSettings, FALSE);
                         plugin->CheckFormats(url);
                     }
                     else
@@ -1235,6 +1589,7 @@ namespace NSUI
                             ? codecs[codecIndex - 1] : L"";
                         plugin->Start(url, quality, streamMode, codec);
                         EnableWindow(hEdit, FALSE);
+                        EnableWindow(hSettings, FALSE);
                         SetWindowTextW(hAction, tr(L"Cancel").c_str());
                     }
                 }
@@ -1243,6 +1598,12 @@ namespace NSUI
             case 5: // About
             {
                 NSUI::ShowAboutDialog(hwnd);
+                break;
+            }
+            case 9: // Settings
+            {
+                if (IsWindowEnabled(hSettings))
+                    NSUI::ShowSettingsDialog(hwnd, plugin);
                 break;
             }
             default:
@@ -1261,12 +1622,14 @@ namespace NSUI
         case WM_YT_RETRY_FORMATS:
             EnableWindow(hEdit, FALSE);
             EnableWindow(hAction, FALSE);
+            EnableWindow(hSettings, FALSE);
             SetWindowTextW(hAction, tr(L"Check").c_str());
             plugin->RetryFormatsAfterLogin();
             break;
 
         case WM_YT_FAILED:
             EnableWindow(hEdit, TRUE);
+            EnableWindow(hSettings, TRUE);
             SetWindowTextW(hAction, tr(L"Download").c_str());
             plugin->ReportFailure();
             break;
@@ -1275,6 +1638,7 @@ namespace NSUI
         {
             EnableWindow(hEdit, TRUE);
             EnableWindow(hAction, TRUE);
+            EnableWindow(hSettings, TRUE);
             if (plugin->AvailableQualities().empty())
             {
                 plugin->SetCaption(tr(L"Error"));
@@ -1473,7 +1837,7 @@ extern "C" {
 
     PLUGIN_API wchar_t* __stdcall PluginVersion()
     {
-        return export_str(L"1.0.2");
+        return export_str(L"1.0.3");
     }
 
     PLUGIN_API wchar_t* __stdcall PluginIcon(PluginHandle plugin)

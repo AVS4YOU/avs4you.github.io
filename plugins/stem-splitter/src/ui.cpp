@@ -432,7 +432,7 @@ namespace {
 	}
 } // namespace
 
-void ShowStemSplitterWindow(CStemSplitterPlugin* plugin) {
+void ShowStemSplitterWindow(CStemSplitterPlugin* plugin, const std::filesystem::path& initialFile) {
 	HWND host = GetActiveWindow();
 	if (!host) {
 		HWND foreground = GetForegroundWindow();
@@ -482,6 +482,13 @@ void ShowStemSplitterWindow(CStemSplitterPlugin* plugin) {
 		CW_USEDEFAULT, rect.right - rect.left, rect.bottom - rect.top, host, nullptr,
 		GetModuleHandleW(nullptr), plugin);
 	if (hwnd) {
+		std::error_code error;
+		auto* controls = reinterpret_cast<Controls*>(GetPropW(hwnd, CONTROLS_PROPERTY));
+		if (controls && !initialFile.empty() && std::filesystem::is_regular_file(initialFile, error)) {
+			controls->input = initialFile;
+			ShowInput(controls);
+			AVS::Label_SetText(controls->status, Translate(L"Ready"));
+		}
 		if (hostWasEnabled)
 			EnableWindow(host, FALSE);
 		CenterWindow(hwnd);

@@ -13,6 +13,7 @@ GetMenuForContext
 GetPluginMenu
 GetIconById
 ClickMenuItem
+ClickMenuItemEx
 SetCallbackHandler
 CleanTemporaryFiles
 PluginInfo

@@ -12,4 +12,5 @@ struct UiStatus {
 	bool success;
 };
 
-void ShowSubtitlesWindow(CSubtitlesPlugin* plugin);
+// initialFile - media file from the host app (context menu), shown as the selected file
+void ShowSubtitlesWindow(CSubtitlesPlugin* plugin, const std::filesystem::path& initialFile = {});

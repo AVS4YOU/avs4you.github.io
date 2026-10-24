@@ -5,9 +5,12 @@
   "desc": "Split any song into vocals and instrumental, or into 4 or 6 tracks - vocals, drums, bass, guitar, piano and the rest - with Meta's Demucs AI, right on your computer: no account, no API key, nothing uploaded. Make karaoke, remixes and clean voice-overs.",
   "apps": [
     "Audio Editor",
-    "Video Editor"
+    "Video Editor",
+    "Video Converter",
+    "Video ReMaker",
+    "Audio Converter"
   ],
-  "version": "v1.0.0",
+  "version": "v1.0.1",
   "type": "content",
   "typeLabel": "Content Plugin",
   "aiPowered": true,

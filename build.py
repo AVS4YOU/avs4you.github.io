@@ -217,6 +217,11 @@ PLUGINS: dict[str, Builder] = {
         extras={"ffmpeg.exe": "../youtube/resources/x86/ffmpeg.exe",
                 "stems.exe": "build/x64/stems.exe",
                 "onnxruntime.dll": "build/x64/onnxruntime.dll"}),
+    "voice-clone": cmake(
+        "build/cmake-{arch}", "build/{arch}/VoiceClone.dll", "VoiceClone.dll",
+        extras={"ffmpeg.exe": "../youtube/resources/x86/ffmpeg.exe",
+                "seedvc": "build/x64/seedvc",
+                "licenses": "licenses"}),
     "StableAudio3": cmake(
         "build/cmake-{arch}", "build/{arch}/StableAudio3.dll", "StableAudio3.dll",
         defines={"STABLEAUDIO3_BACKEND": "NONE"},

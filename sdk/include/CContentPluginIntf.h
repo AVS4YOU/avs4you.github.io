@@ -273,6 +273,25 @@ extern "C" {
      */
     typedef void (__stdcall *LPCLICKMENUITEM)(PluginHandle, int);
 
+    /**
+     * @brief Handles a menu item click event with data from the host app (optional export)
+     * @param handle Handle to the plugin instance
+     * @param itemId Menu item identifier
+     * @param params JSON string with host data, e.g.
+     *        {"version":1,"context":2,"files":["D:\\Video\\clip.mp4"]}
+     *        where "context" is Plugins::ContextType value of the menu and
+     *        "files" are the media files selected in the host app
+     * @details Called instead of ClickMenuItem when the host has data for the plugin
+     *          (e.g. media file of the context menu). The string is valid only during the call,
+     *          the plugin must copy what it needs. Unknown JSON fields must be ignored.
+     */
+    PLUGIN_API void __stdcall ClickMenuItemEx(PluginHandle handle, int itemId, const wchar_t* params);
+
+    /**
+     * @brief Function pointer type for ClickMenuItemEx
+     */
+    typedef void (__stdcall *LPCLICKMENUITEMEX)(PluginHandle, int, const wchar_t*);
+
     // ========================================================================
     // Callback Management
     // ========================================================================

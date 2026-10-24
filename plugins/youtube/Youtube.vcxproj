@@ -176,6 +176,7 @@
     <ClInclude Include="src\browser_cookies.h" />
     <ClInclude Include="src\failure_reason.h" />
     <ClInclude Include="src\output_name.h" />
+    <ClInclude Include="src\output_folder.h" />
     <ClInclude Include="src\browser_login.h" />
     <ClInclude Include="src\yt_downloader.h" />
     <ClInclude Include="src\external_process_with_childs.h" />

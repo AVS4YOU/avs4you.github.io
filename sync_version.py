@@ -88,6 +88,10 @@ FILES = {
         "src/exports.cpp": (PLUGIN_VERSION,),
         "src/version.h": VERSION_H,
     },
+    "voice-clone": {
+        "src/exports.cpp": (PLUGIN_VERSION,),
+        "src/version.h": VERSION_H,
+    },
     "StableAudio3": {
         "src/exports.cpp": (PLUGIN_VERSION,),
         "src/version.h": VERSION_H,
