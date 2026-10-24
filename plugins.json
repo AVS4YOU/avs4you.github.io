@@ -10,9 +10,11 @@
       "apps": [
         "Video Editor",
         "Video Converter",
-        "Audio Editor"
+        "Audio Editor",
+        "Video ReMaker",
+        "Audio Converter"
       ],
-      "version": "v1.0.0",
+      "version": "v1.0.1",
       "type": "content",
       "typeLabel": "Content Plugin",
       "aiPowered": true,
@@ -21,8 +23,8 @@
       "media": "plugins/ai-subtitles/icon.ico",
       "basePath": "plugins/ai-subtitles",
       "downloads": {
-        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/ai-subtitles-v1.0.0/ai-subtitles-v1.0.0-x86.avsp",
-        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/ai-subtitles-v1.0.0/ai-subtitles-v1.0.0-x64.avsp"
+        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/ai-subtitles-v1.0.1/ai-subtitles-v1.0.1-x86.avsp",
+        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/ai-subtitles-v1.0.1/ai-subtitles-v1.0.1-x64.avsp"
       }
     },
     {
@@ -189,9 +191,12 @@
       "desc": "Split any song into vocals and instrumental, or into 4 or 6 tracks - vocals, drums, bass, guitar, piano and the rest - with Meta's Demucs AI, right on your computer: no account, no API key, nothing uploaded. Make karaoke, remixes and clean voice-overs.",
       "apps": [
         "Audio Editor",
-        "Video Editor"
+        "Video Editor",
+        "Video Converter",
+        "Video ReMaker",
+        "Audio Converter"
       ],
-      "version": "v1.0.0",
+      "version": "v1.0.1",
       "type": "content",
       "typeLabel": "Content Plugin",
       "aiPowered": true,
@@ -200,8 +205,8 @@
       "media": "plugins/stem-splitter/icon.ico",
       "basePath": "plugins/stem-splitter",
       "downloads": {
-        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/stem-splitter-v1.0.0/stem-splitter-v1.0.0-x86.avsp",
-        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/stem-splitter-v1.0.0/stem-splitter-v1.0.0-x64.avsp"
+        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/stem-splitter-v1.0.1/stem-splitter-v1.0.1-x86.avsp",
+        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/stem-splitter-v1.0.1/stem-splitter-v1.0.1-x64.avsp"
       }
     },
     {
@@ -272,6 +277,28 @@
       }
     },
     {
+      "slug": "voice-clone",
+      "pluginId": "VoiceClone.plugin",
+      "name": "Voice Clone",
+      "desc": "Sing or speak in another voice: give it the vocals of a song and a few seconds of the voice you want, and Seed-VC AI re-sings them in that voice, keeping the melody, the rhythm and the words. Runs on this computer, on the graphics card when there is one: no account, no API key, nothing uploaded. The voice model (1.6 GB) is downloaded once, on first use.",
+      "apps": [
+        "Audio Editor",
+        "Video Editor"
+      ],
+      "version": "v1.0.0",
+      "type": "content",
+      "typeLabel": "Content Plugin",
+      "aiPowered": true,
+      "requiresKey": false,
+      "tint": "linear-gradient(135deg,#7C4DFF,#00BFA5)",
+      "media": "plugins/voice-clone/icon.ico",
+      "basePath": "plugins/voice-clone",
+      "downloads": {
+        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/voice-clone-v1.0.0/voice-clone-v1.0.0-x86.avsp",
+        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/voice-clone-v1.0.0/voice-clone-v1.0.0-x64.avsp"
+      }
+    },
+    {
       "slug": "youtube",
       "pluginId": "Youtube.plugin",
       "name": "YouTube Video Downloader",
@@ -280,7 +307,7 @@
         "Video Converter",
         "Video Editor"
       ],
-      "version": "v1.0.2",
+      "version": "v1.0.3",
       "type": "content",
       "typeLabel": "Content Plugin",
       "aiPowered": false,
@@ -289,8 +316,8 @@
       "media": "plugins/youtube/icon.ico",
       "basePath": "plugins/youtube",
       "downloads": {
-        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/youtube-v1.0.2/youtube-v1.0.2-x86.avsp",
-        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/youtube-v1.0.2/youtube-v1.0.2-x64.avsp"
+        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/youtube-v1.0.3/youtube-v1.0.3-x86.avsp",
+        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/youtube-v1.0.3/youtube-v1.0.3-x64.avsp"
       }
     }
   ]
