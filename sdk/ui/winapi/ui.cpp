@@ -979,6 +979,20 @@ namespace AVS
 			InvalidateRect(hwnd, NULL, FALSE);
 			break;
 		}
+		case WM_ENABLE:
+		{
+			// The STATIC underneath repaints itself on enable/disable directly,
+			// not through WM_PAINT - as an empty static over the combo box,
+			// which then stays blank until something invalidates it. Repaint
+			// the combo box instead.
+			if (!wParam && info->hListBox && IsWindowVisible(info->hListBox))
+				CloseComboBoxDropdown(info);
+			info->IsHovered = false;
+			info->IsArrowHovered = false;
+			info->IsArrowPressed = false;
+			InvalidateRect(hwnd, NULL, FALSE);
+			return 0;
+		}
 		case WM_KILLFOCUS:
 		{
 			if (info->hListBox && GetFocus() != info->hListBox)
@@ -1196,11 +1210,16 @@ namespace AVS
 				DeleteObject(hArrowPen);
 			}
 
-			// Draw selected text
+			// Draw selected text - halfway to the background while disabled
 			if (info->SelectedIndex >= 0 && info->SelectedIndex < (int)info->Items.size())
 			{
 				SetBkMode(hdc, TRANSPARENT);
-				SetTextColor(hdc, RGB(info->Settings.TextColor.R, info->Settings.TextColor.G, info->Settings.TextColor.B));
+				const Color& text = info->Settings.TextColor;
+				if (IsWindowEnabled(hwnd))
+					SetTextColor(hdc, RGB(text.R, text.G, text.B));
+				else
+					SetTextColor(hdc, RGB((text.R + backColor.R) / 2, (text.G + backColor.G) / 2,
+						(text.B + backColor.B) / 2));
 
 				HFONT hOldFont = (HFONT)SelectObject(hdc, info->hFont);
 

@@ -16,6 +16,7 @@ src/yt_downloader.h                builds the yt-dlp command line
 src/browser_cookies.h              the three cookie sources, in order
 src/failure_reason.h               classifies a failed download from yt-dlp output
 src/output_name.h                  turns a video title into a usable file name
+src/output_folder.h                where finished files go (Settings), signing out
 src/external_process_with_childs.h shared child-process runner (piped stdout/stderr)
 resources/x86/yt-dlp.exe           bundled downloader
 resources/x86/ffmpeg.exe           bundled muxer
@@ -104,7 +105,13 @@ While the browser is open its profile is locked, but that cannot collide with a
 download: the dialog is modal, so Download is unreachable until the browser has
 been closed.
 
-To sign out, delete the `signin-profile` folder.
+To sign out: **Settings -> Sign out**. It deletes `signin-profile` and
+`cookies.txt` (below), so no account is used until the next sign-in. The
+button is enabled only while either exists, and the note next to it never
+claims a sign-in - it says "Forget the accounts the plugin signed in to", or
+"Not signed in to any account" when there is nothing to forget. If a sign-in
+browser still holds the profile open, the deletion is incomplete and the user
+is told to close it and try again.
 
 ### The About box
 
@@ -270,8 +277,15 @@ install on the test machine was found and rejected:
 
 ## User interface
 
-The window shows the URL box, **Download**, **About**, **Ok** and **Cancel**.
-Nothing about cookies or sign-in state is displayed - see the reasoning above.
+The window shows the URL box, **About**, **Settings** and the Check / Download
+button. Nothing about cookies or sign-in state is displayed - see the reasoning
+above.
+
+**Settings** opens a modal window with the folder downloads are saved to
+(**Browse...**, the shell's folder picker; kept on OK) and **Sign out** (done at
+once, after a confirmation). The button is disabled while a check or a download
+runs: the folder is read when the file is saved, and signing out would delete
+the profile yt-dlp is reading.
 
 The title bar carries the whole status: `Downloading...`, then
 `Downloading... 45%` once yt-dlp starts reporting progress (the percentage is
@@ -279,7 +293,7 @@ parsed out of its `[download]` lines), then `Complete`, or `Error`. Which cookie
 source is being tried never reaches the title; it is an implementation detail.
 
 Every user-visible string goes through `tr()` and lives in `translation.json`
-(18 keys, 14 languages). `tr(key, argument)` substitutes `%1`. A key missing from
+(40 keys, 13 languages). `tr(key, argument)` substitutes `%1`. A key missing from
 the JSON is not an error at build time - `CTranslate` silently returns the key
 itself, so the string quietly stays English in every locale. `check_i18n.py`
 guards against that by extracting every `tr(L"...")` literal from the source and
@@ -310,6 +324,29 @@ out of the temp directory:
 parameter or the last path segment - and `video` if even that yields nothing.
 The fallback is deliberately not translated: a file name should not change with
 the UI language.
+
+## Where files go
+
+yt-dlp downloads into `%LOCALAPPDATA%vs_plugin_youtube	emp`; the finished
+file is then moved to the output folder - the user's **Videos\YouTube** unless
+another folder was chosen in Settings (`src/output_folder.h`):
+
+- Videos is the shell's known folder, so one the user moved to another drive is
+  followed. The `YouTube` folder is created by the first download.
+- The choice is one UTF-8 line in `%LOCALAPPDATA%vs_plugin_youtube\output-folder.txt`,
+  not next to the DLL: the host replaces the plugin's own folder on an update.
+  An empty or missing file means the default; `%VARIABLES%` are expanded, so it
+  can be written by hand.
+- The move may cross drives (a copy, on the yt-dlp reader thread, with
+  `Saving...` in the title) and **never replaces a file**: a taken name gets
+  ` (2)`, ` (3)` and so on - the folder is the user's own.
+- If the file cannot be moved there (missing drive, no rights, disk full), the
+  user is told that the video was downloaded but could not be saved to that
+  folder, with the system's reason. It is not retried with another cookie
+  source - that would only download the same file again.
+
+Before 1.0.3 files stayed in `%LOCALAPPDATA%vs_plugin_youtube` itself; they
+are not moved.
 
 ## Threading
 

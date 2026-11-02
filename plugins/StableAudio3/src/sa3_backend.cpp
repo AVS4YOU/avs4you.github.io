@@ -1,5 +1,6 @@
 #include "sa3_backend.h"
 #include "libsa3.h"
+#include "system_info.h"
 #include <algorithm>
 #include <fstream>
 #include <iomanip>
@@ -110,17 +111,30 @@ bool GenerateAudio(
 	const std::filesystem::path& output,
 	const std::function<void(const std::wstring&, int)>& callback,
 	std::wstring& error) {
+	// GPU when asked for and ready, else the CPU backend this processor runs:
+	// the AVX2 one, or sa3-cpp-cpu-compat on older CPUs
 	Api api;
-	const auto backendPath =
-		plugin.moduleDirectory /
-		(options.device == L"gpu" ? L"sa3-cpp-gpu" : L"sa3-cpp-cpu") / L"sa3.dll";
-	if (!api.load(backendPath, error))
-		return false;
+	bool gpu = options.device == L"gpu";
+	auto backendPath =
+		plugin.moduleDirectory / BackendFolder(plugin.moduleDirectory, gpu) / L"sa3.dll";
+	gpu = backendPath.parent_path().filename() == L"sa3-cpp-gpu";
+	if (!api.load(backendPath, error)) {
+		if (!gpu)
+			return false;
+		// a CUDA runtime that is there but does not load: still generate, on the CPU
+		gpu = false;
+		backendPath =
+			plugin.moduleDirectory / BackendFolder(plugin.moduleDirectory, false) / L"sa3.dll";
+		api = Api{};
+		if (!api.load(backendPath, error))
+			return false;
+		error.clear();
+	}
 
 	auto models = U((plugin.workDirectory / L"models").wstring());
 	auto variant = U(options.model);
 	auto encoding = U(options.encoding);
-	auto device = U(options.device);
+	auto device = U(gpu ? L"gpu" : L"cpu");
 	sa3_config_ex config{};
 	config.config.models_dir = models.c_str();
 	config.config.adapters_dir = models.c_str();

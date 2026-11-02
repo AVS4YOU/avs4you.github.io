@@ -66,7 +66,7 @@ extern "C" {
 
     PLUGIN_API wchar_t* __stdcall PluginVersion()
     {
-        return export_str(L"1.0.0");
+        return export_str(L"1.0.2");
     }
 
     PLUGIN_API wchar_t* __stdcall PluginIcon()

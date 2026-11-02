@@ -36,7 +36,13 @@ Flow:
    `{ "text", "icon", "action" }` for the context the host is asking about
    (`MediaLibrary`, `Video`, `Audio`, `Text`, `Image`).
 2. The host calls `ClickMenuItem(handle, id)` - open a modal window here and
-   pump messages.
+   pump messages. If the plugin also exports the optional
+   `ClickMenuItemEx(handle, id, params)`, the host calls it instead when it has
+   data for the plugin: `params` is JSON
+   `{"version":1,"context":<ContextType>,"files":["<path>"]}` with the media
+   file of the context menu - open the window with that file already selected
+   (see `plugins/ai-subtitles/src/exports.cpp`). Copy `params`, it's valid only
+   during the call; ignore unknown fields.
 3. When the result file is ready, call the callback registered through
    `SetCallbackHandler` with `(PluginId(), path, 0, context)`. The path string
    must be allocated with `export_str` - the host frees it via

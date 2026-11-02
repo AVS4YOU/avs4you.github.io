@@ -1,0 +1,16 @@
+﻿ffmpeg.exe
+==========
+
+FFmpeg N-110925-g45fa85a777 of 2023-05-29, 32-bit Windows build made by
+https://github.com/BtbN/FFmpeg-Builds ("gpl" variant: configured with
+--enable-gpl --enable-version3), by the FFmpeg developers, https://ffmpeg.org
+
+Licence:  GNU General Public License v3.0 - the text is in MODELS-LICENSES.txt
+          in this folder and in seedvc\LICENSE.
+Source:   FFmpeg at that commit,
+          https://github.com/FFmpeg/FFmpeg/commit/45fa85a777
+          and the build scripts that add the libraries it is built with,
+          https://github.com/BtbN/FFmpeg-Builds
+
+The Voice Clone plugin runs it as a separate program to read audio and video
+files and to write the result; it is used unchanged.

@@ -3,6 +3,7 @@
 #include <cwctype>
 #include <dxgi.h>
 #include <filesystem>
+#include <immintrin.h>
 #include <intrin.h>
 #include <set>
 #include <sstream>
@@ -88,19 +89,87 @@ namespace {
 		FreeLibrary(driver);
 		return status;
 	}
+
+	struct GpuBackendStatus {
+		CudaDriverStatus cuda;
+		std::vector<std::wstring> missing;
+		bool runtimeBundled = false;
+		bool runtimeInstalled = false;
+		bool avx2 = false;
+
+		bool Ready() const {
+			return cuda.ready && missing.empty() && (runtimeBundled || runtimeInstalled) &&
+				avx2;
+		}
+	};
+
+	GpuBackendStatus CheckGpuBackend(const std::filesystem::path& moduleDirectory) {
+		GpuBackendStatus status;
+		status.cuda = CheckCudaDriver();
+		const auto gpuDirectory = moduleDirectory / L"sa3-cpp-gpu";
+		std::error_code error;
+		for (const wchar_t* name : { L"sa3.dll", L"ggml.dll", L"ggml-base.dll",
+									L"ggml-cpu.dll", L"ggml-cuda.dll" })
+			if (!std::filesystem::is_regular_file(gpuDirectory / name, error))
+				status.missing.emplace_back(name);
+		status.runtimeBundled = HasMatchingDll(gpuDirectory, L"cudart64_") &&
+			HasMatchingDll(gpuDirectory, L"cublas64_") &&
+			HasMatchingDll(gpuDirectory, L"cublaslt64_");
+		status.runtimeInstalled = CanLoadRuntimeLibrary(L"cudart64_12.dll") &&
+			CanLoadRuntimeLibrary(L"cublasLt64_12.dll") &&
+			CanLoadRuntimeLibrary(L"cublas64_12.dll");
+		status.avx2 = CpuHasAvx2();
+		return status;
+	}
 } // namespace
+
+bool CpuHasAvx2() {
+	int regs[4]{};
+	__cpuid(regs, 0);
+	if (regs[0] < 7)
+		return false;
+	__cpuid(regs, 1);
+	const int ecx = regs[2];
+	// OSXSAVE, and the OS saving the XMM and YMM registers on a context switch
+	if (!(ecx & (1 << 27)) || (_xgetbv(0) & 6) != 6)
+		return false;
+	// AVX, FMA, F16C: ggml's AVX2 build uses all three
+	if (!(ecx & (1 << 28)) || !(ecx & (1 << 12)) || !(ecx & (1 << 29)))
+		return false;
+	__cpuidex(regs, 7, 0);
+	return (regs[1] & (1 << 5)) != 0;
+}
+
+bool GpuBackendReady(const std::filesystem::path& moduleDirectory) {
+#if defined(_WIN32) && !defined(_WIN64)
+	(void)moduleDirectory;
+	return false;
+#else
+	return CheckGpuBackend(moduleDirectory).Ready();
+#endif
+}
+
+std::wstring BackendFolder(const std::filesystem::path& moduleDirectory, bool gpu) {
+	if (gpu && GpuBackendReady(moduleDirectory))
+		return L"sa3-cpp-gpu";
+	// a package from before sa3-cpp-cpu-compat only has the AVX2 build
+	std::error_code error;
+	if (!CpuHasAvx2() &&
+		std::filesystem::is_regular_file(moduleDirectory / L"sa3-cpp-cpu-compat" / L"sa3.dll",
+			error))
+		return L"sa3-cpp-cpu-compat";
+	return L"sa3-cpp-cpu";
+}
 
 std::wstring GetSystemSummary(const std::filesystem::path& workDirectory) {
 	SYSTEM_INFO si{};
 	GetNativeSystemInfo(&si);
 	MEMORYSTATUSEX ms{ sizeof(ms) };
 	GlobalMemoryStatusEx(&ms);
-	int regs[4]{};
-	__cpuidex(regs, 7, 0);
-	bool avx2 = (regs[1] & (1 << 5)) != 0;
+	const bool avx2 = CpuHasAvx2();
 	std::wostringstream output;
 	output << L"CPU: " << si.dwNumberOfProcessors << L" logical threads, AVX2 "
-		<< (avx2 ? L"yes" : L"no") << L"\r\nRAM: " << (ms.ullAvailPhys >> 30)
+		<< (avx2 ? L"yes" : L"no - compatible CPU backend") << L"\r\nRAM: " << (ms.ullAvailPhys >> 30)
 		<< L" GB free / " << (ms.ullTotalPhys >> 30) << L" GB";
 
 #if defined(_WIN32) && !defined(_WIN64)
@@ -131,7 +200,8 @@ std::wstring GetSystemSummary(const std::filesystem::path& workDirectory) {
 		factory->Release();
 	}
 
-	const CudaDriverStatus cuda = CheckCudaDriver();
+	const GpuBackendStatus gpu = CheckGpuBackend(workDirectory);
+	const CudaDriverStatus& cuda = gpu.cuda;
 	if (cuda.ready)
 		output << L"\r\nCUDA: driver API " << cuda.version / 1000 << L"."
 		<< (cuda.version % 1000) / 10 << L", " << cuda.devices
@@ -139,30 +209,18 @@ std::wstring GetSystemSummary(const std::filesystem::path& workDirectory) {
 	else
 		output << L"\r\nCUDA: unavailable - " << cuda.error;
 
-	const auto gpuDirectory = workDirectory / L"sa3-cpp-gpu";
-	std::vector<std::wstring> missing;
-	std::error_code error;
-	for (const wchar_t* name : { L"sa3.dll", L"ggml.dll", L"ggml-base.dll",
-								L"ggml-cpu.dll", L"ggml-cuda.dll" })
-		if (!std::filesystem::is_regular_file(gpuDirectory / name, error))
-			missing.emplace_back(name);
-	const bool runtimeBundled = HasMatchingDll(gpuDirectory, L"cudart64_") &&
-		HasMatchingDll(gpuDirectory, L"cublas64_") &&
-		HasMatchingDll(gpuDirectory, L"cublaslt64_");
-	const bool runtimeInstalled = CanLoadRuntimeLibrary(L"cudart64_12.dll") &&
-		CanLoadRuntimeLibrary(L"cublasLt64_12.dll") &&
-		CanLoadRuntimeLibrary(L"cublas64_12.dll");
-
-	if (cuda.ready && missing.empty() && (runtimeBundled || runtimeInstalled))
+	if (gpu.Ready())
 		output << L"\r\nGPU backend: ready (CUDA runtime: "
-		<< (runtimeBundled ? L"bundled" : L"system") << L")";
+		<< (gpu.runtimeBundled ? L"bundled" : L"system") << L")";
 	else {
 		output << L"\r\nGPU backend: not ready";
-		if (!missing.empty())
-			output << L" - missing " << Join(missing);
-		else if (cuda.ready && !runtimeBundled && !runtimeInstalled)
+		if (!gpu.missing.empty())
+			output << L" - missing " << Join(gpu.missing);
+		else if (cuda.ready && !gpu.runtimeBundled && !gpu.runtimeInstalled)
 			output << L" - install NVIDIA CUDA Toolkit 12.9 "
 			L"(CUDA Runtime and cuBLAS) to use GPU";
+		else if (cuda.ready && !gpu.avx2)
+			output << L" - needs a CPU with AVX2";
 	}
 #endif
 	return output.str();

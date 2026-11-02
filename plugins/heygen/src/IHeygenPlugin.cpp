@@ -37,7 +37,7 @@ extern "C" {
 
     PLUGIN_API wchar_t* __stdcall PluginVersion()
     {
- 		return utils::wstr_to_ptr(L"0.0.1");
+ 		return utils::wstr_to_ptr(L"1.0.2");
    }
 
     PLUGIN_API wchar_t* __stdcall PluginIcon(PluginHandle h)
