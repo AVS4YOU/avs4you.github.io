@@ -6,6 +6,7 @@
 #include "../../sdk/include/CContentPluginIntf.h"
 #include "../../sdk/include/AVSConsts.h"
 #include "../../sdk/translate/translate.h"
+#include "../../sdk/common/HostProcess.h"
 #include "../../sdk/common/utils.h"
 
 #include "./src/yt_downloader.h"
@@ -109,6 +110,8 @@ public:
     std::wstring m_moduleDirectory;
 
     HWND m_hWnd = NULL;
+    HWND m_parentWindow = NULL;
+    bool m_isAvsAudioEditor = false;
 
     AsyncCallback m_callback = nullptr;
     void* m_callback_context = nullptr;
@@ -462,6 +465,17 @@ public:
     bool IsYouTubeUrl() const
     {
         return ytdl::IsYouTubeHost(ytdl::TargetHost(m_url));
+    }
+
+    void SetHostWindow(HWND hwnd)
+    {
+        m_parentWindow = hwnd && IsWindow(hwnd) ? GetAncestor(hwnd, GA_ROOT) : NULL;
+        m_isAvsAudioEditor = m_parentWindow && (NSHostProcess::GetHostProcess().find(L"avsaudioeditor") != std::wstring::npos);
+    }
+
+    bool IsAvsAudioEditor() const
+    {
+        return m_isAvsAudioEditor;
     }
 
     void InvalidateCheckedFormats()
@@ -1580,7 +1594,9 @@ namespace NSUI
                         const int quality = qualityIndex > 0 && (size_t)(qualityIndex - 1) < qualities.size()
                             ? qualities[qualityIndex - 1] : 0;
                         const int streamIndex = (int)SendMessageW(hStream, CB_GETCURSEL, 0, 0);
-                        const int streamMode = plugin->IsYouTubeUrl()
+                        const int streamMode = plugin->IsAvsAudioEditor()
+                            ? 2
+                            : plugin->IsYouTubeUrl()
                             ? (streamIndex == 1 ? 1 : (streamIndex == 2 ? 2 : 0))
                             : (streamIndex == 0 ? 0 : 3);
                         const int codecIndex = (int)SendMessageW(hCodec, CB_GETCURSEL, 0, 0);
@@ -1656,17 +1672,26 @@ namespace NSUI
             SendMessageW(hQuality, CB_SETCURSEL, 0, 0);
 
             SendMessageW(hStream, CB_RESETCONTENT, 0, 0);
-            SendMessageW(hStream, CB_ADDSTRING, 0, (LPARAM)tr(L"Video + audio").c_str());
-            if (plugin->IsYouTubeUrl())
+            if (plugin->IsAvsAudioEditor())
             {
-                SendMessageW(hStream, CB_ADDSTRING, 0, (LPARAM)tr(L"Video only").c_str());
                 SendMessageW(hStream, CB_ADDSTRING, 0, (LPARAM)tr(L"Audio only").c_str());
+                EnableWindow(hQuality, FALSE);
+                EnableWindow(hCodec, FALSE);
             }
-            // Twitch, Instagram and similar services often publish only an
-            // already-muxed MP4. There is no genuine stream choice there, so
-            // avoid presenting a misleading second option.
-            else if (plugin->CanChooseStreamType())
-                SendMessageW(hStream, CB_ADDSTRING, 0, (LPARAM)tr(L"Single stream").c_str());
+            else
+            {
+                SendMessageW(hStream, CB_ADDSTRING, 0, (LPARAM)tr(L"Video + audio").c_str());
+                if (plugin->IsYouTubeUrl())
+                {
+                    SendMessageW(hStream, CB_ADDSTRING, 0, (LPARAM)tr(L"Video only").c_str());
+                    SendMessageW(hStream, CB_ADDSTRING, 0, (LPARAM)tr(L"Audio only").c_str());
+                }
+                // Twitch, Instagram and similar services often publish only an
+                // already-muxed MP4. There is no genuine stream choice there, so
+                // avoid presenting a misleading second option.
+                else if (plugin->CanChooseStreamType())
+                    SendMessageW(hStream, CB_ADDSTRING, 0, (LPARAM)tr(L"Single stream").c_str());
+            }
             SendMessageW(hStream, CB_SETCURSEL, 0, 0);
 
             SendMessageW(hCodec, CB_RESETCONTENT, 0, 0);
@@ -1746,21 +1771,27 @@ namespace NSUI
         RECT rc = { 0, 0, 500, 90 };
         AdjustWindowRectEx(&rc, dwStyle, FALSE, 0);
 
-        HWND hostWindow = GetActiveWindow();
-        if (!hostWindow)
+        HWND hostWindow = plugin->m_parentWindow;
+        if (!hostWindow || !IsWindow(hostWindow))
         {
-            HWND foregroundWindow = GetForegroundWindow();
-            DWORD processId = 0;
+            hostWindow = GetActiveWindow();
+            if (!hostWindow)
+            {
+                HWND foregroundWindow = GetForegroundWindow();
+                DWORD processId = 0;
 
-            if (foregroundWindow)
-                GetWindowThreadProcessId(foregroundWindow, &processId);
+                if (foregroundWindow)
+                    GetWindowThreadProcessId(foregroundWindow, &processId);
 
-            if (processId == GetCurrentProcessId())
-                hostWindow = foregroundWindow;
+                if (processId == GetCurrentProcessId())
+                    hostWindow = foregroundWindow;
+            }
         }
 
         if (hostWindow)
             hostWindow = GetAncestor(hostWindow, GA_ROOT);
+
+        plugin->SetHostWindow(hostWindow);
 
         const bool hostWasEnabled = hostWindow && IsWindowEnabled(hostWindow);
 
@@ -1853,6 +1884,7 @@ extern "C" {
         {
         case AVS_VIDEO_CONVERTER:
         case AVS_VIDEO_EDITOR:
+        case AVS_AUDIO_EDITOR:
             return true;
         default:break;
         }
@@ -1868,6 +1900,13 @@ extern "C" {
     PLUGIN_API void __stdcall SetLanguage(PluginHandle, const wchar_t* name)
     {
         CTranslate::GetInstance().GetManager()->SetLang(NSStringUtils::wstring_to_utf8(name));
+    }
+
+    PLUGIN_API void __stdcall SetParentWindow(PluginHandle handle, void* hwnd)
+    {
+        CYoutubePlugin* plugin = static_cast<CYoutubePlugin*>(handle);
+        if (plugin)
+            plugin->SetHostWindow(static_cast<HWND>(hwnd));
     }
 
     PLUGIN_API wchar_t* __stdcall GetMenuForContext(PluginHandle, Plugins::ContextType type)

@@ -9,6 +9,7 @@ PluginIcon
 IsApplicationSupported
 ReleasePluginString
 SetLanguage
+SetParentWindow
 GetMenuForContext
 GetPluginMenu
 GetIconById

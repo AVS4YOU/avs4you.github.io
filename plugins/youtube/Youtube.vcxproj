@@ -140,6 +140,9 @@
       <EnableUAC>false</EnableUAC>
       <ModuleDefinitionFile>module.def</ModuleDefinitionFile>
     </Link>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>../../sdk/common</AdditionalIncludeDirectories>
+    </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -167,11 +170,13 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\sdk\common\HostProcess.cpp" />
     <ClCompile Include="..\..\sdk\common\utils.cpp" />
     <ClCompile Include="..\..\sdk\translate\translate.cpp" />
     <ClCompile Include="dllmain.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\sdk\common\HostProcess.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="src\browser_cookies.h" />
     <ClInclude Include="src\failure_reason.h" />
