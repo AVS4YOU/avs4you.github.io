@@ -317,7 +317,7 @@ public:
                 break;
             }
 
-            m_path = FindDownloadedFile();
+            m_path = message == "0" ? FindDownloadedFile() : L"";
 
             if (!m_path.empty() && NSSystemUtils::ExistsFile(m_path))
             {
@@ -337,7 +337,8 @@ public:
                 if (m_hWnd)
                     PostMessageW(m_hWnd, WM_YT_FAILED, 0, 0);
             }
-            else if (m_attempt + 1 < m_strategies.size() && NSYoutube::WorthAnotherCookieSource(m_log))
+            else if (m_attempt + 1 < m_strategies.size() &&
+                m_log.find("AVSMediaToolkit") == std::string::npos && NSYoutube::WorthAnotherCookieSource(m_log))
             {
                 // No file this time. Try the next cookie source - but do it on
                 // the UI thread, because we are inside the process runner's own
@@ -549,7 +550,8 @@ public:
             return;
         }
 
-        if (!host.empty() && NSYoutube::LooksLikeSignInRequired(m_log))
+        if (m_log.find("AVSMediaToolkit") == std::string::npos &&
+            !host.empty() && NSYoutube::LooksLikeSignInRequired(m_log))
         {
             const bool signedIn = NSUI::ShowLoginDialog(m_hWnd, m_workDirectory, host);
             if (signedIn && m_checkingFormats && m_hWnd)
@@ -714,7 +716,7 @@ private:
         if (m_streamMode == 2)
         {
             options.extractAudio = true;
-            options.audioFormat = L"mp3";
+            options.formatSelector = L"ba";
         }
         else if (m_streamMode == 1)
         {
@@ -725,7 +727,10 @@ private:
         {
             // Prefer separate tracks for the selected height: this is the
             // usual way to get the highest quality a service offers.
-            options.formatSelector = L"bv*" + codec + cap + L"+ba/b" + codec + cap + L"/b";
+            options.formatSelector = L"bv" + codec + cap + L"[ext=mp4]+ba[ext=m4a]"
+                + L"/bv" + codec + cap + L"[ext=mp4]+ba[ext=mp4]"
+                + L"/bv" + codec + cap + L"[ext=webm]+ba[ext=webm][acodec=opus]"
+                + L"/b" + codec + cap + L"/b";
         }
         if (m_streamMode == 3)
         {
