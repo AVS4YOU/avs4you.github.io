@@ -22,14 +22,6 @@ namespace {
 		return result;
 	}
 
-	double ParseClock(const std::string& text) {
-		int hours = 0, minutes = 0;
-		double seconds = 0;
-		if (sscanf_s(text.c_str(), "%d:%d:%lf", &hours, &minutes, &seconds) != 3)
-			return 0;
-		return hours * 3600.0 + minutes * 60.0 + seconds;
-	}
-
 	std::wstring Megabytes(std::uint64_t bytes) {
 		return std::to_wstring((bytes + 512 * 1024) / (1024 * 1024)) + L" MB";
 	}
@@ -63,14 +55,6 @@ namespace {
 		return (std::min)((std::max)(1u, std::thread::hardware_concurrency()), 64u);
 	}
 
-	// what ffmpeg writes to stderr when a file has no audio
-	bool NoAudio(const std::vector<std::string>& output) {
-		for (const auto& line : output)
-			if (line.find("does not contain any stream") != std::string::npos ||
-				line.find("matches no streams") != std::string::npos)
-				return true;
-		return false;
-	}
 } // namespace
 
 const std::vector<StemModel>& StemModels() {
@@ -94,9 +78,9 @@ const StemModel* FindStemModel(const std::wstring& id) {
 
 const std::vector<StemFormat>& StemFormats() {
 	static const std::vector<StemFormat> formats = {
-		{L"wav", L"WAV (16-bit)", L".wav", L"-c:a pcm_s16le"},
-		{L"flac", L"FLAC (lossless)", L".flac", L"-c:a flac"},
-		{L"mp3", L"MP3 (320 kbps)", L".mp3", L"-c:a libmp3lame -b:a 320k"},
+		{L"wav", L"WAV (32-bit float)", L".wav", L"wav-f32"},
+		{L"flac", L"FLAC (lossless)", L".flac", L"flac"},
+		{L"mp3", L"MP3 (320 kbps)", L".mp3", L"mp3"},
 	};
 	return formats;
 }
@@ -153,7 +137,7 @@ bool SeparateStems(const StemTools& tools, const StemJob& job, const StemProgres
 		error = tr(L"Stem Splitter needs 64-bit Windows.");
 		return false;
 	}
-	const auto ffmpegExe = NSChildProcess::Quote((tools.toolsDirectory / L"ffmpeg.exe").wstring());
+	const auto toolkitExe = NSChildProcess::Quote((tools.toolsDirectory / L"AVSMediaToolkit.exe").wstring());
 
 	// 1. the model, downloaded once
 	if (!IsStemModelPresent(tools, *model)) {
@@ -193,24 +177,16 @@ bool SeparateStems(const StemTools& tools, const StemJob& job, const StemProgres
 	// 3. the audio as raw 44.1 kHz stereo float, which is what Demucs takes
 	const std::wstring decoding = tr(L"Reading audio...");
 	progress(decoding, 0);
-	double duration = 0;
-	std::vector<std::string> ffmpegOutput;
-	const int decodeExit = NSChildProcess::Run(ffmpegExe +
-		L" -hide_banner -nostdin -y -i " + NSChildProcess::Quote(job.input.wstring()) +
-		L" -vn -ac 2 -ar 44100 -f f32le -c:a pcm_f32le -progress pipe:1 -nostats input.f32",
+	std::vector<std::string> decodeOutput;
+	const int decodeExit = NSChildProcess::Run(toolkitExe +
+		L" convertaudio --input " + NSChildProcess::Quote(job.input.wstring()) +
+		L" --output input.f32 --format raw-f32 --overwrite",
 		scratch.wstring(),
-		[&](const std::string& line) {
-			ffmpegOutput.push_back(line);
-			const size_t at = line.find("Duration: ");
-			if (at != std::string::npos && duration == 0)
-				duration = ParseClock(line.substr(at + 10));
-			if (line.rfind("out_time_us=", 0) == 0 && duration > 0)
-				progress(decoding, std::clamp(static_cast<int>(std::atof(line.c_str() + 12) / 1e6 * 5 / duration), 0, 5));
-		}, cancel, error);
+		[&](const std::string& line) { decodeOutput.push_back(line); }, cancel, error);
 	if (decodeExit != 0) {
 		if (error.empty())
-			error = NoAudio(ffmpegOutput) ? tr(L"The file has no audio track.")
-			: tr(L"Cannot read the audio of this file.") + LastLines(ffmpegOutput, 3);
+			error = decodeExit == -10 ? tr(L"The file has no audio track.")
+			: tr(L"Cannot read the audio of this file.") + LastLines(decodeOutput, 3);
 		return false;
 	}
 
@@ -246,9 +222,10 @@ bool SeparateStems(const StemTools& tools, const StemJob& job, const StemProgres
 		progress(tr(L"Saving") + L" " + outputs[index].filename().wstring(),
 			90 + static_cast<int>(index * 10 / outputs.size()));
 		std::vector<std::string> encodeOutput;
-		const int encodeExit = NSChildProcess::Run(ffmpegExe +
-			L" -hide_banner -nostdin -y -f f32le -ar 44100 -ac 2 -i " + raw + L".f32 " + format->encoder +
-			L" " + NSChildProcess::Quote(outputs[index].wstring()),
+		const int encodeExit = NSChildProcess::Run(toolkitExe +
+			L" convertaudio --input " + NSChildProcess::Quote(raw + L".f32") +
+			L" --input-format raw-f32 --input-rate 44100 --input-channels 2 --format " + format->toolkitFormat +
+			L" --overwrite --output " + NSChildProcess::Quote(outputs[index].wstring()),
 			scratch.wstring(),
 			[&](const std::string& line) { encodeOutput.push_back(line); }, cancel, error);
 		if (encodeExit != 0) {

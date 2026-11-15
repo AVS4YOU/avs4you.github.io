@@ -15,7 +15,7 @@ public:
 	~CStemSplitterPlugin();
 	CStemSplitterPlugin(const CStemSplitterPlugin&) = delete;
 
-	std::filesystem::path moduleDirectory;  // the DLL, ffmpeg.exe, stems.exe, onnxruntime.dll
+	std::filesystem::path moduleDirectory;  // the DLL, AVSMediaToolkit.exe, stems.exe, onnxruntime.dll
 	std::filesystem::path workDirectory;    // %LOCALAPPDATA%\avs_plugin_stemsplitter
 	HWND window = nullptr;
 	AsyncCallback callback = nullptr;

@@ -3,7 +3,7 @@
 //
 //   stems <model.onnx> <input.f32> <output dir> <threads> [vocals]
 //
-// input.f32 is raw float32 interleaved stereo at 44.1 kHz (what ffmpeg
+// input.f32 is raw float32 interleaved stereo at 44.1 kHz (what AVSMediaToolkit
 // -f f32le -ac 2 -ar 44100 writes). Every source the model has is written as
 // <name>.f32 in the same format. With "vocals" only vocals.f32 and
 // instrumental.f32 (the mix minus the vocals) are written - for the
