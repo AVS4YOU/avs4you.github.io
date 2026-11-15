@@ -9,7 +9,7 @@ step; export_onnx.py makes the models it runs.
            [--device auto|gpu|cpu] [--seed 0]
 
 Audio is raw float32 mono: the song and the voice sample at 44.1 kHz and at
-16 kHz (ffmpeg makes both); the output is 44.1 kHz. What the voice sings, its
+16 kHz (AVSMediaToolkit makes both); the output is 44.1 kHz. What the voice sings, its
 melody and timing come from the source; how it sounds, from the reference.
 
 stdout: "progress <0-100> <stage>" lines, then "device <name>" once and
