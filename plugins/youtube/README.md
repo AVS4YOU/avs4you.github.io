@@ -2,7 +2,8 @@
 
 Content plugin that downloads a video from a URL and hands the file to the host
 app (AVS Video Converter / Video Editor). It drives a bundled `yt-dlp.exe`, with
-`ffmpeg.exe` next to it for muxing.
+`AVSMediaToolkit.exe` next to `Youtube.dll` for merging separate tracks.
+No executable path needs to be configured.
 
 Despite the name it is not limited to YouTube - the bundled yt-dlp supports 1752
 sites. See [Which services this can download from](#which-services-this-can-download-from).
@@ -19,13 +20,34 @@ src/output_name.h                  turns a video title into a usable file name
 src/output_folder.h                where finished files go (Settings), signing out
 src/external_process_with_childs.h shared child-process runner (piped stdout/stderr)
 resources/x86/yt-dlp.exe           bundled downloader
-resources/x86/ffmpeg.exe           bundled muxer
 resources/x86/qjs.exe              bundled QuickJS, solves YouTube's JS challenge
-build/x86/youtube.avsp             ZIP: Youtube.dll + yt-dlp.exe + ffmpeg.exe + qjs.exe
+build/x86/youtube.avsp             ZIP: Youtube.dll + yt-dlp.exe + qjs.exe (Toolkit supplied alongside DLL)
 ```
 
 The plugin looks for `yt-dlp.exe` next to the loaded DLL, which is where the host
 extracts the `.avsp`.
+
+## Track downloads and merging
+
+The plugin resolves a compatible format pair without downloading, downloads each
+selected format separately using yt-dlp's native downloader, then runs the
+`AVSMediaToolkit.exe` located beside the loaded `Youtube.dll`:
+
+- MP4 video + M4A/MP4 AAC audio: `merge --container quicktime`.
+- WebM video (VP8/VP9/AV1) + WebM Opus audio: `merge --container matroska`.
+- Audio only: saves the original audio track; no MP3 conversion.
+- Video only and progressive files: saved directly without a merge.
+
+Automatic yt-dlp fixups and user configuration are disabled. No ffmpeg command
+or postprocessor is requested. Toolkit and its AVS COM components must be
+installed for the architecture of Toolkit. A merge failure is reported with its
+exit code and stderr (including HRESULT details); it does not trigger sign-in.
+The plugin only accepts successful, nonempty output. Intermediate tracks are
+excluded from the host's file scan and removed after a successful merge.
+
+Offline integration checks are in `tests/integration.py` and
+`tests/downloader_harness.cpp`. They use real yt-dlp and Toolkit against a local
+HTTP server; ffprobe is used only by the test to inspect the resulting streams.
 
 ## Authentication
 
@@ -259,14 +281,6 @@ What remains available when the challenge is unsolved is only storyboard
 images - `sb0`-`sb3`, mhtml, up to 101x180. No video format of any kind. So the
 engine is not a configurable preference; it is the price of entry.
 
-Verified working afterwards, from the extracted package:
-
-```
-[youtube] [jsc:quickjs] Solving JS challenges using quickjs
-[Merger] Merging formats into "out\....mp4"
--> single 1 136 972 byte .mp4
-```
-
 Note that yt-dlp checks the engine's *version*, not just its presence. A Node 18
 install on the test machine was found and rejected:
 
@@ -276,6 +290,12 @@ install on the test machine was found and rejected:
 ```
 
 ## User interface
+
+The window is 600 pixels wide. After Check, videos with multiple audio languages
+show an additional audio-track dropdown below the format selectors. Encoding and
+bitrate variants are grouped by language. Default preserves yt-dlp’s choice; an
+explicit language applies to audio-only and video-with-audio downloads without
+silently falling back to a different language. Video-only disables this choice.
 
 The window shows the URL box, **About**, **Settings** and the Check / Download
 button. Nothing about cookies or sign-in state is displayed - see the reasoning
@@ -369,7 +389,7 @@ sha256sum yt-dlp_x86.exe && grep yt-dlp_x86.exe SHA2-256SUMS
 ```
 
 Verify the hash, copy over `resources/x86/yt-dlp.exe`, then rebuild and repack
-`build/x86/youtube.avsp` with the DLL plus both bundled executables. The `.avsp`
+`build/x86/youtube.avsp` with the DLL plus yt-dlp and QuickJS. Ensure AVSMediaToolkit.exe is deployed alongside the DLL. The `.avsp`
 is a plain ZIP.
 
 ## Publishing
