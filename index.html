@@ -365,6 +365,119 @@
       box-shadow: var(--shadow);
     }
 
+    .plugins .plugin-card,
+    .plugin-open {
+      cursor: pointer;
+    }
+
+    .plugin-open {
+      max-width: 100%;
+      padding: 0;
+      background: transparent;
+      color: inherit;
+      font-weight: inherit;
+      text-align: left;
+    }
+
+    .plugin-open:hover {
+      color: var(--accent-dark);
+    }
+
+    .plugin-details {
+      --details-max-height: calc(100dvh - 24px);
+      width: min(640px, calc(100% - 32px));
+      max-height: var(--details-max-height);
+      overflow: hidden;
+      padding: 0;
+      border: 0;
+      border-radius: 12px;
+      background: var(--panel);
+      color: var(--text);
+    }
+
+    .plugin-details .plugin-card {
+      max-height: var(--details-max-height);
+      border: 0;
+    }
+
+    .plugin-details .card-body {
+      min-height: 0;
+    }
+
+    .plugin-details .preview,
+    .plugin-details .plugin-heading,
+    .plugin-details .card-bottom {
+      flex-shrink: 0;
+    }
+
+    .plugin-details-description {
+      min-height: 0;
+      overflow: auto;
+      overscroll-behavior: contain;
+      padding-bottom: 12px;
+    }
+
+    .plugin-details-description .plugin-desc + .plugin-desc {
+      margin-top: 9px;
+    }
+
+    .plugin-details::backdrop {
+      background: rgba(14, 27, 43, 0.65);
+    }
+
+    .plugin-details .preview {
+      --preview-max-height: max(56px, calc(var(--details-max-height) - 185px));
+      height: clamp(145px, 36vh, 320px);
+      max-height: var(--preview-max-height);
+    }
+
+    .plugin-details .preview:has(img:not(.icon-media)) {
+      height: auto;
+    }
+
+    .plugin-details .preview img:not(.icon-media) {
+      position: relative;
+      display: block;
+      height: auto;
+      max-height: var(--preview-max-height);
+      object-fit: contain;
+    }
+
+    .plugin-details .preview img.icon-media {
+      max-height: 100%;
+    }
+
+    .plugin-details .preview-ai {
+      right: 56px;
+    }
+
+    .plugin-details .plugin-title {
+      font-size: 22px;
+      white-space: normal;
+    }
+
+    .plugin-details .plugin-desc {
+      display: block;
+      overflow: visible;
+      font-size: 14px;
+    }
+
+    .plugin-details-close {
+      position: absolute;
+      z-index: 3;
+      top: 8px;
+      right: 8px;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      padding: 0;
+      cursor: pointer;
+    }
+
     .preview {
       position: relative;
       height: 158px;
@@ -858,6 +971,14 @@
       </section>
     </main>
   </div>
+  <dialog class="plugin-details" id="pluginDetails" aria-labelledby="pluginDetailsTitle">
+    <button class="plugin-details-close" id="closePluginDetails" type="button" aria-label="Close plugin details" autofocus>
+      <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M5 5l14 14M19 5 5 19"/>
+      </svg>
+    </button>
+    <div id="pluginDetailsContent"></div>
+  </dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script type="application/json" id="plugins-data">
@@ -1260,6 +1381,9 @@
       gridView: document.getElementById("gridView"),
       listView: document.getElementById("listView"),
       footer: document.getElementById("footer"),
+      pluginDetails: document.getElementById("pluginDetails"),
+      pluginDetailsContent: document.getElementById("pluginDetailsContent"),
+      closePluginDetails: document.getElementById("closePluginDetails"),
       toast: document.getElementById("toast")
     };
 
@@ -1430,7 +1554,7 @@
       showToast("Install requested: " + href.split("/").pop());
     }
 
-    function makeCard(plugin) {
+    function makeCard(plugin, detailed = false) {
       const activePlatform = state.isApp
         ? state.appPlatform
         : (X86_ONLY ? DEFAULT_ARCH : (state.platform[plugin.slug] || state.appPlatform));
@@ -1475,9 +1599,26 @@
       const heading = document.createElement("div");
       heading.className = "plugin-heading";
 
-      const title = document.createElement("h3");
+      const title = document.createElement(detailed ? "h2" : "h3");
       title.className = "plugin-title";
-      title.textContent = plugin.name;
+      if (detailed) {
+        title.id = "pluginDetailsTitle";
+        title.textContent = plugin.name;
+      } else {
+        const open = document.createElement("button");
+        open.type = "button";
+        open.className = "plugin-open";
+        open.setAttribute("aria-haspopup", "dialog");
+        open.textContent = plugin.name;
+        title.appendChild(open);
+
+        card.addEventListener("click", (event) => {
+          if (event.target.closest("a, button") && !open.contains(event.target)) return;
+          els.pluginDetailsContent.replaceChildren(makeCard(plugin, true));
+          open.focus({ preventScroll: true });
+          els.pluginDetails.showModal();
+        });
+      }
       heading.appendChild(title);
 
       const desc = document.createElement("p");
@@ -1496,7 +1637,7 @@
         ? activePlatform + " \u00b7 " + plugin.version
         : plugin.version;
 
-      const platformChips = makePlatformChips(plugin, activePlatform);
+      const platformChips = detailed ? null : makePlatformChips(plugin, activePlatform);
       meta.append(metaText);
       if (platformChips) meta.append(platformChips);
 
@@ -1505,10 +1646,31 @@
       link.href = state.isApp ? "#" : href;
       link.textContent = state.isApp ? "Install" : "Download";
       if (!state.isApp) link.setAttribute("download", "");
-      link.addEventListener("click", (event) => handleAction(event, href));
+      link.addEventListener("click", (event) => {
+        if (detailed && state.isApp) els.pluginDetails.close();
+        handleAction(event, href);
+      });
 
       bottom.append(meta, link);
-      body.append(heading, desc, bottom);
+      body.appendChild(heading);
+      if (detailed) {
+        const description = document.createElement("div");
+        description.className = "plugin-details-description";
+        description.setAttribute("role", "region");
+        description.setAttribute("aria-label", "Plugin description");
+        description.tabIndex = 0;
+        description.appendChild(desc);
+        if (plugin.apps.length) {
+          const apps = document.createElement("p");
+          apps.className = "plugin-desc";
+          apps.textContent = "Compatible with: " + plugin.apps.map(getAppLabel).join(", ");
+          description.appendChild(apps);
+        }
+        body.appendChild(description);
+      } else {
+        body.appendChild(desc);
+      }
+      body.appendChild(bottom);
       card.append(preview, body);
       return card;
     }
@@ -1516,7 +1678,7 @@
     function renderPlugins() {
       const filtered = getFilteredPlugins();
       els.plugins.className = "plugins" + (state.view === "list" ? " list" : "");
-      els.plugins.replaceChildren(...filtered.map(makeCard));
+      els.plugins.replaceChildren(...filtered.map((plugin) => makeCard(plugin)));
       els.empty.classList.toggle("visible", filtered.length === 0);
       els.plugins.style.display = filtered.length === 0 ? "none" : "";
       requestAnimationFrame(() => {
@@ -1543,6 +1705,12 @@
       renderFilters();
       renderPlugins();
     }
+
+    els.closePluginDetails.addEventListener("click", () => els.pluginDetails.close());
+
+    els.pluginDetails.addEventListener("click", (event) => {
+      if (event.target === els.pluginDetails) els.pluginDetails.close();
+    });
 
     els.installFile.addEventListener("click", installFromFile);
 
