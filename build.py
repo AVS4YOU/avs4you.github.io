@@ -211,15 +211,15 @@ PLUGINS: dict[str, Builder] = {
     # fetch.py builds the sa3-cpp-cpu/-gpu backends it loads into build/<arch>
     # fetch.py builds stems.exe (Demucs on ONNX Runtime) and brings
     # onnxruntime.dll - 64-bit in both packages, as Demucs does not fit in 32 bits;
-    # ffmpeg decodes the input and writes the tracks
+    # AVSMediaToolkit decodes the input and writes the tracks
     "stem-splitter": cmake(
         "build/cmake-{arch}", "build/{arch}/StemSplitter.dll", "StemSplitter.dll",
-        extras={"ffmpeg.exe": "../youtube/resources/x86/ffmpeg.exe",
+        extras={"AVSMediaToolkit.exe": "resources/{arch}/AVSMediaToolkit.exe",
                 "stems.exe": "build/x64/stems.exe",
                 "onnxruntime.dll": "build/x64/onnxruntime.dll"}),
     "voice-clone": cmake(
         "build/cmake-{arch}", "build/{arch}/VoiceClone.dll", "VoiceClone.dll",
-        extras={"ffmpeg.exe": "../youtube/resources/x86/ffmpeg.exe",
+        extras={"AVSMediaToolkit.exe": "resources/{arch}/AVSMediaToolkit.exe",
                 "seedvc": "build/x64/seedvc",
                 "licenses": "licenses"}),
     "StableAudio3": cmake(
@@ -239,10 +239,11 @@ PLUGINS: dict[str, Builder] = {
                                    "/runtimes/{rid}/native/onnxruntime.dll"}),
     "veo3": msbuild("Veo3.vcxproj", "Veo3.dll"),
     # The DLL runs yt-dlp.exe from its own folder; without it the plugin is a
-    # dead window. Only x86 tools are kept - they run under x64 hosts too.
+    # dead window. Package the runtime tools from the matching architecture.
     "youtube": msbuild(
         "Youtube.vcxproj", "Youtube.dll",
-        extras={tool: f"resources/x86/{tool}" for tool in ("yt-dlp.exe", "ffmpeg.exe", "qjs.exe")}),
+        extras={tool: f"resources/{{arch}}/{tool}"
+                for tool in ("yt-dlp.exe", "AVSMediaToolkit.exe", "qjs.exe")}),
 }
 
 
