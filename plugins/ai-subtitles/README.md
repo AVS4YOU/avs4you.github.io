@@ -22,8 +22,9 @@ window opens with that file already chosen (`ClickMenuItemEx`, see
    | Balanced (default) | `ggml-small.bin` | 488 MB |
    | Best | `ggml-large-v3-turbo-q5_0.bin` | 574 MB |
 
-2. **Audio** - `ffmpeg.exe` (the one the YouTube plugin ships) turns any video
-   or audio into 16 kHz mono WAV in a scratch folder.
+2. **Audio** - `AVSMediaToolkit.exe` (AVS's own decoders, through the AVS
+   components the host app installs) turns any video or audio the host opens
+   into 16 kHz mono 16-bit WAV in a scratch folder.
 3. **Recognition** - whisper-cli with automatic language detection or a chosen
    language, optionally translating into English; segments are capped at two
    subtitle lines. Which build runs:
@@ -53,7 +54,7 @@ window opens with that file already chosen (`ClickMenuItemEx`, see
 
 whisper-cli reads its command line in the ANSI code page, so it only ever gets
 ASCII paths: it runs in a scratch folder under the work directory and is given
-relative paths. ffmpeg takes the user's file under any name.
+relative paths. AVSMediaToolkit takes the user's file under any name.
 
 The window remembers quality, language, content type, the translate and GPU
 switches in `settings.json`. Nothing is handed back to the host: the host has no
@@ -63,7 +64,7 @@ its name.
 ## Layout
 
 ```
-src/subtitles.{h,cpp}  the pipeline, no UI - models, ffmpeg, whisper-cli, cue timing, SRT tidy
+src/subtitles.{h,cpp}  the pipeline, no UI - models, AVSMediaToolkit, whisper-cli, cue timing, SRT tidy
 src/plugin.{h,cpp}     plugin object, worker thread, settings
 src/ui.{h,cpp}         the window
 src/exports.cpp        the content plugin ABI
@@ -88,7 +89,7 @@ OpenMP): x86 and x64, AVX2 and compat, plus `whisper-cli-vulkan.exe` for x64,
 which needs the [Vulkan SDK](https://vulkan.lunarg.com) on the build machine
 (found through `VULKAN_SDK` or the newest `C:\VulkanSDK\<version>`). Users need
 only their GPU driver. Then the plugin DLL is built and packed with them and
-`ffmpeg.exe`.
+`AVSMediaToolkit.exe` (`tools/AVSMediaToolkit/<arch>/`).
 
 ## Tested
 

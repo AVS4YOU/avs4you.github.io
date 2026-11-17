@@ -78,7 +78,9 @@ const StemModel* FindStemModel(const std::wstring& id) {
 
 const std::vector<StemFormat>& StemFormats() {
 	static const std::vector<StemFormat> formats = {
-		{L"wav", L"WAV (32-bit float)", L".wav", L"wav-f32"},
+		{L"wav", L"WAV (16-bit)", L".wav", L"wav-s16"},
+		// keeps peaks above full scale, which separated stems of a loud master can have
+		{L"wav-f32", L"WAV (32-bit float)", L".wav", L"wav-f32"},
 		{L"flac", L"FLAC (lossless)", L".flac", L"flac"},
 		{L"mp3", L"MP3 (320 kbps)", L".mp3", L"mp3"},
 	};
@@ -180,9 +182,14 @@ bool SeparateStems(const StemTools& tools, const StemJob& job, const StemProgres
 	std::vector<std::string> decodeOutput;
 	const int decodeExit = NSChildProcess::Run(toolkitExe +
 		L" convertaudio --input " + NSChildProcess::Quote(job.input.wstring()) +
-		L" --output input.f32 --format raw-f32 --overwrite",
+		L" --output input.f32 --format raw-f32 --overwrite --progress",
 		scratch.wstring(),
-		[&](const std::string& line) { decodeOutput.push_back(line); }, cancel, error);
+		[&](const std::string& line) {
+			if (line.rfind("progress ", 0) == 0)
+				progress(decoding, std::clamp(std::atoi(line.c_str() + 9), 0, 100) * 5 / 100);
+			else
+				decodeOutput.push_back(line);
+		}, cancel, error);
 	if (decodeExit != 0) {
 		if (error.empty())
 			error = decodeExit == -10 ? tr(L"The file has no audio track.")

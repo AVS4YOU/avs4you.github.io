@@ -18,7 +18,7 @@ window opens with that file already chosen (`ClickMenuItemEx`, see
 | 4 tracks | `htdemucs.onnx`, 174 MB | drums, bass, other, vocals |
 | 6 tracks | `htdemucs_6s.onnx`, 115 MB | the 4 + guitar, piano |
 
-Output is WAV 32-bit float, FLAC or MP3 320 kbps; track names are in the UI language
+Output is WAV 16-bit, WAV 32-bit float, FLAC (24-bit) or MP3 320 kbps; track names are in the UI language
 ("Song - Vocals.wav", "Song - Вокал.wav").
 
 ## How it works
@@ -75,14 +75,18 @@ submodule), unpacks ONNX Runtime 1.22.1 from NuGet and builds `engine/`.
 ## Media conversion dependency
 
 `AVSMediaToolkit.exe` must be beside `StemSplitter.dll`. Packaging takes it
-from `resources/x64/AVSMediaToolkit.exe` (the x64 tool is used in both packages).
-It requires the corresponding installed AVS COM components. Refresh this binary
-when rebuilding AVSMediaToolkit; the current bundled copy comes from x64/Debug.
+from `tools/AVSMediaToolkit/<arch>/AVSMediaToolkit.exe` (shared by the plugins): the host app's architecture, as the
+tool uses the AVS COM components the host installs (and needs that host
+running). Both copies are Release builds of AVSMediaToolkit (activex
+`Sources/AVSTools/AVSMediaToolkit`); refresh them together.
 
-Decoding uses `convertaudio --format raw-f32`; encoding reads raw float32 with
-`--input-rate 44100 --input-channels 2`. WAV output is IEEE float32, FLAC is
-24-bit PCM, and MP3 is CBR 320 kbit/s. Reading shows a stage status because the
-tool does not emit percentage progress; separation retains its progress updates.
+Decoding uses `convertaudio --format raw-f32 --progress` (resampling with AVS's
+windowed-sinc `HighQualityResampling`); encoding reads raw float32 with
+`--input-rate 44100 --input-channels 2`. WAV output is 16-bit PCM (`wav-s16`,
+the default, as before) or 32-bit float (`wav-f32`), FLAC is 24-bit, and MP3 is
+CBR 320 kbit/s joint stereo. Only float keeps stem peaks above full scale: on a
+loud master the drums can reach about +2 dBFS, which every integer format clips.
+AVS apps read float WAV through 16 bits, so inside them both WAVs are the same.
 
 ## The models
 

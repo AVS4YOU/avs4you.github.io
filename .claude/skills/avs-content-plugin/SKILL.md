@@ -74,7 +74,7 @@ Flow:
 - **API keys** live unencrypted in `%LOCALAPPDATA%\avs_plugin_<name>\app.key`.
   Set `requiresKey: true` in `config.json` when the plugin needs one.
 - **Bundled tools go inside the `.avsp`.** The YouTube plugin ships `yt-dlp.exe`
-  and `ffmpeg.exe` next to its DLL in the ZIP, and locates them relative to the
+  and `AVSMediaToolkit.exe` next to its DLL in the ZIP, and locates them relative to the
   loaded module directory.
 
 ## Build and publish

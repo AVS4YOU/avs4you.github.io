@@ -25,8 +25,8 @@ the user's computer: no account, no API key, nothing uploaded.
    audio or video) into raw mono float at 44.1 kHz and at 16 kHz in a scratch folder
    under `%LOCALAPPDATA%\avs_plugin_voiceclone\tmp`.
 3. **Convert** - `seedvc\seedvc.exe` (below) re-voices the vocals.
-4. **Encode** - `AVSMediaToolkit.exe` writes the result as stereo 44.1 kHz: WAV float32,
-   FLAC (24-bit) or MP3 (320 kbps).
+4. **Encode** - `AVSMediaToolkit.exe` writes the result as the engine makes it, mono
+   44.1 kHz: WAV 16-bit, FLAC (24-bit) or MP3 (320 kbps).
 
 Inside `seedvc.exe`, step by step as Seed-VC's `inference.py`:
 
@@ -173,25 +173,27 @@ licenses/                the models' licences, packed as they are
 
 ## Media toolkit
 
-`AVSMediaToolkit.exe` must be beside `VoiceClone.dll`. Packaging takes the x64
-utility for both plugin architectures from `resources/x64/AVSMediaToolkit.exe`.
-The current bundled copy comes from AVSMediaToolkit x64/Debug; refresh it when
-rebuilding the utility.
-It requires the matching x64 AVS COM media components to be installed and
-registered. Use a build supporting `convertaudio --output-rate` and
-`--output-channels`: each input is converted separately to raw float32 mono
-at 44100 and 16000 Hz. Reading and saving report stage boundaries; the voice
-engine continues to report detailed conversion progress.
+`AVSMediaToolkit.exe` must be beside `VoiceClone.dll`. Packaging takes it from
+`tools/AVSMediaToolkit/<arch>/AVSMediaToolkit.exe` (shared by the plugins): the host app's architecture, as the tool
+uses the AVS COM components the host installs (and needs that host running).
+Both copies are Release builds of AVSMediaToolkit (activex
+`Sources/AVSTools/AVSMediaToolkit`); refresh them together.
 
-Raw float32 input to the toolkit requires a filesystem supporting hard links
-and a writable directory on the input volume (the plugin's temporary folder).
+Each input is converted separately to raw float32 mono at 44100 and 16000 Hz
+(`--output-channels 1 --output-rate ... --progress`). The toolkit makes mono in
+floating point, as ffmpeg did: a mono file keeps its level, stereo is
+(L+R) x 0.7071 and is not clipped. The result is written mono
+(`--output-channels 1`), like before.
 
-Media conversion was checked with a one-second stereo PCM16 WAV at 48 kHz:
-raw mono output contained exactly 44100 and 16000 finite float32 samples.
-Encoding the 44.1 kHz mono raw result to WAV, FLAC and MP3 and reading each back
-succeeded. WAV is IEEE float32 stereo/44100 Hz; WAV and FLAC preserved the
-frame count. MP3 decoding returned 46080 frames due to encoder delay/padding;
-the toolkit does not provide additional gapless trimming.
+Raw float32 input is handed to AVS through a `.raw` hard link in the output or
+input folder, or a copy of it where the volume has no hard links (FAT32, exFAT).
+
+Checked against the ffmpeg commands it replaced: a 1 kHz tone keeps its level
+mono to mono, stereo to mono is x1.414 as ffmpeg's float output; decoding
+matches ffmpeg within -74 dB at 44.1 kHz (AVS's resampler rolls off above
+19 kHz, and above 7 kHz at 16 kHz). WAV 16-bit and FLAC 24-bit mono are as
+precise as ffmpeg's. MP3 comes from AVS's LAME 3.96, without a LAME tag: it
+starts 1105 samples late in players that trim by that tag (AVS hosts do not).
 
 ## Building
 

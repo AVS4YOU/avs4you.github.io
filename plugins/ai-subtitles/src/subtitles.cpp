@@ -45,15 +45,6 @@ namespace {
 		return text.substr(first, text.find_last_not_of(L" \t\r\n") - first + 1);
 	}
 
-	// "01:02:03.45" -> seconds
-	double ParseClock(const std::string& text) {
-		int hours = 0, minutes = 0;
-		double seconds = 0;
-		if (sscanf_s(text.c_str(), "%d:%d:%lf", &hours, &minutes, &seconds) != 3)
-			return 0;
-		return hours * 3600.0 + minutes * 60.0 + seconds;
-	}
-
 	std::wstring Megabytes(std::uint64_t bytes) {
 		return std::to_wstring((bytes + 512 * 1024) / (1024 * 1024)) + L" MB";
 	}
@@ -336,32 +327,22 @@ bool MakeSubtitles(const SubtitleTools& tools, const SubtitleJob& job,
 
 	// 3. the audio as 16 kHz mono WAV, which is what Whisper listens to
 	progress(tr(L"Extracting audio..."), 0);
-	double duration = 0;
-	std::vector<std::string> ffmpegOutput;
-	const std::wstring ffmpeg = NSChildProcess::Quote((tools.toolsDirectory / L"ffmpeg.exe").wstring()) +
-		L" -hide_banner -nostdin -y -i " + NSChildProcess::Quote(job.input.wstring()) +
-		L" -vn -ac 1 -ar 16000 -c:a pcm_s16le -progress pipe:1 -nostats audio.wav";
-	const int ffmpegExit = NSChildProcess::Run(ffmpeg, scratch.wstring(),
+	std::vector<std::string> extractOutput;
+	const std::wstring extract = NSChildProcess::Quote((tools.toolsDirectory / L"AVSMediaToolkit.exe").wstring()) +
+		L" convertaudio --input " + NSChildProcess::Quote(job.input.wstring()) +
+		L" --output audio.wav --format wav-s16 --output-rate 16000 --output-channels 1 --overwrite --progress";
+	const int extractExit = NSChildProcess::Run(extract, scratch.wstring(),
 		[&](const std::string& line) {
-			ffmpegOutput.push_back(line);
-			const size_t at = line.find("Duration: ");
-			if (at != std::string::npos && duration == 0)
-				duration = ParseClock(line.substr(at + 10));
-			if (line.rfind("out_time_us=", 0) == 0 && duration > 0) {
-				const double done = std::atof(line.c_str() + 12) / 1e6;
-				progress(tr(L"Extracting audio..."),
-					std::clamp(static_cast<int>(done * 10 / duration), 0, 10));
-			}
+			if (line.rfind("progress ", 0) == 0)
+				progress(tr(L"Extracting audio..."), std::clamp(std::atoi(line.c_str() + 9), 0, 100) / 10);
+			else
+				extractOutput.push_back(line);
 		}, cancel, error);
-	if (ffmpegExit != 0) {
-		if (error.empty()) {
-			bool noAudio = false;
-			for (const auto& line : ffmpegOutput)
-				noAudio |= line.find("does not contain any stream") != std::string::npos ||
-				line.find("matches no streams") != std::string::npos;
-			error = noAudio ? tr(L"The file has no audio track.")
-				: tr(L"Cannot read the audio of this file.") + LastLines(ffmpegOutput, 3);
-		}
+	if (extractExit != 0) {
+		if (error.empty())
+			// AVSMediaToolkit's CODE_NO_AUDIO is -10
+			error = extractExit == -10 ? tr(L"The file has no audio track.")
+				: tr(L"Cannot read the audio of this file.") + LastLines(extractOutput, 3);
 		return false;
 	}
 

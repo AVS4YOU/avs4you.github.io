@@ -1,6 +1,6 @@
 #pragma once
 // Speech to subtitles, with no UI: what the plugin window and a test harness
-// both drive. ffmpeg pulls the audio out of any video or audio file,
+// both drive. AVSMediaToolkit pulls the audio out of any video or audio file,
 // whisper-cli recognizes the speech Silero VAD finds in it, and each cue is
 // timed by its words' DTW times rather than Whisper's own whole-second guesses.
 #include <atomic>
@@ -39,7 +39,7 @@ struct SubtitleJob {
 };
 
 struct SubtitleTools {
-	std::filesystem::path toolsDirectory;  // ffmpeg.exe, whisper-cli*.exe
+	std::filesystem::path toolsDirectory;  // AVSMediaToolkit.exe, whisper-cli*.exe
 	std::filesystem::path workDirectory;   // models/ and tmp/
 	// status texts are English keys; the plugin passes its translation
 	std::function<std::wstring(const wchar_t*)> translate = [](const wchar_t* text) {

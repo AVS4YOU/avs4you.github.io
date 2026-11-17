@@ -69,9 +69,14 @@ namespace {
 				L" convertaudio --input " + NSChildProcess::Quote(input.wstring()) +
 				L" --output " + NSChildProcess::Quote(destination.wstring()) +
 				L" --format raw-f32 --audio-track 0 --output-channels 1 --output-rate " +
-				(profile == 0 ? L"44100" : L"16000") + L" --overwrite",
+				(profile == 0 ? L"44100" : L"16000") + L" --overwrite --progress",
 				scratch.wstring(),
-				[&](const std::string& line) { output.push_back(line); }, cancel, error);
+				[&](const std::string& line) {
+					if (line.rfind("progress ", 0) == 0)
+						progress(what, from + (to - from) * (profile * 100 + std::clamp(std::atoi(line.c_str() + 9), 0, 100)) / 200);
+					else
+						output.push_back(line);
+				}, cancel, error);
 			if (exitCode != 0) {
 				if (error.empty())
 					// AVSMediaToolkit's CODE_NO_AUDIO is -10.
@@ -116,9 +121,10 @@ const VoiceQuality* FindVoiceQuality(const std::wstring& id) {
 
 const std::vector<VoiceFormat>& VoiceFormats() {
 	static const std::vector<VoiceFormat> formats = {
-		{L"wav", L"WAV (32-bit float)", L".wav", L"--format wav-f32"},
-		{L"flac", L"FLAC (lossless)", L".flac", L"--format flac"},
-		{L"mp3", L"MP3 (320 kbps)", L".mp3", L"--format mp3 --bitrate 320"},
+		// mono, as the voice comes out of the engine
+		{L"wav", L"WAV (16-bit)", L".wav", L"--format wav-s16 --output-channels 1"},
+		{L"flac", L"FLAC (lossless)", L".flac", L"--format flac --output-channels 1"},
+		{L"mp3", L"MP3 (320 kbps)", L".mp3", L"--format mp3 --bitrate 320 --output-channels 1"},
 	};
 	return formats;
 }
