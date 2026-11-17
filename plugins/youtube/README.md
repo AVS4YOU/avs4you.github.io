@@ -5,6 +5,12 @@ app (AVS Video Converter / Video Editor). It drives a bundled `yt-dlp.exe`, with
 `AVSMediaToolkit.exe` next to `Youtube.dll` for merging separate tracks.
 No executable path needs to be configured.
 
+For Video Editor and Video Converter, `IsApplicationSupported` requires
+`AVSMatroskaFile3.dll` version 6.0.0.1061 or later and `AVSQuickTimeFile3.dll`
+version 6.0.0.343 or later in the matching architecture's Common Files/AVSMedia/ActiveX
+directory. Missing or unreadable version information also means unsupported.
+Audio Editor does not use this compatibility check.
+
 Despite the name it is not limited to YouTube - the bundled yt-dlp supports 1752
 sites. See [Which services this can download from](#which-services-this-can-download-from).
 

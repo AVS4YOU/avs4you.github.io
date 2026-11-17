@@ -13,6 +13,7 @@
 #include "./src/failure_reason.h"
 #include "./src/output_name.h"
 #include "./src/output_folder.h"
+#include "./src/media_toolkit_support.h"
 #include "resource.h"
 
 #include <cctype>
@@ -1951,6 +1952,7 @@ extern "C" {
         {
         case AVS_VIDEO_CONVERTER:
         case AVS_VIDEO_EDITOR:
+            return NSYoutube::HasMediaToolkitLibraries();
         case AVS_AUDIO_EDITOR:
             return true;
         default:break;

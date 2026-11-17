@@ -47,6 +47,9 @@
     <ClInclude Include="src\output_folder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\media_toolkit_support.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\browser_login.h">
       <Filter>Header Files</Filter>
     </ClInclude>
