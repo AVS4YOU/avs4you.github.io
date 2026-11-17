@@ -184,6 +184,22 @@ def cmake(binary_dir: str, output: str, dll: str, defines: dict[str, str] | None
     return build
 
 
+def youtube(plugin_dir: Path, arch: str, tools: Tools, clean: bool) -> Content:
+    """Package common resources plus the selected architecture at the ZIP root."""
+    resources: Content = {}
+    for folder in ("common", arch):
+        directory = plugin_dir / "resources" / folder
+        if not directory.is_dir():
+            raise BuildError(f"resource directory not found: {directory}")
+        for path in sorted(directory.rglob("*")):
+            if path.is_file():
+                resources[path.relative_to(directory).as_posix()] = path
+
+    content = msbuild("Youtube.vcxproj", "Youtube.dll")(plugin_dir, arch, tools, clean)
+    resources.update(content)
+    return resources
+
+
 # --- what each plugin is -----------------------------------------------------
 # Keyed by the folder under plugins/. The package layout matches what the
 # plugin loads at runtime; a folder with a config.json but no entry here is
@@ -238,12 +254,8 @@ PLUGINS: dict[str, Builder] = {
         extras={"onnxruntime.dll": "Supertonic3/packages/Microsoft.ML.OnnxRuntime.1.22.1"
                                    "/runtimes/{rid}/native/onnxruntime.dll"}),
     "veo3": msbuild("Veo3.vcxproj", "Veo3.dll"),
-    # The DLL runs yt-dlp.exe from its own folder; without it the plugin is a
-    # dead window. Package the runtime tools from the matching architecture.
-    "youtube": msbuild(
-        "Youtube.vcxproj", "Youtube.dll",
-        extras={tool: f"resources/{{arch}}/{tool}"
-                for tool in ("yt-dlp.exe", "AVSMediaToolkit.exe", "qjs.exe")}),
+    # Shared tools and architecture-specific files are packaged next to the DLL.
+    "youtube": youtube,
 }
 
 
