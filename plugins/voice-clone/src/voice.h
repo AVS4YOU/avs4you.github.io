@@ -1,7 +1,7 @@
 #pragma once
-// Vocals in another voice, with no UI: what the plugin window drives. ffmpeg
+// Vocals in another voice, with no UI: what the plugin window drives. AVSMediaToolkit
 // decodes the vocals and the voice sample, seedvc.exe (Seed-VC on ONNX
-// Runtime, GPL-3.0, a separate program) re-voices them, ffmpeg writes the result.
+// Runtime, GPL-3.0, a separate program) re-voices them, AVSMediaToolkit writes the result.
 #include <atomic>
 #include <cstdint>
 #include <filesystem>
@@ -27,7 +27,7 @@ struct VoiceFormat {
 	const wchar_t* id;
 	const wchar_t* label;
 	const wchar_t* extension;
-	const wchar_t* encoder;  // ffmpeg arguments
+	const wchar_t* encoder;  // AVSMediaToolkit convertaudio arguments
 };
 const std::vector<VoiceFormat>& VoiceFormats();
 const VoiceFormat* FindVoiceFormat(const std::wstring& id);
@@ -43,7 +43,7 @@ struct VoiceJob {
 };
 
 struct VoiceTools {
-	std::filesystem::path toolsDirectory;  // ffmpeg.exe, seedvc\seedvc.exe
+	std::filesystem::path toolsDirectory;  // AVSMediaToolkit.exe, seedvc\seedvc.exe
 	std::filesystem::path workDirectory;   // models\ and tmp\
 	// status texts are English keys; the plugin translates
 	std::function<std::wstring(const wchar_t*)> translate = [](const wchar_t* text) {

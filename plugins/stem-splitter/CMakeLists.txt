@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 project(StemSplitterPlugin LANGUAGES C CXX)
 
 # The plugin DLL only. stems.exe and onnxruntime.dll are third-party: fetch.py
-# builds them into build/<arch>/, and build.py packs them with ffmpeg.exe.
+# builds them into build/<arch>/, and build.py packs them with AVSMediaToolkit.exe.
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

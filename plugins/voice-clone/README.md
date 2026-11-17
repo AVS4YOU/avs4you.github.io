@@ -21,11 +21,12 @@ the user's computer: no account, no API key, nothing uploaded.
 1. **Models** - downloaded once into `%LOCALAPPDATA%\avs_plugin_voiceclone\models`,
    size-checked, from the `models-seedvc-onnx-1` release of this repository:
    1.6 GB in 7 files (see [What it downloads](#what-it-downloads)).
-2. **Decode** - `ffmpeg.exe` turns the vocals and the voice sample (any audio or
-   video) into raw mono float at 44.1 kHz and at 16 kHz in a scratch folder
+2. **Decode** - `AVSMediaToolkit.exe` turns the vocals and the voice sample (AVS-supported
+   audio or video) into raw mono float at 44.1 kHz and at 16 kHz in a scratch folder
    under `%LOCALAPPDATA%\avs_plugin_voiceclone\tmp`.
 3. **Convert** - `seedvc\seedvc.exe` (below) re-voices the vocals.
-4. **Encode** - `ffmpeg.exe` writes the result in the chosen format.
+4. **Encode** - `AVSMediaToolkit.exe` writes the result as stereo 44.1 kHz: WAV float32,
+   FLAC (24-bit) or MP3 (320 kbps).
 
 Inside `seedvc.exe`, step by step as Seed-VC's `inference.py`:
 
@@ -73,7 +74,7 @@ Where it departs from `inference.py`, and why:
   own - on "Кузнец" 12 dB above the vocal stem - and BigVGAN clamps whatever
   goes past full scale. `bigvgan.onnx` is exported without that clamp, and the
   result is scaled to the integrated loudness of the source vocals (ITU-R
-  BS.1770: K-weighted, gated; the same number ffmpeg's ebur128 gives), its
+  BS.1770: K-weighted, gated), its
   peaks kept under full scale: it goes back into the mix where the old vocals
   were.
 - **RMVPE in 20 s pieces** with 1.28 s of context each side: a whole song in one
@@ -152,24 +153,45 @@ is one; the processor otherwise, several times slower (12 s of vocals at Fast:
   `licenses/MODELS-LICENSES.txt` says for each where it comes from (Hugging Face
   repository and revision), what was changed, and holds the licence texts; it
   goes into the package and into the models release.
-- `ffmpeg.exe` - the GPL-3.0 build the other plugins ship; `licenses/FFMPEG.txt`.
 - The window asks for a voice sample the user has the right to use.
 
 ## Layout
 
 ```
-src/voice.{h,cpp}        the pipeline, no UI - models, ffmpeg, seedvc.exe, encoding
+src/voice.{h,cpp}        the pipeline, no UI - models, AVSMediaToolkit, seedvc.exe, encoding
 src/plugin.{h,cpp}       plugin object, worker thread, settings
 src/ui.{h,cpp}           the window
 src/exports.cpp          the content plugin ABI
 engine/seedvc.py         seedvc.exe (GPL-3.0): numpy features + ONNX Runtime
 engine/export_onnx.py    Seed-VC's checkpoints -> the ONNX models, each checked against PyTorch
 fetch.py                 engine/seedvc.py -> build/x64/seedvc/ with PyInstaller, and its notices
-licenses/                the models' and ffmpeg's licences, packed as they are
+licenses/                the models' licences, packed as they are
 ```
 
 `seedvc.exe` is always 64-bit; the x86 package carries it too and runs it on
 64-bit Windows.
+
+## Media toolkit
+
+`AVSMediaToolkit.exe` must be beside `VoiceClone.dll`. Packaging takes the x64
+utility for both plugin architectures from `resources/x64/AVSMediaToolkit.exe`.
+The current bundled copy comes from AVSMediaToolkit x64/Debug; refresh it when
+rebuilding the utility.
+It requires the matching x64 AVS COM media components to be installed and
+registered. Use a build supporting `convertaudio --output-rate` and
+`--output-channels`: each input is converted separately to raw float32 mono
+at 44100 and 16000 Hz. Reading and saving report stage boundaries; the voice
+engine continues to report detailed conversion progress.
+
+Raw float32 input to the toolkit requires a filesystem supporting hard links
+and a writable directory on the input volume (the plugin's temporary folder).
+
+Media conversion was checked with a one-second stereo PCM16 WAV at 48 kHz:
+raw mono output contained exactly 44100 and 16000 finite float32 samples.
+Encoding the 44.1 kHz mono raw result to WAV, FLAC and MP3 and reading each back
+succeeded. WAV is IEEE float32 stereo/44100 Hz; WAV and FLAC preserved the
+frame count. MP3 decoding returned 46080 frames due to encoder delay/padding;
+the toolkit does not provide additional gapless trimming.
 
 ## Building
 

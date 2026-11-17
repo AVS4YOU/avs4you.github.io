@@ -6,12 +6,14 @@
 #include "../../sdk/include/CContentPluginIntf.h"
 #include "../../sdk/include/AVSConsts.h"
 #include "../../sdk/translate/translate.h"
+#include "../../sdk/common/HostProcess.h"
 #include "../../sdk/common/utils.h"
 
 #include "./src/yt_downloader.h"
 #include "./src/failure_reason.h"
 #include "./src/output_name.h"
 #include "./src/output_folder.h"
+#include "./src/media_toolkit_support.h"
 #include "resource.h"
 
 #include <cctype>
@@ -109,6 +111,8 @@ public:
     std::wstring m_moduleDirectory;
 
     HWND m_hWnd = NULL;
+    HWND m_parentWindow = NULL;
+    bool m_isAvsAudioEditor = false;
 
     AsyncCallback m_callback = nullptr;
     void* m_callback_context = nullptr;
@@ -143,6 +147,8 @@ public:
     int                                m_selectedQuality = 0;
     int                                m_streamMode = 0; // 0: video+audio, 1: video, 2: audio
     std::wstring                       m_selectedVideoCodec;
+    std::wstring m_selectedAudioLanguage;
+    std::vector<std::pair<std::wstring, std::wstring>> m_audioTracks;
 
 public:
     CYoutubePlugin()
@@ -295,6 +301,7 @@ public:
                 m_listingFormats = false;
                 m_availableQualities = QualitiesFromFormatList(m_log);
                 m_availableVideoCodecs = VideoCodecsFromFormatList(m_log);
+                m_audioTracks = AudioTracksFromFormatList(m_log);
                 m_canChooseStreamType = HasSeparateVideoAndAudio(m_log);
                 m_formatsAvailable = !m_availableQualities.empty();
 
@@ -314,7 +321,7 @@ public:
                 break;
             }
 
-            m_path = FindDownloadedFile();
+            m_path = message == "0" ? FindDownloadedFile() : L"";
 
             if (!m_path.empty() && NSSystemUtils::ExistsFile(m_path))
             {
@@ -334,7 +341,8 @@ public:
                 if (m_hWnd)
                     PostMessageW(m_hWnd, WM_YT_FAILED, 0, 0);
             }
-            else if (m_attempt + 1 < m_strategies.size() && NSYoutube::WorthAnotherCookieSource(m_log))
+            else if (m_attempt + 1 < m_strategies.size() &&
+                m_log.find("AVSMediaToolkit") == std::string::npos && NSYoutube::WorthAnotherCookieSource(m_log))
             {
                 // No file this time. Try the next cookie source - but do it on
                 // the UI thread, because we are inside the process runner's own
@@ -368,7 +376,7 @@ public:
     }
 
     void Start(const std::wstring& url, int quality, int streamMode,
-               const std::wstring& videoCodec)
+               const std::wstring& videoCodec, const std::wstring& audioLanguage)
     {
         Stop();
 
@@ -380,6 +388,7 @@ public:
         m_selectedQuality = quality;
         m_streamMode = streamMode;
         m_selectedVideoCodec = videoCodec;
+        m_selectedAudioLanguage = audioLanguage;
 
         m_downloader = new ytdl::YouTubeDownloader(m_moduleDirectory, this);
 
@@ -400,6 +409,7 @@ public:
         m_formatsAvailable = false;
         m_availableQualities.clear();
         m_availableVideoCodecs.clear();
+        m_audioTracks.clear();
         m_canChooseStreamType = false;
         m_downloadInProgress = false;
         m_checkingFormats = true;
@@ -464,12 +474,24 @@ public:
         return ytdl::IsYouTubeHost(ytdl::TargetHost(m_url));
     }
 
+    void SetHostWindow(HWND hwnd)
+    {
+        m_parentWindow = hwnd && IsWindow(hwnd) ? GetAncestor(hwnd, GA_ROOT) : NULL;
+        m_isAvsAudioEditor = m_parentWindow && (NSHostProcess::GetHostProcess().find(L"avsaudioeditor") != std::wstring::npos);
+    }
+
+    bool IsAvsAudioEditor() const
+    {
+        return m_isAvsAudioEditor;
+    }
+
     void InvalidateCheckedFormats()
     {
         m_formatsAvailable = false;
         m_checkedUrl.clear();
         m_availableQualities.clear();
         m_availableVideoCodecs.clear();
+        m_audioTracks.clear();
         m_canChooseStreamType = false;
     }
 
@@ -535,7 +557,8 @@ public:
             return;
         }
 
-        if (!host.empty() && NSYoutube::LooksLikeSignInRequired(m_log))
+        if (m_log.find("AVSMediaToolkit") == std::string::npos &&
+            !host.empty() && NSYoutube::LooksLikeSignInRequired(m_log))
         {
             const bool signedIn = NSUI::ShowLoginDialog(m_hWnd, m_workDirectory, host);
             if (signedIn && m_checkingFormats && m_hWnd)
@@ -627,6 +650,34 @@ private:
         return result;
     }
 
+    // Group encoding/bitrate variants by the language reported in MORE INFO.
+    static std::vector<std::pair<std::wstring, std::wstring>> AudioTracksFromFormatList(const std::string& log)
+    {
+        std::vector<std::pair<std::wstring, std::wstring>> tracks;
+        std::istringstream input(log);
+        std::string line;
+        while (std::getline(input, line))
+        {
+            if (line.find("audio only") == std::string::npos) continue;
+            const auto begin = line.find('[');
+            const auto end = line.find(']', begin);
+            if (begin == std::string::npos || end == std::string::npos) continue;
+            const std::string code = line.substr(begin + 1, end - begin - 1);
+            if (code.empty() || !std::all_of(code.begin(), code.end(), [](unsigned char c) {
+                return std::isalnum(c) || c == '-'; })) continue;
+            const auto language = NSStringUtils::utf8_to_wstring(code);
+            if (std::any_of(tracks.begin(), tracks.end(), [&](const std::pair<std::wstring, std::wstring>& track) {
+                return track.first == language; })) continue;
+            std::string label = line.substr(end + 1);
+            const auto comma = label.find(',');
+            if (comma != std::string::npos) label.resize(comma);
+            const auto first = label.find_first_not_of(" \r\t");
+            label = first == std::string::npos ? code : label.substr(first);
+            tracks.emplace_back(language, L"[" + language + L"] " + NSStringUtils::utf8_to_wstring(label));
+        }
+        return tracks;
+    }
+
     /** Codec families reported by yt-dlp in the VCODEC column. */
     static std::vector<std::wstring> VideoCodecsFromFormatList(const std::string& log)
     {
@@ -668,7 +719,7 @@ private:
 
         // Enough to recognise the failure, bounded so a long download cannot
         // grow this without limit.
-        if (m_log.size() < 32768)
+        if (m_log.size() < (m_listingFormats ? 1024 * 1024 : 32768))
             m_log += message + "\n";
 
         if (message.compare(0, 6, "ERROR:") == 0)
@@ -697,10 +748,12 @@ private:
             codec = L"[vcodec~='(?i)^vp0?9']";
         else if (!m_selectedVideoCodec.empty())
             codec = L"[vcodec^=" + m_selectedVideoCodec + L"]";
+        const std::wstring audio = m_selectedAudioLanguage.empty() ? L""
+            : L"[language=" + m_selectedAudioLanguage + L"]";
         if (m_streamMode == 2)
         {
             options.extractAudio = true;
-            options.audioFormat = L"mp3";
+            options.formatSelector = L"ba" + audio;
         }
         else if (m_streamMode == 1)
         {
@@ -711,12 +764,15 @@ private:
         {
             // Prefer separate tracks for the selected height: this is the
             // usual way to get the highest quality a service offers.
-            options.formatSelector = L"bv*" + codec + cap + L"+ba/b" + codec + cap + L"/b";
+            options.formatSelector = L"bv" + codec + cap + L"[ext=mp4]+ba[ext=m4a]" + audio
+                + L"/bv" + codec + cap + L"[ext=mp4]+ba[ext=mp4]" + audio
+                + L"/bv" + codec + cap + L"[ext=webm]+ba[ext=webm][acodec=opus]" + audio
+                + L"/b" + codec + cap + audio + L"/b" + audio;
         }
         if (m_streamMode == 3)
         {
             // Some services only expose ready-made (progressive) files.
-            options.formatSelector = L"b" + codec + cap + L"/b" + cap + L"/b";
+            options.formatSelector = L"b" + codec + cap + audio + L"/b" + cap + audio + L"/b" + audio;
         }
 
         SetCaption(tr(L"Downloading..."));
@@ -1450,17 +1506,20 @@ namespace NSUI
     LRESULT CALLBACK MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     {
         static HWND hEdit;
-        static HWND hAction, hAbout, hSettings, hQuality, hStream, hCodec;
+        static HWND hAction, hAbout, hSettings, hQuality, hStream, hCodec, hAudio;
 
         const auto showFormatSelectors = [&]()
         {
             ShowWindow(hQuality, SW_SHOW);
             ShowWindow(hStream, SW_SHOW);
             ShowWindow(hCodec, SW_SHOW);
-            MoveWindow(hAbout, 10, 90, 80, 25, TRUE);
-            MoveWindow(hSettings, 95, 90, 100, 25, TRUE);
-            MoveWindow(hAction, 390, 90, 100, 25, TRUE);
-            RECT rc = { 0, 0, 500, 125 };
+            const bool multipleAudio = SendMessageW(hAudio, CB_GETCOUNT, 0, 0) > 2;
+            ShowWindow(hAudio, multipleAudio ? SW_SHOW : SW_HIDE);
+            const int buttonY = multipleAudio ? 125 : 90;
+            MoveWindow(hAbout, 10, buttonY, 80, 25, TRUE);
+            MoveWindow(hSettings, 95, buttonY, 100, 25, TRUE);
+            MoveWindow(hAction, 490, buttonY, 100, 25, TRUE);
+            RECT rc = { 0, 0, 600, buttonY + 35 };
             AdjustWindowRectEx(&rc, WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX, FALSE, 0);
             SetWindowPos(hwnd, NULL, 0, 0, rc.right - rc.left, rc.bottom - rc.top,
                          SWP_NOMOVE | SWP_NOZORDER);
@@ -1471,10 +1530,11 @@ namespace NSUI
             ShowWindow(hQuality, SW_HIDE);
             ShowWindow(hStream, SW_HIDE);
             ShowWindow(hCodec, SW_HIDE);
+            ShowWindow(hAudio, SW_HIDE);
             MoveWindow(hAbout, 10, 55, 80, 25, TRUE);
             MoveWindow(hSettings, 95, 55, 100, 25, TRUE);
-            MoveWindow(hAction, 390, 55, 100, 25, TRUE);
-            RECT rc = { 0, 0, 500, 90 };
+            MoveWindow(hAction, 490, 55, 100, 25, TRUE);
+            RECT rc = { 0, 0, 600, 90 };
             AdjustWindowRectEx(&rc, WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX, FALSE, 0);
             SetWindowPos(hwnd, NULL, 0, 0, rc.right - rc.left, rc.bottom - rc.top,
                          SWP_NOMOVE | SWP_NOZORDER);
@@ -1495,11 +1555,11 @@ namespace NSUI
         {
             hEdit = CreateWindowEx(WS_EX_CLIENTEDGE, L"EDIT", L"",
                 WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL,
-                10, 10, 480, 25, hwnd, NULL, GetModuleHandle(NULL), NULL);
+                10, 10, 580, 25, hwnd, NULL, GetModuleHandle(NULL), NULL);
 
             hAction = CreateWindow(L"BUTTON", tr(L"Check").c_str(),
                 WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-                390, 55, 100, 25, hwnd, (HMENU)1, GetModuleHandle(NULL), NULL);
+                490, 55, 100, 25, hwnd, (HMENU)1, GetModuleHandle(NULL), NULL);
 
             hQuality = CreateWindow(L"COMBOBOX", NULL,
                 WS_CHILD | CBS_DROPDOWNLIST | WS_VSCROLL,
@@ -1509,7 +1569,11 @@ namespace NSUI
                 160, 45, 140, 250, hwnd, (HMENU)7, GetModuleHandle(NULL), NULL);
             hCodec = CreateWindow(L"COMBOBOX", NULL,
                 WS_CHILD | CBS_DROPDOWNLIST | WS_VSCROLL,
-                310, 45, 180, 250, hwnd, (HMENU)8, GetModuleHandle(NULL), NULL);
+                310, 45, 280, 250, hwnd, (HMENU)8, GetModuleHandle(NULL), NULL);
+
+            hAudio = CreateWindow(L"COMBOBOX", NULL,
+                WS_CHILD | CBS_DROPDOWNLIST | WS_VSCROLL,
+                10, 80, 580, 350, hwnd, (HMENU)10, GetModuleHandle(NULL), NULL);
 
             // There is deliberately no sign-in button: signing in is offered by
             // the download when a video actually turns out to need an account.
@@ -1532,6 +1596,7 @@ namespace NSUI
             SendMessage(hQuality, WM_SETFONT, (WPARAM)font, TRUE);
             SendMessage(hStream, WM_SETFONT, (WPARAM)font, TRUE);
             SendMessage(hCodec, WM_SETFONT, (WPARAM)font, TRUE);
+            SendMessage(hAudio, WM_SETFONT, (WPARAM)font, TRUE);
 
             plugin->m_hWnd = hwnd;
             break;
@@ -1545,6 +1610,13 @@ namespace NSUI
                     plugin->InvalidateCheckedFormats();
                     hideFormatSelectors();
                     SetWindowTextW(hAction, tr(L"Check").c_str());
+                }
+                break;
+            case 7:
+                if (HIWORD(wParam) == CBN_SELCHANGE)
+                {
+                    const int mode = (int)SendMessageW(hStream, CB_GETCURSEL, 0, 0);
+                    EnableWindow(hAudio, !plugin->IsYouTubeUrl() || mode != 1);
                 }
                 break;
             case 1: // Check, Download, or Cancel depending on current state.
@@ -1580,14 +1652,20 @@ namespace NSUI
                         const int quality = qualityIndex > 0 && (size_t)(qualityIndex - 1) < qualities.size()
                             ? qualities[qualityIndex - 1] : 0;
                         const int streamIndex = (int)SendMessageW(hStream, CB_GETCURSEL, 0, 0);
-                        const int streamMode = plugin->IsYouTubeUrl()
+                        const int streamMode = plugin->IsAvsAudioEditor()
+                            ? 2
+                            : plugin->IsYouTubeUrl()
                             ? (streamIndex == 1 ? 1 : (streamIndex == 2 ? 2 : 0))
                             : (streamIndex == 0 ? 0 : 3);
                         const int codecIndex = (int)SendMessageW(hCodec, CB_GETCURSEL, 0, 0);
                         const std::vector<std::wstring>& codecs = plugin->AvailableVideoCodecs();
                         const std::wstring codec = codecIndex > 0 && (size_t)(codecIndex - 1) < codecs.size()
                             ? codecs[codecIndex - 1] : L"";
-                        plugin->Start(url, quality, streamMode, codec);
+                        const int audioIndex = (int)SendMessageW(hAudio, CB_GETCURSEL, 0, 0);
+                        const auto& tracks = plugin->m_audioTracks;
+                        const std::wstring language = audioIndex > 0 && (size_t)(audioIndex - 1) < tracks.size()
+                            ? tracks[audioIndex - 1].first : L"";
+                        plugin->Start(url, quality, streamMode, codec, language);
                         EnableWindow(hEdit, FALSE);
                         EnableWindow(hSettings, FALSE);
                         SetWindowTextW(hAction, tr(L"Cancel").c_str());
@@ -1656,17 +1734,26 @@ namespace NSUI
             SendMessageW(hQuality, CB_SETCURSEL, 0, 0);
 
             SendMessageW(hStream, CB_RESETCONTENT, 0, 0);
-            SendMessageW(hStream, CB_ADDSTRING, 0, (LPARAM)tr(L"Video + audio").c_str());
-            if (plugin->IsYouTubeUrl())
+            if (plugin->IsAvsAudioEditor())
             {
-                SendMessageW(hStream, CB_ADDSTRING, 0, (LPARAM)tr(L"Video only").c_str());
                 SendMessageW(hStream, CB_ADDSTRING, 0, (LPARAM)tr(L"Audio only").c_str());
+                EnableWindow(hQuality, FALSE);
+                EnableWindow(hCodec, FALSE);
             }
-            // Twitch, Instagram and similar services often publish only an
-            // already-muxed MP4. There is no genuine stream choice there, so
-            // avoid presenting a misleading second option.
-            else if (plugin->CanChooseStreamType())
-                SendMessageW(hStream, CB_ADDSTRING, 0, (LPARAM)tr(L"Single stream").c_str());
+            else
+            {
+                SendMessageW(hStream, CB_ADDSTRING, 0, (LPARAM)tr(L"Video + audio").c_str());
+                if (plugin->IsYouTubeUrl())
+                {
+                    SendMessageW(hStream, CB_ADDSTRING, 0, (LPARAM)tr(L"Video only").c_str());
+                    SendMessageW(hStream, CB_ADDSTRING, 0, (LPARAM)tr(L"Audio only").c_str());
+                }
+                // Twitch, Instagram and similar services often publish only an
+                // already-muxed MP4. There is no genuine stream choice there, so
+                // avoid presenting a misleading second option.
+                else if (plugin->CanChooseStreamType())
+                    SendMessageW(hStream, CB_ADDSTRING, 0, (LPARAM)tr(L"Single stream").c_str());
+            }
             SendMessageW(hStream, CB_SETCURSEL, 0, 0);
 
             SendMessageW(hCodec, CB_RESETCONTENT, 0, 0);
@@ -1678,6 +1765,12 @@ namespace NSUI
                 SendMessageW(hCodec, CB_ADDSTRING, 0, (LPARAM)codec.c_str());
             SendMessageW(hCodec, CB_SETCURSEL, 0, 0);
 
+            SendMessageW(hAudio, CB_RESETCONTENT, 0, 0);
+            SendMessageW(hAudio, CB_ADDSTRING, 0, (LPARAM)tr(L"Default audio track").c_str());
+            for (const auto& track : plugin->m_audioTracks)
+                SendMessageW(hAudio, CB_ADDSTRING, 0, (LPARAM)track.second.c_str());
+            SendMessageW(hAudio, CB_SETCURSEL, 0, 0);
+            EnableWindow(hAudio, TRUE);
             showFormatSelectors();
             SetWindowTextW(hAction, tr(L"Download").c_str());
             plugin->SetCaption(plugin->VideoTitle().empty()
@@ -1743,24 +1836,30 @@ namespace NSUI
         DWORD dwStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX;
         std::wstring titleWindow = CTranslate::GetInstance().GetManager()->Translate(L"Youtube");
 
-        RECT rc = { 0, 0, 500, 90 };
+        RECT rc = { 0, 0, 600, 90 };
         AdjustWindowRectEx(&rc, dwStyle, FALSE, 0);
 
-        HWND hostWindow = GetActiveWindow();
-        if (!hostWindow)
+        HWND hostWindow = plugin->m_parentWindow;
+        if (!hostWindow || !IsWindow(hostWindow))
         {
-            HWND foregroundWindow = GetForegroundWindow();
-            DWORD processId = 0;
+            hostWindow = GetActiveWindow();
+            if (!hostWindow)
+            {
+                HWND foregroundWindow = GetForegroundWindow();
+                DWORD processId = 0;
 
-            if (foregroundWindow)
-                GetWindowThreadProcessId(foregroundWindow, &processId);
+                if (foregroundWindow)
+                    GetWindowThreadProcessId(foregroundWindow, &processId);
 
-            if (processId == GetCurrentProcessId())
-                hostWindow = foregroundWindow;
+                if (processId == GetCurrentProcessId())
+                    hostWindow = foregroundWindow;
+            }
         }
 
         if (hostWindow)
             hostWindow = GetAncestor(hostWindow, GA_ROOT);
+
+        plugin->SetHostWindow(hostWindow);
 
         const bool hostWasEnabled = hostWindow && IsWindowEnabled(hostWindow);
 
@@ -1853,6 +1952,8 @@ extern "C" {
         {
         case AVS_VIDEO_CONVERTER:
         case AVS_VIDEO_EDITOR:
+            return NSYoutube::HasMediaToolkitLibraries();
+        case AVS_AUDIO_EDITOR:
             return true;
         default:break;
         }
@@ -1868,6 +1969,13 @@ extern "C" {
     PLUGIN_API void __stdcall SetLanguage(PluginHandle, const wchar_t* name)
     {
         CTranslate::GetInstance().GetManager()->SetLang(NSStringUtils::wstring_to_utf8(name));
+    }
+
+    PLUGIN_API void __stdcall SetParentWindow(PluginHandle handle, void* hwnd)
+    {
+        CYoutubePlugin* plugin = static_cast<CYoutubePlugin*>(handle);
+        if (plugin)
+            plugin->SetHostWindow(static_cast<HWND>(hwnd));
     }
 
     PLUGIN_API wchar_t* __stdcall GetMenuForContext(PluginHandle, Plugins::ContextType type)

@@ -185,31 +185,20 @@ namespace NSProcesses
 			});
 		}
 
-		void stop()
-		{
-			if (m_running.load())
-			{
-				if (m_hJob)
-					CloseHandle(m_hJob);
-				m_hJob = nullptr;
-
-				if (m_hStdOutRd) { CloseHandle(m_hStdOutRd); m_hStdOutRd = nullptr; }
-				if (m_hStdOutWr) { CloseHandle(m_hStdOutWr); m_hStdOutWr = nullptr; }
-				if (m_hStdErrRd) { CloseHandle(m_hStdErrRd); m_hStdErrRd = nullptr; }
-				if (m_hStdErrWr) { CloseHandle(m_hStdErrWr); m_hStdErrWr = nullptr; }
-				if (m_hStdInRd)  { CloseHandle(m_hStdInRd);  m_hStdInRd  = nullptr; }
-				if (m_hStdInWr)  { CloseHandle(m_hStdInWr);  m_hStdInWr  = nullptr; }
-			}
-
-			m_running.store(false);
-			if (m_worker.joinable())
-			{
-				if (std::this_thread::get_id() != m_worker.get_id())
-					m_worker.join();
-				else
-					m_worker.detach();
-			}
-		}
+        void stop()
+        {
+            m_running.store(false);
+            if (m_hJob) { CloseHandle(m_hJob); m_hJob = nullptr; }
+            if (m_worker.joinable())
+            {
+                if (std::this_thread::get_id() != m_worker.get_id()) m_worker.join();
+                else m_worker.detach();
+            }
+            HANDLE* handles[] = { &m_hStdOutRd, &m_hStdOutWr, &m_hStdErrRd, &m_hStdErrWr,
+                &m_hStdInRd, &m_hStdInWr, &m_pi.hProcess, &m_pi.hThread };
+            for (HANDLE* handle : handles)
+                if (*handle) { CloseHandle(*handle); *handle = nullptr; }
+        }
 
 		void wait()
 		{
@@ -233,13 +222,14 @@ namespace NSProcesses
 			char buf[4096];
 			
 			DWORD n;
-			while (m_running.load())
+			while (true)
 			{
 				DWORD available = 0;
 				PeekNamedPipe(handle, nullptr, 0, nullptr, &available, nullptr);
 
 				if (available == 0)
 				{
+					if (!m_running.load()) break;
 					NSThreads::Sleep(100);
 					continue;
 				}
@@ -521,7 +511,7 @@ namespace NSProcesses
 				m_hStdErrWr = nullptr;
 				m_hStdInRd = nullptr;
 
-				m_callback->process_callback(m_id, StreamType::Terminate, "");
+				m_callback->process_callback(m_id, StreamType::Terminate, std::to_string(dwError));
 				return;
 			}
 
@@ -550,6 +540,8 @@ namespace NSProcesses
 											});
 
 			wait();
+			DWORD exitCode = 1;
+			GetExitCodeProcess(m_pi.hProcess, &exitCode);
 
 			m_running.store(false);
 
@@ -558,7 +550,9 @@ namespace NSProcesses
 			if (t_err.joinable())
 				t_err.join();
 
-			m_callback->process_callback(m_id, m_isEnded ? StreamType::Terminate : StreamType::Stop, "");
+			CloseHandle(m_pi.hProcess); m_pi.hProcess = nullptr;
+			CloseHandle(m_pi.hThread); m_pi.hThread = nullptr;
+			m_callback->process_callback(m_id, m_isEnded ? StreamType::Terminate : StreamType::Stop, std::to_string(static_cast<LONG>(exitCode)));
 		}
 
 	private:
@@ -661,18 +655,18 @@ namespace NSProcesses
 			}
 		}
 
-		void StopAll()
-		{
-			m_enable_callback.store(false);
-
-			NSCriticalSection::CTemporaryCS oCS(&m_cs);
-			for (std::vector<CProcessRunner*>::iterator iter = m_processes.begin(); iter != m_processes.end(); iter++)
-			{
-				CProcessRunner* runner = *iter;
-				delete runner;
-			}
-			m_processes.clear();
-		}
+        void StopAll()
+        {
+            m_enable_callback.store(false);
+            std::vector<CProcessRunner*> processes;
+            {
+                NSCriticalSection::CTemporaryCS callbacks(&m_cs_callback);
+                NSCriticalSection::CTemporaryCS access(&m_cs);
+                processes.swap(m_processes);
+            }
+            // Joining while holding m_cs would deadlock a completing callback.
+            for (CProcessRunner* runner : processes) delete runner;
+        }
 
 		virtual void process_callback(const int& id, const StreamType& type, const std::string& message)
 		{
@@ -683,7 +677,7 @@ namespace NSProcesses
 
 			m_callback->process_callback(id, type == StreamType::Terminate ? StreamType::Stop : type, message);
 
-			if (type == StreamType::Stop)
+			if (type == StreamType::Stop || type == StreamType::Terminate)
 				End(id);
 		}
 	};

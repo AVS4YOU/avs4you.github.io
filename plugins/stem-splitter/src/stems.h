@@ -1,7 +1,7 @@
 #pragma once
 // Music to separate tracks, with no UI: what the plugin window and a test
-// harness both drive. ffmpeg decodes any audio or video, stems.exe (Demucs v4
-// on ONNX Runtime) separates it, and ffmpeg writes each track.
+// harness both drive. AVSMediaToolkit decodes any audio or video, stems.exe (Demucs v4
+// on ONNX Runtime) separates it, and AVSMediaToolkit writes each track.
 #include <atomic>
 #include <cstdint>
 #include <filesystem>
@@ -24,7 +24,7 @@ struct StemFormat {
 	const wchar_t* id;
 	const wchar_t* label;
 	const wchar_t* extension;
-	const wchar_t* encoder;  // ffmpeg arguments
+	const wchar_t* toolkitFormat;  // AVSMediaToolkit output format
 };
 const std::vector<StemFormat>& StemFormats();
 const StemFormat* FindStemFormat(const std::wstring& id);
@@ -37,7 +37,7 @@ struct StemJob {
 };
 
 struct StemTools {
-	std::filesystem::path toolsDirectory;  // ffmpeg.exe, stems.exe, onnxruntime.dll
+	std::filesystem::path toolsDirectory;  // AVSMediaToolkit.exe, stems.exe, onnxruntime.dll
 	std::filesystem::path workDirectory;   // models/ and tmp/
 	// where a run keeps its raw audio - about 21 MB a minute per track - in
 	// a "avs-stems-<n>" subfolder; empty: workDirectory\tmp

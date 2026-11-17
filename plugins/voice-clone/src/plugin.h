@@ -15,7 +15,7 @@ public:
 	~CVoiceClonePlugin();
 	CVoiceClonePlugin(const CVoiceClonePlugin&) = delete;
 
-	std::filesystem::path moduleDirectory;  // the DLL, ffmpeg.exe, seedvc\ (the engine)
+	std::filesystem::path moduleDirectory;  // the DLL, AVSMediaToolkit.exe, seedvc\ (the engine)
 	std::filesystem::path workDirectory;    // %LOCALAPPDATA%\avs_plugin_voiceclone
 	HWND window = nullptr;
 	AsyncCallback callback = nullptr;

@@ -21,14 +21,6 @@ namespace {
 		return result;
 	}
 
-	double ParseClock(const std::string& text) {
-		int hours = 0, minutes = 0;
-		double seconds = 0;
-		if (sscanf_s(text.c_str(), "%d:%d:%lf", &hours, &minutes, &seconds) != 3)
-			return 0;
-		return hours * 3600.0 + minutes * 60.0 + seconds;
-	}
-
 	std::wstring Megabytes(std::uint64_t bytes) {
 		return std::to_wstring((bytes + 512 * 1024) / (1024 * 1024)) + L" MB";
 	}
@@ -59,43 +51,36 @@ namespace {
 #endif
 	}
 
-	bool NoAudio(const std::vector<std::string>& output) {
-		for (const auto& line : output)
-			if (line.find("does not contain any stream") != std::string::npos ||
-				line.find("matches no streams") != std::string::npos)
-				return true;
-		return false;
-	}
-
 	// a file's first audio track as raw mono float at 44.1 and at 16 kHz
 	bool Decode(const VoiceTools& tools, const std::filesystem::path& input, const std::wstring& name,
 		const std::filesystem::path& scratch, const VoiceProgress& progress, const std::wstring& what,
 		int from, int to, const std::atomic_bool& cancel, std::wstring& error) {
 		const auto& tr = tools.translate;
-		double duration = 0;
-		std::vector<std::string> output;
-		const int exitCode = NSChildProcess::Run(
-			NSChildProcess::Quote((tools.toolsDirectory / L"ffmpeg.exe").wstring()) +
-			L" -hide_banner -nostdin -y -i " + NSChildProcess::Quote(input.wstring()) +
-			L" -map 0:a:0 -vn -ac 1 -ar 44100 -f f32le -c:a pcm_f32le " + name + L".f32" +
-			L" -map 0:a:0 -vn -ac 1 -ar 16000 -f f32le -c:a pcm_f32le " + name + L"16.f32" +
-			L" -progress pipe:1 -nostats",
-			scratch.wstring(),
-			[&](const std::string& line) {
-				output.push_back(line);
-				const size_t at = line.find("Duration: ");
-				if (at != std::string::npos && duration == 0)
-					duration = ParseClock(line.substr(at + 10));
-				if (line.rfind("out_time_us=", 0) == 0 && duration > 0)
-					progress(what, from + std::clamp(static_cast<int>(
-						std::atof(line.c_str() + 12) / 1e6 * (to - from) / duration), 0, to - from));
-			}, cancel, error);
-		if (exitCode != 0) {
-			if (error.empty())
-				error = NoAudio(output) ? tr(L"The file has no audio track:") + L" " + input.filename().wstring()
-				: tr(L"Cannot read the audio of this file:") + L" " + input.filename().wstring() + LastLines(output, 3);
-			return false;
+		for (int profile = 0; profile < 2; ++profile) {
+			if (cancel) {
+				error = tr(L"Cancelled");
+				return false;
+			}
+			progress(what, from + (to - from) * profile / 2);
+			const auto destination = scratch / (name + (profile == 0 ? L".f32" : L"16.f32"));
+			std::vector<std::string> output;
+			const int exitCode = NSChildProcess::Run(
+				NSChildProcess::Quote((tools.toolsDirectory / L"AVSMediaToolkit.exe").wstring()) +
+				L" convertaudio --input " + NSChildProcess::Quote(input.wstring()) +
+				L" --output " + NSChildProcess::Quote(destination.wstring()) +
+				L" --format raw-f32 --audio-track 0 --output-channels 1 --output-rate " +
+				(profile == 0 ? L"44100" : L"16000") + L" --overwrite",
+				scratch.wstring(),
+				[&](const std::string& line) { output.push_back(line); }, cancel, error);
+			if (exitCode != 0) {
+				if (error.empty())
+					// AVSMediaToolkit's CODE_NO_AUDIO is -10.
+					error = exitCode == -10 ? tr(L"The file has no audio track:") + L" " + input.filename().wstring()
+					: tr(L"Cannot read the audio of this file:") + L" " + input.filename().wstring() + LastLines(output, 3);
+				return false;
+			}
 		}
+		progress(what, to);
 		return true;
 	}
 } // namespace
@@ -131,9 +116,9 @@ const VoiceQuality* FindVoiceQuality(const std::wstring& id) {
 
 const std::vector<VoiceFormat>& VoiceFormats() {
 	static const std::vector<VoiceFormat> formats = {
-		{L"wav", L"WAV (16-bit)", L".wav", L"-c:a pcm_s16le"},
-		{L"flac", L"FLAC (lossless)", L".flac", L"-c:a flac"},
-		{L"mp3", L"MP3 (320 kbps)", L".mp3", L"-c:a libmp3lame -b:a 320k"},
+		{L"wav", L"WAV (32-bit float)", L".wav", L"--format wav-f32"},
+		{L"flac", L"FLAC (lossless)", L".flac", L"--format flac"},
+		{L"mp3", L"MP3 (320 kbps)", L".mp3", L"--format mp3 --bitrate 320"},
 	};
 	return formats;
 }
@@ -256,8 +241,9 @@ bool ConvertVoice(const VoiceTools& tools, const VoiceJob& job, const VoiceForma
 	std::filesystem::create_directories(job.output.parent_path(), ignored);
 	std::vector<std::string> encodeOutput;
 	const int encodeExit = NSChildProcess::Run(
-		NSChildProcess::Quote((tools.toolsDirectory / L"ffmpeg.exe").wstring()) +
-		L" -hide_banner -nostdin -y -f f32le -ar 44100 -ac 1 -i output.f32 " + format.encoder + L" " +
+		NSChildProcess::Quote((tools.toolsDirectory / L"AVSMediaToolkit.exe").wstring()) +
+		L" convertaudio --input output.f32 --input-format raw-f32 --input-rate 44100 --input-channels 1 " +
+		format.encoder + L" --overwrite --output " +
 		NSChildProcess::Quote(job.output.wstring()),
 		scratch.wstring(),
 		[&](const std::string& line) { encodeOutput.push_back(line); }, cancel, error);

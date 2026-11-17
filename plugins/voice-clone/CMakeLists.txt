@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 project(VoiceClonePlugin LANGUAGES C CXX)
 
 # The plugin DLL only. The engine, seedvc\ (GPL-3.0, a separate program), is
-# built by fetch.py into build/x64/; build.py packs it with ffmpeg.exe.
+# built by fetch.py into build/x64/; build.py packs it with AVSMediaToolkit.exe.
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

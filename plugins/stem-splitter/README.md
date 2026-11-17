@@ -18,14 +18,14 @@ window opens with that file already chosen (`ClickMenuItemEx`, see
 | 4 tracks | `htdemucs.onnx`, 174 MB | drums, bass, other, vocals |
 | 6 tracks | `htdemucs_6s.onnx`, 115 MB | the 4 + guitar, piano |
 
-Output is WAV 16-bit, FLAC or MP3 320 kbps; track names are in the UI language
+Output is WAV 32-bit float, FLAC or MP3 320 kbps; track names are in the UI language
 ("Song - Vocals.wav", "Song - Вокал.wav").
 
 ## How it works
 
 1. **Model** - downloaded once into `%LOCALAPPDATA%\avs_plugin_stemsplitter\models`,
    size-checked, from the `models-demucs-onnx-1` release of this repository.
-2. **Decode** - `ffmpeg.exe` turns any audio or video into raw 44.1 kHz stereo
+2. **Decode** - `AVSMediaToolkit.exe` turns AVS-supported audio or video into raw 44.1 kHz stereo
    float in a scratch folder: `%LOCALAPPDATA%\avs_plugin_stemsplitter\tmp`, or
    an `avs-stems-<n>` subfolder of the temporary folder chosen in the window.
    It holds about 21 MB a minute per track (the input and every output) until
@@ -38,7 +38,7 @@ Output is WAV 16-bit, FLAC or MP3 320 kbps; track names are in the UI language
    memory (physical and commit) cannot carry 3: past it, Windows grows the page
    file on C: - 8 jobs at once took 19 GB and filled the disk. Inside a job
    Demucs runs 7.8 s segments with 25 % overlap and cross-fades them.
-4. **Encode** - `ffmpeg.exe` writes each track in the chosen format.
+4. **Encode** - `AVSMediaToolkit.exe` writes each track in the chosen format.
 
 A 4-minute song in 6 tracks takes about 110 s and 7.4 GB on an i5-11400H
 (6 cores / 12 threads) - 3 jobs of 4 threads were the fastest of the splits
@@ -54,7 +54,7 @@ at once it now and then asked for one huge block and failed.
 ## Layout
 
 ```
-src/stems.{h,cpp}        the pipeline, no UI - model, ffmpeg, stems.exe, encoding
+src/stems.{h,cpp}        the pipeline, no UI - model, AVSMediaToolkit, stems.exe, encoding
 src/plugin.{h,cpp}       plugin object, worker thread, settings (incl. the temporary folder)
 src/ui.{h,cpp}           the window
 src/exports.cpp          the content plugin ABI
@@ -72,6 +72,18 @@ python build.py stem-splitter
 `fetch.py` checks out demucs.onnx at a pinned commit (with only its Eigen
 submodule), unpacks ONNX Runtime 1.22.1 from NuGet and builds `engine/`.
 
+## Media conversion dependency
+
+`AVSMediaToolkit.exe` must be beside `StemSplitter.dll`. Packaging takes it
+from `resources/x64/AVSMediaToolkit.exe` (the x64 tool is used in both packages).
+It requires the corresponding installed AVS COM components. Refresh this binary
+when rebuilding AVSMediaToolkit; the current bundled copy comes from x64/Debug.
+
+Decoding uses `convertaudio --format raw-f32`; encoding reads raw float32 with
+`--input-rate 44100 --input-channels 2`. WAV output is IEEE float32, FLAC is
+24-bit PCM, and MP3 is CBR 320 kbit/s. Reading shows a stage status because the
+tool does not emit percentage progress; separation retains its progress updates.
+
 ## The models
 
 Made from Meta's official weights by `tools/export_demucs_onnx.py`, published by
@@ -85,7 +97,7 @@ python tools/publish_assets.py models-demucs-onnx-1 models/htdemucs.onnx models/
 A changed model goes out under a new tag, with `MODEL_URL` and the sizes in
 `src/stems.cpp` updated.
 
-## Tested
+## Earlier pipeline validation (before AVSMediaToolkit migration)
 
 With the pipeline driven directly (no UI): a video under a Cyrillic path in all
 three modes and formats, x64 and the x86 plugin with the x64 engine. On a mix of

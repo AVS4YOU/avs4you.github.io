@@ -1,6 +1,7 @@
 {
     "en-US": {
         "Youtube": "Youtube",
+        "Default audio track": "Default audio track",
         "Check": "Check", "Checking formats...": "Checking formats...", "Best available": "Best available", "Video + audio": "Video + audio", "Video only": "Video only", "Audio only": "Audio only", "Single stream": "Single stream", "Any video codec": "Any video codec",
         "Download": "Download",
         "About": "About",
@@ -36,6 +37,7 @@
     },
     "ru-RU": {
         "Youtube": "Youtube",
+        "Default audio track": "Звуковая дорожка по умолчанию",
         "Check": "Проверить", "Checking formats...": "Проверка форматов...", "Best available": "Лучшее доступное", "Video + audio": "Видео + аудио", "Video only": "Только видео", "Audio only": "Только аудио", "Single stream": "Единый поток", "Any video codec": "Любой видеокодек",
         "Download": "Скачать",
         "About": "О плагине",
@@ -71,6 +73,7 @@
     },
     "de-DE": {
         "Youtube": "Youtube",
+        "Default audio track": "Standard-Audiospur",
         "Check": "Prüfen", "Checking formats...": "Formate werden geprüft...", "Best available": "Beste verfügbare", "Video + audio": "Video + Audio", "Video only": "Nur Video", "Audio only": "Nur Audio", "Single stream": "Einzelner Stream", "Any video codec": "Beliebiger Videocodec",
         "Download": "Herunterladen",
         "About": "Über",
@@ -106,6 +109,7 @@
     },
     "fr-FR": {
         "Youtube": "Youtube",
+        "Default audio track": "Piste audio par défaut",
         "Check": "Vérifier", "Checking formats...": "Vérification des formats...", "Best available": "Meilleure qualité disponible", "Video + audio": "Vidéo + audio", "Video only": "Vidéo uniquement", "Audio only": "Audio uniquement", "Single stream": "Flux unique", "Any video codec": "N’importe quel codec vidéo",
         "Download": "Télécharger",
         "About": "À propos",
@@ -141,6 +145,7 @@
     },
     "es-ES": {
         "Youtube": "Youtube",
+        "Default audio track": "Pista de audio predeterminada",
         "Check": "Comprobar", "Checking formats...": "Comprobando formatos...", "Best available": "Mejor disponible", "Video + audio": "Vídeo + audio", "Video only": "Solo vídeo", "Audio only": "Solo audio", "Single stream": "Flujo único", "Any video codec": "Cualquier códec de vídeo",
         "Download": "Descargar",
         "About": "Acerca de",
@@ -176,6 +181,7 @@
     },
     "it-IT": {
         "Youtube": "Youtube",
+        "Default audio track": "Traccia audio predefinita",
         "Check": "Verifica", "Checking formats...": "Verifica dei formati...", "Best available": "Migliore disponibile", "Video + audio": "Video + audio", "Video only": "Solo video", "Audio only": "Solo audio", "Single stream": "Flusso singolo", "Any video codec": "Qualsiasi codec video",
         "Download": "Scarica",
         "About": "Informazioni",
@@ -211,6 +217,7 @@
     },
     "ja-JP": {
         "Youtube": "Youtube",
+        "Default audio track": "既定の音声トラック",
         "Check": "確認", "Checking formats...": "フォーマットを確認中...", "Best available": "利用可能な最高品質", "Video + audio": "動画 + 音声", "Video only": "動画のみ", "Audio only": "音声のみ", "Single stream": "単一ストリーム", "Any video codec": "任意の動画コーデック",
         "Download": "ダウンロード",
         "About": "バージョン情報",
@@ -246,6 +253,7 @@
     },
     "nl-NL": {
         "Youtube": "Youtube",
+        "Default audio track": "Standaard audiotrack",
         "Check": "Controleren", "Checking formats...": "Formaten controleren...", "Best available": "Beste beschikbare", "Video + audio": "Video + audio", "Video only": "Alleen video", "Audio only": "Alleen audio", "Single stream": "Enkele stream", "Any video codec": "Elke videocodec",
         "Download": "Downloaden",
         "About": "Over",
@@ -281,6 +289,7 @@
     },
     "ko-KR": {
         "Youtube": "Youtube",
+        "Default audio track": "기본 오디오 트랙",
         "Check": "검사", "Checking formats...": "형식 확인 중...", "Best available": "사용 가능한 최고 품질", "Video + audio": "동영상 + 오디오", "Video only": "동영상만", "Audio only": "오디오만", "Single stream": "단일 스트림", "Any video codec": "모든 동영상 코덱",
         "Download": "다운로드",
         "About": "정보",
@@ -316,6 +325,7 @@
     },
     "pt-BR": {
         "Youtube": "Youtube",
+        "Default audio track": "Faixa de áudio padrão",
         "Check": "Verificar", "Checking formats...": "Verificando formatos...", "Best available": "Melhor disponível", "Video + audio": "Vídeo + áudio", "Video only": "Somente vídeo", "Audio only": "Somente áudio", "Single stream": "Fluxo único", "Any video codec": "Qualquer codec de vídeo",
         "Download": "Baixar",
         "About": "Sobre",
@@ -351,6 +361,7 @@
     },
     "pl-PL": {
         "Youtube": "Youtube",
+        "Default audio track": "Domyślna ścieżka audio",
         "Check": "Sprawdź", "Checking formats...": "Sprawdzanie formatów...", "Best available": "Najlepsza dostępna", "Video + audio": "Wideo + dźwięk", "Video only": "Tylko wideo", "Audio only": "Tylko dźwięk", "Single stream": "Pojedynczy strumień", "Any video codec": "Dowolny kodek wideo",
         "Download": "Pobierz",
         "About": "O programie",
@@ -386,6 +397,7 @@
     },
     "da-DK": {
         "Youtube": "Youtube",
+        "Default audio track": "Standardlydspor",
         "Check": "Tjek", "Checking formats...": "Kontrollerer formater...", "Best available": "Bedst tilgængelige", "Video + audio": "Video + lyd", "Video only": "Kun video", "Audio only": "Kun lyd", "Single stream": "Enkelt stream", "Any video codec": "Vilkårligt videocodec",
         "Download": "Download",
         "About": "Om",
@@ -421,6 +433,7 @@
     },
     "zh-CN": {
         "Youtube": "Youtube",
+        "Default audio track": "默认音轨",
         "Check": "检查", "Checking formats...": "正在检查格式...", "Best available": "最佳可用", "Video + audio": "视频 + 音频", "Video only": "仅视频", "Audio only": "仅音频", "Single stream": "单一流", "Any video codec": "任意视频编解码器",
         "Download": "下载",
         "About": "关于",
