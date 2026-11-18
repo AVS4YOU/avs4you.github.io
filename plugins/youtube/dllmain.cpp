@@ -1936,7 +1936,7 @@ extern "C" {
 
     PLUGIN_API wchar_t* __stdcall PluginVersion()
     {
-        return export_str(L"1.0.3");
+        return export_str(L"1.0.4");
     }
 
     PLUGIN_API wchar_t* __stdcall PluginIcon(PluginHandle plugin)

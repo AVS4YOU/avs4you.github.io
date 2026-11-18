@@ -10,7 +10,7 @@
     "Video ReMaker",
     "Audio Converter"
   ],
-  "version": "v1.0.1",
+  "version": "v1.0.2",
   "type": "content",
   "typeLabel": "Content Plugin",
   "aiPowered": true,
