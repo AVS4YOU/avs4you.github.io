@@ -1296,6 +1296,17 @@
     // without ?platform, and they are 32-bit.
     const DEFAULT_ARCH = "x86";
 
+    // In a plain browser the default is the Windows the page runs on: 64-bit
+    // Windows gets the x64 packages. The user agent says "Win64; x64" (64-bit
+    // browser) or "WOW64" (32-bit browser on 64-bit Windows); not Windows at all
+    // also means x64. Chromium freezes its user agent at "Win64; x64" whatever the
+    // system, so there the bitness client hint corrects it (refineBrowserArch).
+    function guessBrowserArch() {
+      const ua = navigator.userAgent || "";
+      if (!/Windows/i.test(ua)) return "x64";
+      return /Win64|WOW64|x64|x86_64|amd64|arm64|aarch64/i.test(ua) ? "x64" : "x86";
+    }
+
     const ICONS = {
       search: '<svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
       grid: '<svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
@@ -1339,9 +1350,10 @@
       rm: "Video ReMaker"
     };
     const initialAppFilter = typeAppFilter[typeParam] || "all";
+    const isApp = typeParam === "app" || initialAppFilter !== "all";
     const state = {
-      isApp: typeParam === "app" || initialAppFilter !== "all",
-      appPlatform: params.get("platform") || DEFAULT_ARCH,
+      isApp,
+      appPlatform: params.get("platform") || (isApp ? DEFAULT_ARCH : guessBrowserArch()),
       category: "all",
       app: initialAppFilter,
       search: "",
@@ -1739,6 +1751,22 @@
         return;
       }
       render();
+      refineBrowserArch();
+    }
+
+    // Chromium on Windows: the bitness client hint ("64" or "32") instead of the
+    // frozen user agent. Only the default changes; a chip the visitor picked stays.
+    function refineBrowserArch() {
+      const hints = navigator.userAgentData;
+      if (state.isApp || params.get("platform") || !hints || hints.platform !== "Windows" ||
+          typeof hints.getHighEntropyValues !== "function") return;
+      hints.getHighEntropyValues(["bitness"]).then((values) => {
+        const arch = values.bitness === "32" ? "x86" : values.bitness === "64" ? "x64" : "";
+        if (arch && arch !== state.appPlatform) {
+          state.appPlatform = arch;
+          renderPlugins();
+        }
+      }).catch(() => {});
     }
 
     init();
