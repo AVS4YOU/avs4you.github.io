@@ -7,17 +7,19 @@
 
 1. sa3.cpp, with ggml as its submodule, is checked out at a pinned commit into
    sa3-cpp/ next to this file.
-2. Its sa3_backend target is built through CMakePresets.json, which copies
-   sa3.dll, ggml*.dll and the VC/UCRT runtime into build/<arch>/:
+2. Its sa3_backend target is built through CMakePresets.json into one sa3.dll
+   per backend - ggml linked in, the static runtime - in build/<arch>/:
      sa3-cpp-cpu/          x86 and x64 - AVX2
      sa3-cpp-cpu-compat/   x86 and x64 - no AVX, for CPUs without AVX2
-     sa3-cpp-gpu/          x64 only - CUDA, needs the CUDA Toolkit (12.8+ keeps it small)
+     sa3-cpp-gpu/          x64 only - Vulkan, needs the Vulkan SDK to build
+                           (VULKAN_SDK or the newest C:/VulkanSDK/<version>);
+                           users need only their GPU driver
    The plugin picks among them at run time (src/system_info.cpp).
 
 A backend is rebuilt only when what it is built from changes - the sa3.cpp
-commit, CMakeLists.txt, its preset in CMakePresets.json or the CUDA version - or with
---clean; otherwise this does nothing. Without a CUDA Toolkit an existing GPU
-backend is kept, or taken from the previous x64 package in build/x64.
+commit, CMakeLists.txt, its preset in CMakePresets.json or the Vulkan SDK - or with
+--clean; otherwise this does nothing. Without a Vulkan SDK an existing GPU
+backend is kept.
 
 build.py in the repository root runs this before it builds StableAudio3.dll
 itself and packs it with these backends.
@@ -65,13 +67,14 @@ class Backend:
 
     @property
     def gpu(self) -> bool:
-        return self.configure == "windows-cuda"
+        return self.configure == "windows-vulkan"
 
     def complete(self) -> bool:
         return all((self.output / name).is_file() for name in self.files)
 
 
-CPU_FILES = ("sa3.dll", "ggml.dll", "ggml-base.dll", "ggml-cpu.dll")
+# ggml is linked into sa3.dll (CMakeLists.txt), so a backend is that one file
+CPU_FILES = ("sa3.dll",)
 BACKENDS = [
     Backend("x86", "sa3-cpp-cpu", "windows-x86-cpu", "x86-cpu-release", "out/x86-cpu", CPU_FILES),
     # no AVX at all: what the plugin runs on CPUs without AVX2
@@ -80,13 +83,8 @@ BACKENDS = [
     Backend("x64", "sa3-cpp-cpu", "windows-cpu", "cpu-release", "out/cpu", CPU_FILES),
     Backend("x64", "sa3-cpp-cpu-compat", "windows-cpu-compat", "cpu-compat-release",
             "out/cpu-compat", CPU_FILES),
-    Backend("x64", "sa3-cpp-gpu", "windows-cuda", "cuda-release", "out/cuda",
-            CPU_FILES + ("ggml-cuda.dll",)),
+    Backend("x64", "sa3-cpp-gpu", "windows-vulkan", "vulkan-release", "out/vulkan", CPU_FILES),
 ]
-
-# ggml compresses its CUDA kernels (-compress-mode=size) only from this
-# version on; older toolkits make ggml-cuda.dll about four times larger
-CUDA_COMPRESSION = (12, 8)
 
 
 class FetchError(Exception):
@@ -149,21 +147,33 @@ def checkout() -> None:
 # --- backends -------------------------------------------------------------------
 
 
-def cuda_toolkit() -> Path | None:
-    """The CUDA Toolkit CUDA_PATH names - the installer points it at the newest."""
+def vulkan_sdk() -> Path | None:
+    """The Vulkan SDK: VULKAN_SDK if it exists, else the newest C:/VulkanSDK/*
+    (as ai-subtitles/fetch.py finds it)."""
 
-    cuda_path = os.environ.get("CUDA_PATH")
-    if cuda_path and (Path(cuda_path) / "bin" / "nvcc.exe").exists():
-        return Path(cuda_path)
+    candidates = []
+    if os.environ.get("VULKAN_SDK"):
+        candidates.append(Path(os.environ["VULKAN_SDK"]))
+    root = Path("C:/VulkanSDK")
+    if root.is_dir():
+        candidates += sorted((path for path in root.iterdir() if path.is_dir()),
+                             key=lambda path: [int(part) if part.isdigit() else 0
+                                               for part in path.name.split(".")], reverse=True)
+    for sdk in candidates:
+        if (sdk / "Include/vulkan/vulkan.h").is_file() and (sdk / "Bin/glslc.exe").is_file():
+            return sdk
     return None
 
 
-def cuda_version(toolkit: Path) -> tuple[int, ...]:
-    try:
-        version = json.loads((toolkit / "version.json").read_text(encoding="utf-8"))
-        return tuple(int(part) for part in version["cuda"]["version"].split("."))
-    except (OSError, ValueError, KeyError):
-        return ()
+def vulkan_defines(sdk: Path) -> list[str]:
+    return [
+        # explicit, so a stale VULKAN_SDK cannot send CMake elsewhere
+        f"-DVulkan_INCLUDE_DIR={(sdk / 'Include').as_posix()}",
+        f"-DVulkan_LIBRARY={(sdk / 'Lib/vulkan-1.lib').as_posix()}",
+        f"-DVulkan_GLSLC_EXECUTABLE={(sdk / 'Bin/glslc.exe').as_posix()}",
+        # SPIRV-HeadersConfig.cmake, which ggml finds only through VULKAN_SDK
+        f"-DCMAKE_PREFIX_PATH={sdk.as_posix()}",
+    ]
 
 
 def preset_chain(name: str) -> list[dict]:
@@ -188,8 +198,8 @@ def fingerprint(backend: Backend) -> str:
     digest.update((PLUGIN_DIR / "CMakeLists.txt").read_bytes())
     digest.update(json.dumps(preset_chain(backend.configure), sort_keys=True).encode())
     if backend.gpu:
-        toolkit = cuda_toolkit()
-        digest.update(".".join(map(str, cuda_version(toolkit) if toolkit else ())).encode())
+        sdk = vulkan_sdk()
+        digest.update((sdk.name if sdk else "").encode())
     return digest.hexdigest()
 
 
@@ -203,31 +213,20 @@ def up_to_date(backend: Backend) -> bool:
 
 def build_backend(backend: Backend, tools: Tools) -> None:
     # copy_if_different never deletes, so start empty or files of an older
-    # sa3.cpp would ride along; the CMake cache pins the CUDA Toolkit it found
+    # build (ggml*.dll, the VC runtime, ggml-cuda.dll) would ride along; the
+    # CMake cache pins the Vulkan SDK it found
     shutil.rmtree(backend.output, ignore_errors=True)
     backend.stamp.unlink(missing_ok=True)
     shutil.rmtree(backend.binary_dir, ignore_errors=True)
 
     configure = [tools.cmake, "--preset", backend.configure,
                  f"-DCMAKE_GENERATOR_INSTANCE={tools.vs_path}"]
-    env = None
     if backend.gpu:
-        toolkit = cuda_toolkit()
-        version = cuda_version(toolkit)
-        if version and version < CUDA_COMPRESSION:
-            print(f"WARNING: CUDA {'.'.join(map(str, version))} cannot compress the kernels - "
-                  f"ggml-cuda.dll comes out about four times larger than with CUDA 12.8+",
-                  flush=True)
-        # with several toolkits installed, build with the CUDA_PATH one
-        configure += ["-T", f"cuda={toolkit}"]
-        # MSBuild compiles the .cu files one at a time; let nvcc at least
-        # build each for all its architectures at once
-        env = {"NVCC_APPEND_FLAGS":
-               f"{os.environ.get('NVCC_APPEND_FLAGS', '')} --threads 0".strip()}
+        configure += vulkan_defines(vulkan_sdk())
     run(configure, cwd=PLUGIN_DIR)
     # only the backend: StableAudio3.dll itself is build.py's job
     run([tools.cmake, "--build", "--preset", backend.build, "--target", "sa3_backend"],
-        cwd=PLUGIN_DIR, env=env)
+        cwd=PLUGIN_DIR)
 
     if not backend.complete():
         raise FetchError(f"the build did not fill {backend.shown}")
@@ -235,28 +234,14 @@ def build_backend(backend: Backend, tools: Tools) -> None:
 
 
 def keep_gpu_backend(backend: Backend) -> None:
-    """No CUDA Toolkit here: keep the GPU backend there is, or the one in the
-    previous x64 package, rather than ship a package without GPU support."""
+    """No Vulkan SDK here: keep the Vulkan backend there is rather than ship a
+    package without GPU support. A CUDA one from before 1.1 does not count."""
 
-    if backend.complete():
-        print(f"WARNING: no CUDA Toolkit - keeping {backend.shown} as it is", flush=True)
+    if backend.complete() and not (backend.output / "ggml-cuda.dll").exists():
+        print(f"WARNING: no Vulkan SDK - keeping {backend.shown} as it is", flush=True)
         return
-
-    for previous in sorted(backend.output.parent.glob("*.avsp")):
-        with zipfile.ZipFile(previous) as archive:
-            prefix = backend.output.name + "/"
-            members = [name for name in archive.namelist()
-                       if name.startswith(prefix) and not name.endswith("/")]
-            if not members:
-                continue
-            print(f"WARNING: no CUDA Toolkit - taking {prefix} ({len(members)} files) "
-                  f"from the previous {previous.name}", flush=True)
-            shutil.rmtree(backend.output, ignore_errors=True)
-            archive.extractall(backend.output.parent, members)
-            return
-
-    raise FetchError(f"{backend.shown} needs the CUDA Toolkit, or a previous x64 package "
-                     f"with it in build/x64")
+    raise FetchError(f"{backend.shown} needs the Vulkan SDK (https://vulkan.lunarg.com): "
+                     f"its headers, vulkan-1.lib and glslc")
 
 
 # --- main -------------------------------------------------------------------------
@@ -267,7 +252,7 @@ def main(argv: list[str] | None = None) -> int:
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--arch", choices=[*ARCHS, "both"], default="both")
     parser.add_argument("--clean", action="store_true",
-                        help="rebuild the backends from scratch, CUDA included")
+                        help="rebuild the backends from scratch, Vulkan included")
     parser.add_argument("--check", action="store_true",
                         help="change nothing; exit 1 if anything is missing or out of date")
     args = parser.parse_args(argv)
@@ -296,11 +281,11 @@ def main(argv: list[str] | None = None) -> int:
             if up_to_date(backend) and not args.clean:
                 print(f"ok:      {backend.shown}")
                 continue
-            if backend.gpu and not cuda_toolkit():
+            if backend.gpu and not vulkan_sdk():
                 keep_gpu_backend(backend)
                 continue
-            print(f"building {backend.shown}" + (" - CUDA, this takes a while" if backend.gpu
-                                                 else ""), flush=True)
+            print(f"building {backend.shown}" + (" - Vulkan, the shaders take a while"
+                                                 if backend.gpu else ""), flush=True)
             tools = tools or find_vs2019()
             build_backend(backend, tools)
             print(f"ok:      {backend.shown}")

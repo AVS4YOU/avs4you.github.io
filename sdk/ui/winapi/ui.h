@@ -91,6 +91,10 @@ namespace AVS
 
 		bool IsVscroll = false;
 		bool IsMultiline = false;
+		// single-line only: the text line in the middle of the box, not at its top
+		bool IsVCenter = false;
+		// ES_LEFT, ES_CENTER or ES_RIGHT (numbers read best on the right)
+		int TextAlign = ES_LEFT;
 
 		std::wstring FontName = L"Segoe UI";
 		bool FontItalic = false;
@@ -212,6 +216,37 @@ namespace AVS
 		LPCWSTR text,
 		const int& x, const int& y, const int& w, const int& h,
 		const LabelSettings& settings);
+
+	// A checkbox drawn like the other widgets here: the box in the edit border colours,
+	// filled with the accent and a white tick when checked. BM_GETCHECK / BM_SETCHECK
+	// and BN_CLICKED work as on a BS_AUTOCHECKBOX.
+	class CheckBoxSettings
+	{
+	public:
+		Color Background;   // the parent's background, behind box and text
+		Color Box;          // inside the unchecked box
+		Color Border;
+		Color BorderHover;
+		Color BorderFocus;
+		Color Check;        // fill of the checked box
+		Color Tick;
+		Color TextColor;
+		Color TextColorDisabled;
+		int BoxSize = 16;
+		int TextGap = 8;
+
+		std::wstring FontName = L"Segoe UI";
+		int FontSize = -12;
+		bool FontBold = false;
+		bool FontItalic = false;
+
+		static CheckBoxSettings Create();
+	};
+
+	HWND CreateCheckBox(HWND hParent, HMENU hMenu, HINSTANCE hInstance,
+		LPCWSTR text,
+		const int& x, const int& y, const int& w, const int& h,
+		const CheckBoxSettings& settings, bool checked = false);
 
 	void Label_SetText(HWND hwnd, const std::wstring& text);
 	std::wstring Label_GetText(HWND hwnd);

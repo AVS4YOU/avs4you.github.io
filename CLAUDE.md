@@ -77,11 +77,13 @@ tests/content/             same for content plugins
 - A Build Tools install without the C++ workload has `MSBuild.exe` but no
   `Microsoft.Cpp.props` and fails with MSB4019. `tools/plugin-tools` and
   `build.py` pick an install that has the workload.
-- GPU builds need their SDK on the build machine: StableAudio3's `fetch.py`
-  CUDA, AI Subtitles' `fetch.py` the Vulkan SDK (for `whisper-cli-vulkan.exe`,
-  x64; found through `VULKAN_SDK` or the newest `C:\VulkanSDK\<version>`).
-  Users need only their GPU driver; without a usable GPU the plugins run on
-  the CPU.
+- GPU builds need the Vulkan SDK on the build machine: AI Subtitles'
+  `fetch.py` for `whisper-cli-vulkan.exe` and StableAudio3's for its
+  `sa3-cpp-gpu` backend (both x64; found through `VULKAN_SDK` or the newest
+  `C:\VulkanSDK\<version>`). Users need only their GPU driver; without a
+  usable GPU the plugins run on the CPU. Prefer Vulkan (or DirectML) to CUDA:
+  CUDA kernels weigh hundreds of MB and need the CUDA runtime and cuBLAS,
+  which the NVIDIA driver does not install.
 
 ## Releasing a version
 
@@ -97,8 +99,8 @@ python package.py                   # index.html + plugins.json
   into the package. Third-party code is not its business: a
   `plugins/<slug>/fetch.py` gets it (it is passed `--arch` and `--clean`) and
   leaves alone what it already has. StableAudio3's fetches sa3.cpp at a pinned
-  commit and builds its CPU/CUDA backends, which takes the better part of an
-  hour for CUDA - `--clean` is the only thing that forces that.
+  commit and builds its CPU and Vulkan backends; only a changed input or
+  `--clean` rebuilds them.
 - `build.py` is incremental; `--clean` rebuilds everything. A new plugin needs
   an entry in `build.py` `PLUGINS` and `sync_version.py` `FILES`; both stop on
   a plugin folder they do not know.

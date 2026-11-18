@@ -8,10 +8,15 @@ std::wstring GetSystemSummary(const std::filesystem::path &workDirectory);
 // the AVX registers. Without it only sa3-cpp-cpu-compat runs.
 bool CpuHasAvx2();
 
-// The CUDA backend can run here: x64 build, an NVIDIA driver with a CUDA
-// device, the sa3-cpp-gpu files, a CUDA 12 runtime and an AVX2 CPU (its
-// ggml-cpu.dll is the AVX2 one).
+// The Vulkan backend can run here: x64 build, the sa3-cpp-gpu file, a GPU
+// driver with a Vulkan 1.2 discrete or integrated GPU, and an AVX2 CPU (the
+// backend's CPU code is the AVX2 one).
 bool GpuBackendReady(const std::filesystem::path &moduleDirectory);
+
+// Ready, and with a discrete GPU, which ggml-vulkan picks first: worth
+// preselecting. An integrated GPU alone is offered but not preselected - it
+// may not beat the processor.
+bool GpuBackendPreferred(const std::filesystem::path &moduleDirectory);
 
 // The backend folder next to StableAudio3.dll a generation runs on: the GPU
 // one when asked for and ready, otherwise the CPU one this processor can run.

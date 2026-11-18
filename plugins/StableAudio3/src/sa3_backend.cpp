@@ -106,30 +106,16 @@ static void prog(void* user, const char* stage, int step, int total,
 static int cancelled(void* user) {
 	return static_cast<CStableAudio3Plugin*>(user)->cancel ? 1 : 0;
 }
-bool GenerateAudio(
+// One generation on the backend in `folder`.
+static bool Generate(
 	CStableAudio3Plugin& plugin, const GenerationOptions& options,
-	const std::filesystem::path& output,
+	const std::wstring& folder, const std::filesystem::path& output,
 	const std::function<void(const std::wstring&, int)>& callback,
 	std::wstring& error) {
-	// GPU when asked for and ready, else the CPU backend this processor runs:
-	// the AVX2 one, or sa3-cpp-cpu-compat on older CPUs
 	Api api;
-	bool gpu = options.device == L"gpu";
-	auto backendPath =
-		plugin.moduleDirectory / BackendFolder(plugin.moduleDirectory, gpu) / L"sa3.dll";
-	gpu = backendPath.parent_path().filename() == L"sa3-cpp-gpu";
-	if (!api.load(backendPath, error)) {
-		if (!gpu)
-			return false;
-		// a CUDA runtime that is there but does not load: still generate, on the CPU
-		gpu = false;
-		backendPath =
-			plugin.moduleDirectory / BackendFolder(plugin.moduleDirectory, false) / L"sa3.dll";
-		api = Api{};
-		if (!api.load(backendPath, error))
-			return false;
-		error.clear();
-	}
+	if (!api.load(plugin.moduleDirectory / folder / L"sa3.dll", error))
+		return false;
+	const bool gpu = folder == L"sa3-cpp-gpu";
 
 	auto models = U((plugin.workDirectory / L"models").wstring());
 	auto variant = U(options.model);
@@ -180,6 +166,27 @@ bool GenerateAudio(
 		api.fa(&audio);
 	api.fc(context);
 	return ok;
+}
+bool GenerateAudio(
+	CStableAudio3Plugin& plugin, const GenerationOptions& options,
+	const std::filesystem::path& output,
+	const std::function<void(const std::wstring&, int)>& callback,
+	std::wstring& error) {
+	// GPU when asked for and ready, else the CPU backend this processor runs:
+	// the AVX2 one, or sa3-cpp-cpu-compat on older CPUs
+	const std::wstring folder = BackendFolder(plugin.moduleDirectory, options.device == L"gpu");
+	if (folder != L"sa3-cpp-gpu")
+		return Generate(plugin, options, folder, output, callback, error);
+	if (Generate(plugin, options, folder, output, callback, error))
+		return true;
+	if (plugin.cancel)
+		return false;
+	// a Vulkan driver that cannot load the backend, runs out of video memory or
+	// fails mid-run: the CPU still makes the audio
+	callback(L"GPU failed (" + error + L"), generating on the CPU...", 0);
+	error.clear();
+	return Generate(plugin, options, BackendFolder(plugin.moduleDirectory, false), output,
+		callback, error);
 }
 struct MF {
 	std::wstring repo, name, localName;

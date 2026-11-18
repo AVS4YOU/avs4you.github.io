@@ -2,6 +2,11 @@
 #include <commctrl.h>
 #pragma comment(lib, "comctl32.lib")
 #include <Windowsx.h>
+// the checkbox tells screen readers what it is (Dynamic Annotation, oleacc)
+#include <initguid.h>
+#include <oleacc.h>
+#pragma comment(lib, "ole32.lib")
+#pragma comment(lib, "oleaut32.lib")
 
 namespace AVS
 {
@@ -377,6 +382,43 @@ namespace AVS
 			RedrawWindow(hwnd, NULL, NULL, RDW_FRAME | RDW_INVALIDATE);
 			break;
 		}
+		case WM_NCCALCSIZE:
+		{
+			LRESULT result = DefSubclassProc(hwnd, msg, wParam, lParam);
+			// A single-line EDIT draws its text at the top of the client area:
+			// shrink that to one text line in the middle, the rest becomes frame.
+			if (wParam && info->Settings.IsVCenter && !info->Settings.IsMultiline)
+			{
+				RECT& client = reinterpret_cast<NCCALCSIZE_PARAMS*>(lParam)->rgrc[0];
+				HDC hdc = GetDC(hwnd);
+				HFONT hOldFont = (HFONT)SelectObject(hdc, info->hFont);
+				TEXTMETRICW tm = {};
+				GetTextMetricsW(hdc, &tm);
+				SelectObject(hdc, hOldFont);
+				ReleaseDC(hwnd, hdc);
+				const int line = tm.tmHeight + 2;
+				const int available = client.bottom - client.top;
+				if (available > line)
+				{
+					client.top += (available - line) / 2;
+					client.bottom = client.top + line;
+				}
+			}
+			return result;
+		}
+		case WM_NCHITTEST:
+		{
+			// clicks above and below the centred line still go to the edit
+			if (info->Settings.IsVCenter && !info->Settings.IsMultiline)
+			{
+				RECT rc;
+				GetWindowRect(hwnd, &rc);
+				POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+				if (PtInRect(&rc, pt))
+					return HTCLIENT;
+			}
+			break;
+		}
 		case WM_NCPAINT:
 		{
 			LRESULT result = DefSubclassProc(hwnd, msg, wParam, lParam);
@@ -386,6 +428,25 @@ namespace AVS
 			RECT rc;
 			GetWindowRect(hwnd, &rc);
 			OffsetRect(&rc, -rc.left, -rc.top);
+
+			if (info->Settings.IsVCenter && !info->Settings.IsMultiline)
+			{
+				// the frame above and below the text line, in the field's own colour
+				RECT client;
+				GetClientRect(hwnd, &client);
+				MapWindowPoints(hwnd, NULL, reinterpret_cast<POINT*>(&client), 2);
+				RECT window;
+				GetWindowRect(hwnd, &window);
+				OffsetRect(&client, -window.left, -window.top);
+				RECT inner = rc;
+				InflateRect(&inner, -GetSystemMetrics(SM_CXEDGE), -GetSystemMetrics(SM_CYEDGE));
+				const bool editable = IsWindowEnabled(hwnd) &&
+					!(GetWindowLongPtrW(hwnd, GWL_STYLE) & ES_READONLY);
+				int saved = SaveDC(hdc);
+				ExcludeClipRect(hdc, client.left, client.top, client.right, client.bottom);
+				FillRect(hdc, &inner, GetSysColorBrush(editable ? COLOR_WINDOW : COLOR_3DFACE));
+				RestoreDC(hdc, saved);
+			}
 
 			bool hasFocus = (GetFocus() == hwnd);			
 
@@ -481,7 +542,8 @@ namespace AVS
 		const int& x, const int& y, const int& w, const int& h,
 		const TextEditSettings& settings)
 	{
-		DWORD dwStyle = WS_CHILD | WS_VISIBLE | WS_TABSTOP | ES_WANTRETURN;
+		DWORD dwStyle = WS_CHILD | WS_VISIBLE | WS_TABSTOP | ES_WANTRETURN |
+			(settings.TextAlign & (ES_LEFT | ES_CENTER | ES_RIGHT));
 		if (settings.IsMultiline)
 		{
 			dwStyle |= ES_MULTILINE;
@@ -500,6 +562,10 @@ namespace AVS
 		TextEditInfo* info = new TextEditInfo(settings);
 		SendMessage(hwnd, WM_SETFONT, (WPARAM)info->hFont, TRUE);
 		SetWindowSubclass(hwnd, _EditSubclassProc, 0, (DWORD_PTR)info);
+		// WM_NCCALCSIZE ran at creation, before the subclass: once more, with it
+		if (settings.IsVCenter && !settings.IsMultiline)
+			SetWindowPos(hwnd, NULL, 0, 0, 0, 0,
+				SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
 
 		return hwnd;
 	}
@@ -1599,5 +1665,425 @@ namespace AVS
 			SetWindowText(hwnd, text.c_str());
 			InvalidateRect(hwnd, NULL, TRUE);
 		}
+	}
+
+	CheckBoxSettings CheckBoxSettings::Create()
+	{
+		CheckBoxSettings settings;
+		settings.Background = Color::GetDefaultWindowBackground();
+		settings.Box = Color::MakeRGBA(255, 255, 255);
+		// the TextEdit border colours, the button accent
+		settings.Border = Color::MakeRGBA(206, 215, 230);
+		settings.BorderHover = Color::MakeRGBA(57, 114, 227);
+		settings.BorderFocus = Color::MakeRGBA(57, 114, 227);
+		settings.Check = Color::MakeRGBA(57, 114, 227);
+		settings.Tick = Color::MakeRGBA(255, 255, 255);
+		// the Enabled and Disabled label colours
+		settings.TextColor = Color::MakeRGBA(0, 0, 0);
+		settings.TextColorDisabled = Color::MakeRGBA(130, 130, 130);
+		return settings;
+	}
+
+	// What a screen reader hears. The checkbox is an owner-drawn BUTTON, which the system
+	// accessibility proxy reports as a push button without a state; Dynamic Annotation
+	// overrides the role once and asks this server for the state each time.
+	class CheckBoxAccessibility : public IAccPropServer
+	{
+		LONG m_refs = 1;
+		IAccPropServices* m_services;
+
+	public:
+		explicit CheckBoxAccessibility(IAccPropServices* services) : m_services(services)
+		{
+			m_services->AddRef();
+		}
+		~CheckBoxAccessibility()
+		{
+			m_services->Release();
+		}
+		HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** out) override
+		{
+			if (!out)
+				return E_POINTER;
+			if (riid == IID_IUnknown || riid == IID_IAccPropServer)
+			{
+				*out = static_cast<IAccPropServer*>(this);
+				AddRef();
+				return S_OK;
+			}
+			*out = NULL;
+			return E_NOINTERFACE;
+		}
+		ULONG STDMETHODCALLTYPE AddRef() override
+		{
+			return InterlockedIncrement(&m_refs);
+		}
+		ULONG STDMETHODCALLTYPE Release() override
+		{
+			const ULONG refs = InterlockedDecrement(&m_refs);
+			if (!refs)
+				delete this;
+			return refs;
+		}
+		HRESULT STDMETHODCALLTYPE GetPropValue(const BYTE* key, DWORD keyLength, MSAAPROPID property,
+			VARIANT* value, BOOL* found) override
+		{
+			*found = FALSE;
+			VariantInit(value);
+			HWND hwnd = NULL;
+			DWORD object = 0, child = 0;
+			if (FAILED(m_services->DecomposeHwndIdentityString(key, keyLength, &hwnd, &object, &child)) || !IsWindow(hwnd))
+				return S_OK;
+			const bool checked = SendMessage(hwnd, BM_GETCHECK, 0, 0) == BST_CHECKED;
+			if (property == PROPID_ACC_STATE)
+			{
+				LONG state = STATE_SYSTEM_FOCUSABLE;
+				if (checked) state |= STATE_SYSTEM_CHECKED;
+				// focused as the system reports it: in the window the user is in
+				if (GetFocus() == hwnd && GetForegroundWindow() == GetAncestor(hwnd, GA_ROOT))
+					state |= STATE_SYSTEM_FOCUSED;
+				if (!IsWindowEnabled(hwnd)) state |= STATE_SYSTEM_UNAVAILABLE;
+				if (!IsWindowVisible(hwnd)) state |= STATE_SYSTEM_INVISIBLE;
+				value->vt = VT_I4;
+				value->lVal = state;
+				*found = TRUE;
+			}
+			else if (property == PROPID_ACC_DEFAULTACTION)
+			{
+				// the words a standard checkbox uses
+				value->vt = VT_BSTR;
+				value->bstrVal = SysAllocString(checked ? L"Uncheck" : L"Check");
+				*found = value->bstrVal != NULL;
+			}
+			return S_OK;
+		}
+	};
+
+	class CheckBoxInfo
+	{
+	public:
+		CheckBoxSettings Settings;
+		bool IsHovered = false;
+		bool IsChecked = false;
+		bool IsSpaceDown = false;
+		IAccPropServices* Accessibility = nullptr;
+		HFONT hFont;
+
+		CheckBoxInfo(const CheckBoxSettings& settings, bool checked)
+		{
+			Settings = settings;
+			IsChecked = checked;
+			int fontH = Settings.FontSize;
+			if (fontH > 0)
+				fontH = -MulDiv(fontH, 96, 72);
+			hFont = CreateFontW(fontH, 0, 0, 0, Settings.FontBold ? FW_BOLD : FW_NORMAL,
+				Settings.FontItalic ? TRUE : FALSE, FALSE, FALSE, DEFAULT_CHARSET,
+				OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,
+				DEFAULT_PITCH | FF_SWISS, Settings.FontName.c_str());
+		}
+
+		~CheckBoxInfo()
+		{
+			DeleteObject(hFont);
+		}
+	};
+
+	// The tick, smoothed: GDI draws lines without anti-aliasing, so a 2 px tick in a 16 px
+	// box comes out as a jagged blob. Drawn here 4x larger with round ends into a mask,
+	// each pixel then takes the average of its 4x4 block as the share of tick colour.
+	static void _DrawSmoothTick(HDC hdc, const RECT& box, const Color& fill, const Color& tick)
+	{
+		const int size = box.right - box.left;
+		const int scale = 4, big = size * scale;
+		BITMAPINFO bi = {};
+		bi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+		bi.bmiHeader.biWidth = big;
+		bi.bmiHeader.biHeight = -big;
+		bi.bmiHeader.biPlanes = 1;
+		bi.bmiHeader.biBitCount = 32;
+		bi.bmiHeader.biCompression = BI_RGB;
+		void* bits = NULL;
+		HDC maskDc = CreateCompatibleDC(hdc);
+		HBITMAP mask = CreateDIBSection(hdc, &bi, DIB_RGB_COLORS, &bits, NULL, 0);
+		if (!maskDc || !mask || !bits)
+		{
+			if (mask) DeleteObject(mask);
+			if (maskDc) DeleteDC(maskDc);
+			return;
+		}
+		HBITMAP oldMask = (HBITMAP)SelectObject(maskDc, mask);
+		RECT all = { 0, 0, big, big };
+		FillRect(maskDc, &all, (HBRUSH)GetStockObject(BLACK_BRUSH));
+
+		// in 1/16 of the box: down to the lower third, then up to the top right; 2 px wide
+		const float points[3][2] = { { 4.0f, 8.5f }, { 7.0f, 11.5f }, { 12.0f, 5.0f } };
+		LOGBRUSH brush = { BS_SOLID, RGB(255, 255, 255), 0 };
+		HPEN pen = ExtCreatePen(PS_GEOMETRIC | PS_SOLID | PS_ENDCAP_ROUND | PS_JOIN_ROUND,
+			(DWORD)(2.0f * big / 16.0f + 0.5f), &brush, 0, NULL);
+		HPEN oldPen = (HPEN)SelectObject(maskDc, pen);
+		POINT line[3];
+		for (int i = 0; i < 3; ++i)
+		{
+			line[i].x = (LONG)(points[i][0] * big / 16.0f + 0.5f);
+			line[i].y = (LONG)(points[i][1] * big / 16.0f + 0.5f);
+		}
+		Polyline(maskDc, line, 3);
+		SelectObject(maskDc, oldPen);
+		DeleteObject(pen);
+		GdiFlush();
+
+		const DWORD* pixels = (const DWORD*)bits;
+		for (int y = 0; y < size; ++y)
+		{
+			for (int x = 0; x < size; ++x)
+			{
+				int sum = 0;
+				for (int sy = 0; sy < scale; ++sy)
+					for (int sx = 0; sx < scale; ++sx)
+						sum += pixels[(y * scale + sy) * big + x * scale + sx] & 0xFF;
+				const int a = sum / (scale * scale);
+				if (!a)
+					continue;
+				SetPixel(hdc, box.left + x, box.top + y, RGB(
+					fill.R + (tick.R - fill.R) * a / 255,
+					fill.G + (tick.G - fill.G) * a / 255,
+					fill.B + (tick.B - fill.B) * a / 255));
+			}
+		}
+		SelectObject(maskDc, oldMask);
+		DeleteObject(mask);
+		DeleteDC(maskDc);
+	}
+
+	static void _CheckBoxSetChecked(HWND hwnd, CheckBoxInfo* info, bool checked)
+	{
+		if (info->IsChecked == checked)
+			return;
+		info->IsChecked = checked;
+		InvalidateRect(hwnd, NULL, FALSE);
+		// a screen reader says "checked" / "not checked" now, not on the next look
+		NotifyWinEvent(EVENT_OBJECT_STATECHANGE, hwnd, OBJID_CLIENT, CHILDID_SELF);
+	}
+
+	static void _CheckBoxToggle(HWND hwnd, CheckBoxInfo* info)
+	{
+		_CheckBoxSetChecked(hwnd, info, !info->IsChecked);
+	}
+
+	static const MSAAPROPID _CheckBoxDynamicProps[] = { PROPID_ACC_STATE, PROPID_ACC_DEFAULTACTION };
+
+	static void _CheckBoxAnnotate(HWND hwnd, CheckBoxInfo* info)
+	{
+		// needs COM on this thread, as every AVS host has it; without it the checkbox
+		// still works, a screen reader just takes it for a button
+		IAccPropServices* services = NULL;
+		if (FAILED(CoCreateInstance(CLSID_AccPropServices, NULL, CLSCTX_INPROC_SERVER,
+			IID_IAccPropServices, (void**)&services)) || !services)
+			return;
+		VARIANT role;
+		VariantInit(&role);
+		role.vt = VT_I4;
+		role.lVal = ROLE_SYSTEM_CHECKBUTTON;
+		services->SetHwndProp(hwnd, OBJID_CLIENT, CHILDID_SELF, PROPID_ACC_ROLE, role);
+		CheckBoxAccessibility* server = new CheckBoxAccessibility(services);
+		services->SetHwndPropServer(hwnd, OBJID_CLIENT, CHILDID_SELF, _CheckBoxDynamicProps,
+			ARRAYSIZE(_CheckBoxDynamicProps), server, ANNO_THIS);
+		server->Release();
+		info->Accessibility = services;
+	}
+
+	static void _CheckBoxClearAnnotation(HWND hwnd, CheckBoxInfo* info)
+	{
+		if (!info->Accessibility)
+			return;
+		const MSAAPROPID props[] = { PROPID_ACC_ROLE, PROPID_ACC_STATE, PROPID_ACC_DEFAULTACTION };
+		info->Accessibility->ClearHwndProps(hwnd, OBJID_CLIENT, CHILDID_SELF, props, ARRAYSIZE(props));
+		info->Accessibility->Release();
+		info->Accessibility = nullptr;
+	}
+
+	LRESULT CALLBACK _CheckBoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
+	{
+		CheckBoxInfo* info = (CheckBoxInfo*)dwRefData;
+
+		switch (msg)
+		{
+		case BM_GETCHECK:
+			return info->IsChecked ? BST_CHECKED : BST_UNCHECKED;
+		case BM_SETCHECK:
+			_CheckBoxSetChecked(hwnd, info, wParam == BST_CHECKED);
+			return 0;
+		case WM_LBUTTONUP:
+		{
+			// released over the control after pressing it: the button sends BN_CLICKED
+			// on its own, the state flips first
+			if (SendMessage(hwnd, BM_GETSTATE, 0, 0) & BST_PUSHED)
+				_CheckBoxToggle(hwnd, info);
+			break;
+		}
+		case WM_LBUTTONDBLCLK:
+			// an owner-drawn button takes the second click of a double click for a
+			// BN_DOUBLECLICKED, not a press; a standard checkbox flips twice
+			return DefSubclassProc(hwnd, WM_LBUTTONDOWN, wParam, lParam);
+		case WM_GETDLGCODE:
+		{
+			if (lParam)
+			{
+				MSG* pMsg = (MSG*)lParam;
+				if (pMsg->message == WM_KEYDOWN && pMsg->wParam == VK_SPACE)
+					return DLGC_WANTALLKEYS;
+			}
+			return 0;
+		}
+		case WM_KEYDOWN:
+		{
+			// as a standard checkbox: Space flips it once, on release; the key's
+			// auto-repeat while it is held does nothing
+			if (wParam == VK_SPACE)
+			{
+				info->IsSpaceDown = true;
+				return 0;
+			}
+			break;
+		}
+		case WM_KEYUP:
+		{
+			if (wParam == VK_SPACE)
+			{
+				if (info->IsSpaceDown)
+				{
+					info->IsSpaceDown = false;
+					_CheckBoxToggle(hwnd, info);
+					SendMessage(GetParent(hwnd), WM_COMMAND, MAKEWPARAM(GetDlgCtrlID(hwnd), BN_CLICKED), (LPARAM)hwnd);
+				}
+				return 0;
+			}
+			break;
+		}
+		case WM_MOUSEMOVE:
+		{
+			if (!info->IsHovered)
+			{
+				info->IsHovered = true;
+				InvalidateRect(hwnd, NULL, FALSE);
+				TRACKMOUSEEVENT tme = { sizeof(tme) };
+				tme.dwFlags = TME_LEAVE;
+				tme.hwndTrack = hwnd;
+				TrackMouseEvent(&tme);
+			}
+			break;
+		}
+		case WM_MOUSELEAVE:
+		{
+			info->IsHovered = false;
+			InvalidateRect(hwnd, NULL, FALSE);
+			break;
+		}
+		case WM_KILLFOCUS:
+			// Space pressed here and released elsewhere is no click
+			info->IsSpaceDown = false;
+			InvalidateRect(hwnd, NULL, FALSE);
+			break;
+		case WM_SETFOCUS:
+		case WM_ENABLE:
+		{
+			InvalidateRect(hwnd, NULL, FALSE);
+			break;
+		}
+		case WM_ERASEBKGND:
+			return 1;
+		case WM_PAINT:
+		{
+			PAINTSTRUCT ps;
+			HDC paintDc = BeginPaint(hwnd, &ps);
+			RECT rc;
+			GetClientRect(hwnd, &rc);
+
+			// drawn off screen, then copied: no flicker on hover
+			HDC hdc = CreateCompatibleDC(paintDc);
+			HBITMAP bitmap = CreateCompatibleBitmap(paintDc, rc.right, rc.bottom);
+			HBITMAP oldBitmap = (HBITMAP)SelectObject(hdc, bitmap);
+
+			const CheckBoxSettings& s = info->Settings;
+			HBRUSH back = CreateSolidBrush(RGB(s.Background.R, s.Background.G, s.Background.B));
+			FillRect(hdc, &rc, back);
+			DeleteObject(back);
+
+			const bool enabled = IsWindowEnabled(hwnd) != FALSE;
+			const bool focused = GetFocus() == hwnd;
+			RECT box;
+			box.left = rc.left + 1;
+			box.top = rc.top + (rc.bottom - rc.top - s.BoxSize) / 2;
+			box.right = box.left + s.BoxSize;
+			box.bottom = box.top + s.BoxSize;
+
+			Color fill = info->IsChecked ? s.Check : s.Box;
+			Color border = info->IsChecked ? s.Check : s.Border;
+			int borderW = 1;
+			if (focused) { border = s.BorderFocus; borderW = 2; }
+			else if (info->IsHovered) border = s.BorderHover;
+			if (!enabled)
+			{
+				// greyed: the box keeps its shape, without the accent
+				fill = info->IsChecked ? Color::MakeRGBA(170, 178, 192) : Color::MakeRGBA(245, 246, 249);
+				border = Color::MakeRGBA(200, 205, 214);
+				borderW = 1;
+			}
+
+			HBRUSH fillBrush = CreateSolidBrush(RGB(fill.R, fill.G, fill.B));
+			HPEN borderPen = CreatePen(PS_INSIDEFRAME, borderW, RGB(border.R, border.G, border.B));
+			HBRUSH oldBrush = (HBRUSH)SelectObject(hdc, fillBrush);
+			HPEN oldPen = (HPEN)SelectObject(hdc, borderPen);
+			Rectangle(hdc, box.left, box.top, box.right, box.bottom);
+			SelectObject(hdc, oldPen);
+			SelectObject(hdc, oldBrush);
+			DeleteObject(borderPen);
+			DeleteObject(fillBrush);
+
+			if (info->IsChecked)
+				_DrawSmoothTick(hdc, box, fill, s.Tick);
+
+			wchar_t text[512];
+			GetWindowText(hwnd, text, 512);
+			RECT textRect = rc;
+			textRect.left = box.right + s.TextGap;
+			const Color& textColor = enabled ? s.TextColor : s.TextColorDisabled;
+			SetBkMode(hdc, TRANSPARENT);
+			SetTextColor(hdc, RGB(textColor.R, textColor.G, textColor.B));
+			HFONT oldFont = (HFONT)SelectObject(hdc, info->hFont);
+			DrawText(hdc, text, -1, &textRect, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+			SelectObject(hdc, oldFont);
+
+			BitBlt(paintDc, 0, 0, rc.right, rc.bottom, hdc, 0, 0, SRCCOPY);
+			SelectObject(hdc, oldBitmap);
+			DeleteObject(bitmap);
+			DeleteDC(hdc);
+			EndPaint(hwnd, &ps);
+			return 0;
+		}
+		case WM_NCDESTROY:
+		{
+			_CheckBoxClearAnnotation(hwnd, info);
+			delete info;
+			RemoveWindowSubclass(hwnd, _CheckBoxProc, uIdSubclass);
+			break;
+		}
+		}
+		return DefSubclassProc(hwnd, msg, wParam, lParam);
+	}
+
+	HWND CreateCheckBox(HWND hParent, HMENU hMenu, HINSTANCE hInstance,
+		LPCWSTR text,
+		const int& x, const int& y, const int& w, const int& h,
+		const CheckBoxSettings& settings, bool checked)
+	{
+		// owner-drawn, so Windows draws nothing of its own; _CheckBoxProc paints it all
+		HWND hwnd = CreateWindow(L"BUTTON", text, WS_CHILD | WS_VISIBLE | BS_OWNERDRAW | WS_TABSTOP,
+			x, y, w, h, hParent, hMenu, hInstance, NULL);
+		CheckBoxInfo* info = new CheckBoxInfo(settings, checked);
+		SendMessage(hwnd, WM_SETFONT, (WPARAM)info->hFont, TRUE);
+		SetWindowSubclass(hwnd, _CheckBoxProc, 0, (DWORD_PTR)info);
+		_CheckBoxAnnotate(hwnd, info);
+		return hwnd;
 	}
 }

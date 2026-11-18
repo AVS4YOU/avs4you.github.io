@@ -16,10 +16,10 @@
       "cacheVariables": { "STABLEAUDIO3_BACKEND": "CPU" }
     },
     {
-      "name": "windows-cuda",
+      "name": "windows-vulkan",
       "inherits": "windows-cpu",
-      "binaryDir": "${sourceDir}/out/cuda",
-      "cacheVariables": { "STABLEAUDIO3_BACKEND": "CUDA", "CMAKE_CUDA_ARCHITECTURES": "61;75;80;86;89;120" }
+      "binaryDir": "${sourceDir}/out/vulkan",
+      "cacheVariables": { "STABLEAUDIO3_BACKEND": "VULKAN" }
     },
     {
       "name": "compat",
@@ -44,7 +44,7 @@
   "buildPresets": [
     { "name": "x86-cpu-release", "configurePreset": "windows-x86-cpu", "configuration": "Release" },
     { "name": "cpu-release", "configurePreset": "windows-cpu", "configuration": "Release" },
-    { "name": "cuda-release", "configurePreset": "windows-cuda", "configuration": "Release" },
+    { "name": "vulkan-release", "configurePreset": "windows-vulkan", "configuration": "Release" },
     { "name": "x86-cpu-compat-release", "configurePreset": "windows-x86-cpu-compat", "configuration": "Release" },
     { "name": "cpu-compat-release", "configurePreset": "windows-cpu-compat", "configuration": "Release" }
   ]

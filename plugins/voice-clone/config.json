@@ -7,7 +7,7 @@
     "Audio Editor",
     "Video Editor"
   ],
-  "version": "v1.0.1",
+  "version": "v1.0.2",
   "type": "content",
   "typeLabel": "Content Plugin",
   "aiPowered": true,

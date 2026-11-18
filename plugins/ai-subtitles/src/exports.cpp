@@ -27,7 +27,7 @@ extern "C" {
 	Plugins::PluginType __stdcall PluginType() { return Plugins::PluginType::Content; }
 	wchar_t* __stdcall PluginId() { return export_str(L"AiSubtitles.plugin"); }
 	wchar_t* __stdcall PluginName() { return export_str(Translate(L"AI Subtitles").c_str()); }
-	wchar_t* __stdcall PluginVersion() { return export_str(L"1.0.2"); }
+	wchar_t* __stdcall PluginVersion() { return export_str(L"1.0.3"); }
 	wchar_t* __stdcall PluginIcon(PluginHandle plugin) {
 		return export_str((static_cast<CSubtitlesPlugin*>(plugin)->workDirectory / L"icon.ico").c_str());
 	}

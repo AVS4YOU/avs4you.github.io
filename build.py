@@ -329,7 +329,7 @@ def main(argv: list[str] | None = None) -> int:
                         help="plugin folder names (default: all)")
     parser.add_argument("--arch", choices=[*ARCHS, "both"], default="both")
     parser.add_argument("--clean", action="store_true",
-                        help="rebuild everything, third-party backends (StableAudio3 CUDA) included")
+                        help="rebuild everything, third-party backends (StableAudio3 Vulkan) included")
     args = parser.parse_args(argv)
 
     folders = all_plugin_names()

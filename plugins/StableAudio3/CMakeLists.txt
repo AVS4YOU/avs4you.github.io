@@ -4,15 +4,14 @@ project(StableAudio3Plugin LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+# The static runtime (/MT), the repository's default: the package carries no
+# VC++ or UCRT DLLs (AVS installs the VC++ 2015-2022 Redistributable anyway,
+# and the UCRT is part of Windows 10, the oldest the installers offer plugins
+# on), and each backend is a single sa3.dll.
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
-if(MSVC)
-  set(CMAKE_INSTALL_UCRT_LIBRARIES TRUE)
-  set(CMAKE_INSTALL_OPENMP_LIBRARIES TRUE)
-  include(InstallRequiredSystemLibraries)
-endif()
-
-set(STABLEAUDIO3_BACKEND "CPU" CACHE STRING "sa3 backend: CPU, CUDA or NONE")
-set_property(CACHE STABLEAUDIO3_BACKEND PROPERTY STRINGS CPU CUDA NONE)
+set(STABLEAUDIO3_BACKEND "CPU" CACHE STRING "sa3 backend: CPU, VULKAN or NONE")
+set_property(CACHE STABLEAUDIO3_BACKEND PROPERTY STRINGS CPU VULKAN NONE)
 
 set(AVS_SDK_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../sdk" CACHE PATH "AVS4YOU plugin SDK")
 if(NOT EXISTS "${AVS_SDK_ROOT}/include/CContentPluginIntf.h")
@@ -57,16 +56,25 @@ foreach(_configuration DEBUG RELEASE RELWITHDEBINFO MINSIZEREL)
 endforeach()
 
 if(NOT STABLEAUDIO3_BACKEND STREQUAL "NONE")
-  if(STABLEAUDIO3_BACKEND STREQUAL "CUDA")
-    set(SA3_CUDA ON CACHE BOOL "" FORCE)
+  set(SA3_CUDA OFF CACHE BOOL "" FORCE)
+  set(GGML_CUDA OFF CACHE BOOL "" FORCE)
+  if(STABLEAUDIO3_BACKEND STREQUAL "VULKAN")
+    # Vulkan reaches the GPU through the display driver of any vendor: no
+    # CUDA runtime, and the shaders take a few MB where CUDA kernels took 200
+    set(SA3_VULKAN ON CACHE BOOL "" FORCE)
     set(_sa3_destination "sa3-cpp-gpu")
-    set(_sa3_extra_backend ggml-cuda)
   else()
-    set(SA3_CUDA OFF CACHE BOOL "" FORCE)
-    set(GGML_CUDA OFF CACHE BOOL "" FORCE)
+    set(SA3_VULKAN OFF CACHE BOOL "" FORCE)
+    set(GGML_VULKAN OFF CACHE BOOL "" FORCE)
     set(_sa3_destination "sa3-cpp-cpu")
-    set(_sa3_extra_backend "")
   endif()
+  # ggml as static libraries inside sa3.dll: a backend is one file, and as
+  # each folder's sa3.dll is a module of its own, the host can switch between
+  # CPU and GPU without a restart (separate ggml.dll files share one name, so
+  # Windows kept the first one loaded). ggml's own thread pool instead of
+  # OpenMP, whose vcomp140.dll has no static form.
+  set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+  set(GGML_OPENMP OFF CACHE BOOL "" FORCE)
   # a CPU backend built for another instruction set lands in a folder of its
   # own: sa3-cpp-cpu-compat, which the plugin picks on CPUs without AVX2
   set(STABLEAUDIO3_BACKEND_FOLDER "" CACHE STRING
@@ -89,19 +97,5 @@ if(NOT STABLEAUDIO3_BACKEND STREQUAL "NONE")
   add_custom_command(TARGET sa3_backend POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:StableAudio3>/${_sa3_destination}"
     COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:sa3_shared>" "$<TARGET_FILE_DIR:StableAudio3>/${_sa3_destination}/"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:ggml>" "$<TARGET_FILE_DIR:StableAudio3>/${_sa3_destination}/"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:ggml-base>" "$<TARGET_FILE_DIR:StableAudio3>/${_sa3_destination}/"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:ggml-cpu>" "$<TARGET_FILE_DIR:StableAudio3>/${_sa3_destination}/"
     VERBATIM)
-  foreach(_runtime_library IN LISTS CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS)
-    add_custom_command(TARGET sa3_backend POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E copy_if_different
-              "${_runtime_library}"
-              "$<TARGET_FILE_DIR:StableAudio3>/${_sa3_destination}/"
-      VERBATIM)
-  endforeach()
-  if(STABLEAUDIO3_BACKEND STREQUAL "CUDA")
-    add_custom_command(TARGET sa3_backend POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:ggml-cuda>" "$<TARGET_FILE_DIR:StableAudio3>/${_sa3_destination}/")
-  endif()
 endif()

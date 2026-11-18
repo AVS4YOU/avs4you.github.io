@@ -61,13 +61,11 @@ namespace {
 			AVS::LabelSettings::Create(type, alignment));
 	}
 
+	// the SDK checkbox, drawn like the other widgets; BM_GETCHECK and BN_CLICKED as before
 	HWND CreateCheckBox(HWND parent, int id, const std::wstring& text, int x, int y, int width, bool checked) {
-		HWND box = CreateWindowExW(0, L"BUTTON", text.c_str(),
-			WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX, x, y, width, 24, parent,
-			reinterpret_cast<HMENU>(static_cast<INT_PTR>(id)), GetModuleHandleW(nullptr), nullptr);
-		SendMessageW(box, WM_SETFONT, reinterpret_cast<WPARAM>(GetStockObject(DEFAULT_GUI_FONT)), TRUE);
-		SendMessageW(box, BM_SETCHECK, checked ? BST_CHECKED : BST_UNCHECKED, 0);
-		return box;
+		return AVS::CreateCheckBox(parent, reinterpret_cast<HMENU>(static_cast<INT_PTR>(id)),
+			GetModuleHandleW(nullptr), text.c_str(), x, y, width, 24, AVS::CheckBoxSettings::Create(),
+			checked);
 	}
 
 	bool IsChecked(HWND box) { return SendMessageW(box, BM_GETCHECK, 0, 0) == BST_CHECKED; }
@@ -228,15 +226,6 @@ namespace {
 			auto* create = reinterpret_cast<CREATESTRUCTW*>(lParam);
 			SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(create->lpCreateParams));
 			break;  // DefWindowProc sets the title
-		}
-		case WM_CTLCOLORSTATIC: {
-			// the checkboxes on the window's own background, not the system grey
-			static HBRUSH background = [] {
-				const AVS::Color color = AVS::Color::GetDefaultWindowBackground();
-				return CreateSolidBrush(RGB(color.R, color.G, color.B));
-			}();
-			SetBkMode(reinterpret_cast<HDC>(wParam), TRANSPARENT);
-			return reinterpret_cast<LRESULT>(background);
 		}
 		case WM_CREATE: {
 			plugin = reinterpret_cast<CVoiceClonePlugin*>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
@@ -441,7 +430,7 @@ void ShowVoiceCloneWindow(CVoiceClonePlugin* plugin, const std::filesystem::path
 		host = GetAncestor(host, GA_ROOT);
 	const bool hostWasEnabled = host && IsWindowEnabled(host);
 
-	// common controls v6 from the module manifest, for the themed checkboxes
+	// common controls v6 from the module manifest, for the file dialog in today's style
 	ACTCTXW activation{ sizeof(activation) };
 	activation.dwFlags = ACTCTX_FLAG_RESOURCE_NAME_VALID | ACTCTX_FLAG_HMODULE_VALID;
 	activation.lpResourceName = MAKEINTRESOURCEW(1);

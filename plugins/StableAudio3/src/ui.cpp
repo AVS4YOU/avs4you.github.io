@@ -136,11 +136,33 @@ namespace {
 		}
 	}
 
+	// 1.0f -> "1.0", 6.04f -> "6.04", 0.3f -> "0.3": six decimals - more than a
+	// float holds here, so 0.300000012 comes out as 0.300000 - then the trailing
+	// zeros off, one digit after the point kept. std::to_wstring always wrote six.
+	std::wstring FormatReal(float value) {
+		wchar_t text[64]{};
+		swprintf_s(text, L"%.6f", static_cast<double>(value));
+		std::wstring result = text;
+		const size_t point = result.find(L'.');
+		if (point != std::wstring::npos) {
+			size_t last = result.find_last_not_of(L'0');
+			if (last == point)
+				last = point + 1;
+			result.erase(last + 1);
+		}
+		return result;
+	}
+
+	enum class EditKind { Text, Number, Multiline };
+
 	HWND CreateEdit(HWND parent, int x, int y, int width, int height,
-		const std::wstring& value, bool multiline = false) {
+		const std::wstring& value, EditKind kind = EditKind::Text) {
 		AVS::TextEditSettings settings = AVS::TextEditSettings::Create();
-		settings.IsMultiline = multiline;
-		settings.IsVscroll = multiline;
+		settings.IsMultiline = kind == EditKind::Multiline;
+		settings.IsVscroll = kind == EditKind::Multiline;
+		// a single line sits in the middle of its box; numbers on the right
+		settings.IsVCenter = kind != EditKind::Multiline;
+		settings.TextAlign = kind == EditKind::Number ? ES_RIGHT : ES_LEFT;
 		HWND edit = AVS::CreateTextEditMultiline(parent, GetModuleHandleW(nullptr), x,
 			y, width, height, settings);
 		SetWindowTextW(edit, value.c_str());
@@ -387,16 +409,16 @@ namespace {
 									{Translate(L"Seed"), 140, 120, &SettingsWindow::seed,
 									 std::to_wstring(values.seed)},
 									{Translate(L"CFG scale"), 275, 110, &SettingsWindow::cfg,
-									 std::to_wstring(values.cfg)},
+									 FormatReal(values.cfg)},
 									{Translate(L"CPU threads"), 400, 110, &SettingsWindow::threads,
 									 std::to_wstring(values.threads)},
 									{Translate(L"Padding, sec"), 525, 110,
 									 &SettingsWindow::padding,
-									 std::to_wstring(values.padding)} };
+									 FormatReal(values.padding)} };
 			for (const auto& field : fields) {
 				CreateLabel(hwnd, field.label.c_str(), field.x, 15, field.width, 20);
 				state->*(field.member) =
-					CreateEdit(hwnd, field.x, 38, field.width, 28, field.value);
+					CreateEdit(hwnd, field.x, 38, field.width, 28, field.value, EditKind::Number);
 			}
 
 			CreateLabel(hwnd, Translate(L"Distribution shift").c_str(), 15, 82, 180, 20);
@@ -411,16 +433,10 @@ namespace {
 				hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(204)), instance, 15,
 				104, 180, 28, comboSettings, shifts);
 
-			state->keepModels = CreateWindowExW(
-				0, L"BUTTON", Translate(L"Keep models loaded in memory").c_str(),
-				WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX, 220, 105, 255, 26,
-				hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_SETTINGS_KEEP)),
-				instance, nullptr);
-			SendMessageW(state->keepModels, WM_SETFONT,
-				reinterpret_cast<WPARAM>(GetStockObject(DEFAULT_GUI_FONT)),
-				TRUE);
-			SendMessageW(state->keepModels, BM_SETCHECK,
-				values.keepModels ? BST_CHECKED : BST_UNCHECKED, 0);
+			state->keepModels = AVS::CreateCheckBox(
+				hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_SETTINGS_KEEP)), instance,
+				Translate(L"Keep models loaded in memory").c_str(), 220, 105, 300, 28,
+				AVS::CheckBoxSettings::Create(), values.keepModels);
 
 			AVS::CreateButton(
 				hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_SETTINGS_CANCEL)),
@@ -534,7 +550,7 @@ namespace {
 			HINSTANCE instance = GetModuleHandleW(nullptr);
 
 			CreateLabel(hwnd, Translate(L"Prompt").c_str(), 15, 12, 180, 22);
-			controls->prompt = CreateEdit(hwnd, 15, 36, 730, 150, L"", true);
+			controls->prompt = CreateEdit(hwnd, 15, 36, 730, 150, L"", EditKind::Multiline);
 			CreateLabel(hwnd, Translate(L"Negative prompt").c_str(), 15, 198, 145, 28);
 			controls->negativePrompt = CreateEdit(hwnd, 165, 198, 580, 28, L"");
 
@@ -551,7 +567,7 @@ namespace {
 				15, 267, 190, 28, AVS::ComboBoxSettings::Create(),
 				{ L"medium", L"small-music", L"small-sfx" });
 #endif
-			controls->duration = CreateEdit(hwnd, 220, 267, 100, 28, L"12.0");
+			controls->duration = CreateEdit(hwnd, 220, 267, 100, 28, L"12.0", EditKind::Number);
 			controls->download = AVS::CreateButton(
 				hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_DOWNLOAD)),
 				instance, Translate(L"Download model").c_str(), 565, 267, 180, 28,
@@ -568,14 +584,19 @@ namespace {
 				hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_DEVICE)),
 				instance, 135, 333, 95, 28, AVS::ComboBoxSettings::Create(), { L"cpu" });
 #else
-			// GPU is offered, and preselected, only where it can run; elsewhere
-			// the plugin works on the CPU
+			// GPU is offered only where it can run, and preselected where there
+			// is a discrete GPU - with f16, the precision the GPU path is made
+			// for: f32 medium alone outgrows a 4 GB card. Elsewhere the plugin
+			// works on the CPU.
 			if (GpuBackendReady(plugin->moduleDirectory)) {
 				controls->device = AVS::CreateComboBox(
 					hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_DEVICE)),
 					instance, 135, 333, 95, 28, AVS::ComboBoxSettings::Create(),
 					{ L"cpu", L"gpu" });
-				AVS::ComboBox_SetCurrent(controls->device, 1);
+				if (GpuBackendPreferred(plugin->moduleDirectory)) {
+					AVS::ComboBox_SetCurrent(controls->device, 1);
+					AVS::ComboBox_SetCurrent(controls->encoding, 1);
+				}
 			}
 			else
 				controls->device = AVS::CreateComboBox(
