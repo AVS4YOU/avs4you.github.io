@@ -50,19 +50,32 @@ goes through the display driver of any vendor and packs a few MB of shaders.
 
 - **GPU** when the x64 plugin finds, through the `vulkan-1.dll` every GPU
   driver installs in System32, a discrete or integrated GPU with Vulkan 1.2,
-  the `sa3-cpp-gpu` file and an AVX2 CPU. The Device list then offers `gpu`;
-  with a discrete GPU, which ggml-vulkan picks first, it preselects `gpu` and
-  `f16` (f32 medium alone outgrows a 4 GB card). An integrated GPU alone is
-  offered but not preselected. The probe runs once per host process, guarded:
-  a driver that faults while queried only costs the GPU option.
+  the `sa3-cpp-gpu` file and an AVX2 CPU. The Device list then offers the
+  graphics card; with a discrete GPU, which ggml-vulkan picks first, it
+  preselects it. An integrated GPU alone is offered but not preselected. The
+  probe runs once per host process, guarded: a driver that faults while queried
+  only costs the GPU option.
 - **CPU** otherwise: `sa3-cpp-cpu` on a CPU with AVX2, FMA, F16C and an OS that
   saves the AVX registers, else `sa3-cpp-cpu-compat`.
 
 A GPU generation that fails - the backend does not load, video memory runs
 out, the driver fails mid-run - is made again on the CPU.
 
-Each folder's `sa3.dll` carries its own ggml, so switching between `cpu` and
-`gpu` takes effect without restarting the host.
+Each folder's `sa3.dll` carries its own ggml, so switching between the
+processor and the graphics card takes effect without restarting the host.
+
+## Models and precision
+
+The Model list names the three Stable Audio 3 models by what they make:
+`medium` (1.5B, music and sound effects, up to 380 s, x64 only),
+`small-music` and `small-sfx` (0.5B, about twice as fast, up to 120 s). The
+line under it gives the download: 5.4 GB for medium, 2.1 GB for a small one,
+the 1.1 GB text encoder included, which the models share.
+
+Weights are f16, which the GGUF model cards call the production path. Settings
+has "Full model precision (f32)" - twice the size, f32 medium does not fit a
+4 GB card. Up to 1.1.0 the plugin picked f32 on a computer without a GPU, so a
+model present only in f32 is used as it is rather than downloaded again.
 
 The backends are loaded from the plugin folder. Models downloaded by the GUI
 (the public GGUF sets on Hugging Face, over WinHTTP) and generated WAV files go

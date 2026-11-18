@@ -50,7 +50,7 @@
         "Use the Google Search tool to generate images based on real-time information, such as weather forecasts, stock charts, or recent events.": "Use the Google Search tool to generate images based on real-time information, such as weather forecasts, stock charts, or recent events.",
         "Grounding with Google Image Search allows models to use web images retrieved via Google Image Search as visual context for image generation.": "Grounding with Google Image Search allows models to use web images retrieved via Google Image Search as visual context for image generation.",
         "Video-to-image generation allows you to generate new images using a video's context as a multimodal reference. This is useful for creating video thumbnails, cinematic posters, summary infographics, or artwork inspired by a video scene.": "Video-to-image generation allows you to generate new images using a video's context as a multimodal reference. This is useful for creating video thumbnails, cinematic posters, summary infographics, or artwork inspired by a video scene.",
-        "Image generation (text-to-image)": "Image generation (text-to-image)",
+        "Creates a new image from a text description. Describe what should be in it, the style, the composition and the lighting.": "Creates a new image from a text description. Describe what should be in it, the style, the composition and the lighting.",
         "Generate and edit images with Nano Banana models through the Gemini API.": "Generate and edit images with Nano Banana models through the Gemini API."
     },
     "ru-RU": {
@@ -104,7 +104,7 @@
         "Use the Google Search tool to generate images based on real-time information, such as weather forecasts, stock charts, or recent events.": "Используйте Google Поиск, чтобы создавать изображения на основе актуальных данных: погоды, биржевых графиков, новостей.",
         "Grounding with Google Image Search allows models to use web images retrieved via Google Image Search as visual context for image generation.": "Поиск по картинкам Google даёт модели веб-изображения как визуальный контекст для генерации.",
         "Video-to-image generation allows you to generate new images using a video's context as a multimodal reference. This is useful for creating video thumbnails, cinematic posters, summary infographics, or artwork inspired by a video scene.": "Создание изображений на основе видео как мультимодальной ссылки — для превью, постеров, инфографики и арта по мотивам сцены.",
-        "Image generation (text-to-image)": "Генерация изображений (текст в изображение)",
+        "Creates a new image from a text description. Describe what should be in it, the style, the composition and the lighting.": "Создание нового изображения по текстовому описанию. Опишите, что на нём должно быть, стиль, композицию и освещение.",
         "Generate and edit images with Nano Banana models through the Gemini API.": "Создавайте и редактируйте изображения с помощью моделей Nano Banana через Gemini API."
     },
     "de-DE": {
@@ -158,7 +158,7 @@
         "Use the Google Search tool to generate images based on real-time information, such as weather forecasts, stock charts, or recent events.": "Nutzen Sie die Google-Suche, um Bilder auf Basis aktueller Informationen zu erzeugen, z. B. Wetter, Börsenkurse oder aktuelle Ereignisse.",
         "Grounding with Google Image Search allows models to use web images retrieved via Google Image Search as visual context for image generation.": "Die Google Bildersuche liefert dem Modell Webbilder als visuellen Kontext für die Bilderzeugung.",
         "Video-to-image generation allows you to generate new images using a video's context as a multimodal reference. This is useful for creating video thumbnails, cinematic posters, summary infographics, or artwork inspired by a video scene.": "Video-zu-Bild nutzt den Kontext eines Videos als multimodale Referenz, um neue Bilder zu erzeugen – etwa für Thumbnails, Poster, Infografiken oder Kunstwerke.",
-        "Image generation (text-to-image)": "Bilderzeugung (Text zu Bild)",
+        "Creates a new image from a text description. Describe what should be in it, the style, the composition and the lighting.": "Erstellt ein neues Bild aus einer Textbeschreibung. Beschreiben Sie, was darauf zu sehen sein soll, den Stil, die Komposition und die Beleuchtung.",
         "Generate and edit images with Nano Banana models through the Gemini API.": "Erzeugen und bearbeiten Sie Bilder mit Nano-Banana-Modellen über die Gemini-API."
     },
     "fr-FR": {
@@ -212,7 +212,7 @@
         "Use the Google Search tool to generate images based on real-time information, such as weather forecasts, stock charts, or recent events.": "Utilisez l'outil Recherche Google pour générer des images à partir d'informations en temps réel : météo, cours de bourse ou actualités.",
         "Grounding with Google Image Search allows models to use web images retrieved via Google Image Search as visual context for image generation.": "La recherche d'images Google fournit au modèle des images web comme contexte visuel pour la génération d'images.",
         "Video-to-image generation allows you to generate new images using a video's context as a multimodal reference. This is useful for creating video thumbnails, cinematic posters, summary infographics, or artwork inspired by a video scene.": "La génération vidéo-vers-image crée des images à partir du contexte d'une vidéo (référence multimodale), utile pour miniatures, affiches, infographies ou œuvres inspirées d'une scène.",
-        "Image generation (text-to-image)": "Génération d'images (texte vers image)",
+        "Creates a new image from a text description. Describe what should be in it, the style, the composition and the lighting.": "Crée une nouvelle image à partir d'une description textuelle. Décrivez ce qu'elle doit montrer, le style, la composition et l'éclairage.",
         "Generate and edit images with Nano Banana models through the Gemini API.": "Générez et modifiez des images avec les modèles Nano Banana via l'API Gemini."
     },
     "es-ES": {
@@ -266,7 +266,7 @@
         "Use the Google Search tool to generate images based on real-time information, such as weather forecasts, stock charts, or recent events.": "Use la Búsqueda de Google para generar imágenes basadas en información en tiempo real, como el clima, gráficos bursátiles o eventos recientes.",
         "Grounding with Google Image Search allows models to use web images retrieved via Google Image Search as visual context for image generation.": "La Búsqueda de imágenes de Google ofrece al modelo imágenes web como contexto visual para la generación de imágenes.",
         "Video-to-image generation allows you to generate new images using a video's context as a multimodal reference. This is useful for creating video thumbnails, cinematic posters, summary infographics, or artwork inspired by a video scene.": "La generación de video a imagen usa el contexto de un video como referencia multimodal para crear imágenes; útil para miniaturas, pósteres, infografías u obras inspiradas en una escena.",
-        "Image generation (text-to-image)": "Generación de imágenes (texto a imagen)",
+        "Creates a new image from a text description. Describe what should be in it, the style, the composition and the lighting.": "Crea una imagen nueva a partir de una descripción de texto. Describa lo que debe aparecer, el estilo, la composición y la iluminación.",
         "Generate and edit images with Nano Banana models through the Gemini API.": "Genere y edite imágenes con los modelos Nano Banana a través de la API de Gemini."
     },
     "it-IT": {
@@ -320,7 +320,7 @@
         "Use the Google Search tool to generate images based on real-time information, such as weather forecasts, stock charts, or recent events.": "Usa la Ricerca Google per generare immagini basate su informazioni in tempo reale, come previsioni meteo, grafici di borsa o eventi recenti.",
         "Grounding with Google Image Search allows models to use web images retrieved via Google Image Search as visual context for image generation.": "La Ricerca immagini di Google fornisce al modello immagini web come contesto visivo per la generazione.",
         "Video-to-image generation allows you to generate new images using a video's context as a multimodal reference. This is useful for creating video thumbnails, cinematic posters, summary infographics, or artwork inspired by a video scene.": "La generazione video-immagine usa il contesto di un video come riferimento multimodale per creare nuove immagini; utile per miniature, poster, infografiche o opere ispirate a una scena.",
-        "Image generation (text-to-image)": "Generazione di immagini (testo a immagine)",
+        "Creates a new image from a text description. Describe what should be in it, the style, the composition and the lighting.": "Crea una nuova immagine da una descrizione testuale. Descrivi cosa deve contenere, lo stile, la composizione e l'illuminazione.",
         "Generate and edit images with Nano Banana models through the Gemini API.": "Genera e modifica immagini con i modelli Nano Banana tramite l'API Gemini."
     },
     "ja-JP": {
@@ -374,7 +374,7 @@
         "Use the Google Search tool to generate images based on real-time information, such as weather forecasts, stock charts, or recent events.": "Google検索ツールを使い、天気予報、株価チャート、最近の出来事などリアルタイム情報に基づいて画像を生成します。",
         "Grounding with Google Image Search allows models to use web images retrieved via Google Image Search as visual context for image generation.": "Google画像検索によるグラウンディングにより、モデルはWeb画像を視覚的コンテキストとして画像生成に利用できます。",
         "Video-to-image generation allows you to generate new images using a video's context as a multimodal reference. This is useful for creating video thumbnails, cinematic posters, summary infographics, or artwork inspired by a video scene.": "動画から画像への生成は、動画のコンテキストをマルチモーダル参照として新しい画像を生成します。動画のサムネイル、映画風ポスター、インフォグラフィック、シーンに着想を得たアートワークの作成に便利です。",
-        "Image generation (text-to-image)": "画像生成（テキストから画像）",
+        "Creates a new image from a text description. Describe what should be in it, the style, the composition and the lighting.": "テキストの説明から新しい画像を作成します。描きたい内容、スタイル、構図、照明を記述してください。",
         "Generate and edit images with Nano Banana models through the Gemini API.": "Gemini APIを通じてNano Bananaモデルで画像を生成・編集します。"
     },
     "nl-NL": {
@@ -428,7 +428,7 @@
         "Use the Google Search tool to generate images based on real-time information, such as weather forecasts, stock charts, or recent events.": "Gebruik Google Zoeken om afbeeldingen te genereren op basis van actuele informatie, zoals weersverwachtingen, aandelenkoersen of recente gebeurtenissen.",
         "Grounding with Google Image Search allows models to use web images retrieved via Google Image Search as visual context for image generation.": "Met Google Afbeeldingen zoeken kan het model webafbeeldingen als visuele context gebruiken voor beeldgeneratie.",
         "Video-to-image generation allows you to generate new images using a video's context as a multimodal reference. This is useful for creating video thumbnails, cinematic posters, summary infographics, or artwork inspired by a video scene.": "Video-naar-afbeelding gebruikt de context van een video als multimodale referentie om nieuwe afbeeldingen te maken — handig voor thumbnails, posters, infografieken of kunstwerken geïnspireerd op een scène.",
-        "Image generation (text-to-image)": "Beeldgeneratie (tekst naar afbeelding)",
+        "Creates a new image from a text description. Describe what should be in it, the style, the composition and the lighting.": "Maakt een nieuwe afbeelding op basis van een tekstbeschrijving. Beschrijf wat erop moet staan, de stijl, de compositie en de belichting.",
         "Generate and edit images with Nano Banana models through the Gemini API.": "Genereer en bewerk afbeeldingen met Nano Banana-modellen via de Gemini API."
     },
     "ko-KR": {
@@ -482,7 +482,7 @@
         "Use the Google Search tool to generate images based on real-time information, such as weather forecasts, stock charts, or recent events.": "Google 검색 도구를 사용해 날씨 예보, 주가 차트, 최근 이벤트 등 실시간 정보를 기반으로 이미지를 생성합니다.",
         "Grounding with Google Image Search allows models to use web images retrieved via Google Image Search as visual context for image generation.": "Google 이미지 검색 그라운딩을 사용하면 모델이 웹 이미지를 이미지 생성의 시각적 컨텍스트로 활용할 수 있습니다.",
         "Video-to-image generation allows you to generate new images using a video's context as a multimodal reference. This is useful for creating video thumbnails, cinematic posters, summary infographics, or artwork inspired by a video scene.": "동영상을 이미지로 변환하는 기능은 동영상의 맥락을 멀티모달 참조로 사용해 새 이미지를 생성합니다. 동영상 썸네일, 영화 같은 포스터, 요약 인포그래픽, 장면에서 영감을 받은 아트워크 제작에 유용합니다.",
-        "Image generation (text-to-image)": "이미지 생성 (텍스트 → 이미지)",
+        "Creates a new image from a text description. Describe what should be in it, the style, the composition and the lighting.": "텍스트 설명으로 새 이미지를 만듭니다. 담길 내용, 스타일, 구도, 조명을 설명하세요.",
         "Generate and edit images with Nano Banana models through the Gemini API.": "Gemini API를 통해 Nano Banana 모델로 이미지를 생성하고 편집합니다."
     },
     "pt-BR": {
@@ -536,7 +536,7 @@
         "Use the Google Search tool to generate images based on real-time information, such as weather forecasts, stock charts, or recent events.": "Use a Pesquisa Google para gerar imagens com base em informações em tempo real, como previsão do tempo, gráficos da bolsa ou eventos recentes.",
         "Grounding with Google Image Search allows models to use web images retrieved via Google Image Search as visual context for image generation.": "A Pesquisa de imagens do Google permite que o modelo use imagens da web como contexto visual para a geração de imagens.",
         "Video-to-image generation allows you to generate new images using a video's context as a multimodal reference. This is useful for creating video thumbnails, cinematic posters, summary infographics, or artwork inspired by a video scene.": "A geração de vídeo para imagem usa o contexto de um vídeo como referência multimodal para criar novas imagens; útil para miniaturas, pôsteres, infográficos ou arte inspirada em uma cena.",
-        "Image generation (text-to-image)": "Geração de imagens (texto para imagem)",
+        "Creates a new image from a text description. Describe what should be in it, the style, the composition and the lighting.": "Cria uma nova imagem a partir de uma descrição em texto. Descreva o que deve aparecer, o estilo, a composição e a iluminação.",
         "Generate and edit images with Nano Banana models through the Gemini API.": "Gere e edite imagens com os modelos Nano Banana por meio da API Gemini."
     },
     "pl-PL": {
@@ -590,7 +590,7 @@
         "Use the Google Search tool to generate images based on real-time information, such as weather forecasts, stock charts, or recent events.": "Użyj wyszukiwarki Google, aby generować obrazy na podstawie informacji w czasie rzeczywistym, np. prognozy pogody, wykresów giełdowych lub bieżących wydarzeń.",
         "Grounding with Google Image Search allows models to use web images retrieved via Google Image Search as visual context for image generation.": "Wyszukiwanie obrazów Google dostarcza modelowi obrazy z internetu jako kontekst wizualny do generowania obrazów.",
         "Video-to-image generation allows you to generate new images using a video's context as a multimodal reference. This is useful for creating video thumbnails, cinematic posters, summary infographics, or artwork inspired by a video scene.": "Generowanie obrazu z wideo wykorzystuje kontekst wideo jako odniesienie multimodalne do tworzenia nowych obrazów — przydatne do miniatur, plakatów, infografik lub grafik inspirowanych sceną.",
-        "Image generation (text-to-image)": "Generowanie obrazów (tekst na obraz)",
+        "Creates a new image from a text description. Describe what should be in it, the style, the composition and the lighting.": "Tworzy nowy obraz na podstawie opisu tekstowego. Opisz, co ma się na nim znaleźć, styl, kompozycję i oświetlenie.",
         "Generate and edit images with Nano Banana models through the Gemini API.": "Twórz i edytuj obrazy za pomocą modeli Nano Banana przez API Gemini."
     },
     "da-DK": {
@@ -644,7 +644,7 @@
         "Use the Google Search tool to generate images based on real-time information, such as weather forecasts, stock charts, or recent events.": "Brug Google Søgning til at generere billeder baseret på realtidsoplysninger som vejrudsigter, aktiekurser eller aktuelle begivenheder.",
         "Grounding with Google Image Search allows models to use web images retrieved via Google Image Search as visual context for image generation.": "Google Billedsøgning giver modellen webbilleder som visuel kontekst til billedgenerering.",
         "Video-to-image generation allows you to generate new images using a video's context as a multimodal reference. This is useful for creating video thumbnails, cinematic posters, summary infographics, or artwork inspired by a video scene.": "Video-til-billede bruger en videos kontekst som multimodal reference til at skabe nye billeder — nyttigt til miniaturer, plakater, infografikker eller kunstværker inspireret af en scene.",
-        "Image generation (text-to-image)": "Billedgenerering (tekst til billede)",
+        "Creates a new image from a text description. Describe what should be in it, the style, the composition and the lighting.": "Opretter et nyt billede ud fra en tekstbeskrivelse. Beskriv, hvad det skal vise, stilen, kompositionen og belysningen.",
         "Generate and edit images with Nano Banana models through the Gemini API.": "Generer og rediger billeder med Nano Banana-modeller via Gemini API'et."
     },
     "zh-CN": {
@@ -698,7 +698,7 @@
         "Use the Google Search tool to generate images based on real-time information, such as weather forecasts, stock charts, or recent events.": "使用 Google 搜索工具，根据天气预报、股票图表或近期事件等实时信息生成图像。",
         "Grounding with Google Image Search allows models to use web images retrieved via Google Image Search as visual context for image generation.": "借助 Google 图片搜索的基础支持，模型可将网络图像用作图像生成的视觉上下文。",
         "Video-to-image generation allows you to generate new images using a video's context as a multimodal reference. This is useful for creating video thumbnails, cinematic posters, summary infographics, or artwork inspired by a video scene.": "视频转图像利用视频上下文作为多模态参考生成新图像，适合制作视频缩略图、电影海报、信息图或受视频场景启发的艺术作品。",
-        "Image generation (text-to-image)": "图像生成（文本转图像）",
+        "Creates a new image from a text description. Describe what should be in it, the style, the composition and the lighting.": "根据文字描述生成新图像。请描述画面内容、风格、构图和光线。",
         "Generate and edit images with Nano Banana models through the Gemini API.": "通过 Gemini API 使用 Nano Banana 模型生成和编辑图像。"
     }
 }

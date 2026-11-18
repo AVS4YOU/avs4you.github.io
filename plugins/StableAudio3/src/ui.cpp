@@ -1,4 +1,4 @@
-#include "ui.h"
+﻿#include "ui.h"
 #include "../../../sdk/ui/winapi/ui.h"
 #include "export_utils.h"
 #include "sa3_backend.h"
@@ -17,7 +17,6 @@ extern HMODULE g_module;
 
 namespace {
 	constexpr int ID_MODEL = 103;
-	constexpr int ID_ENCODING = 104;
 	constexpr int ID_DEVICE = 105;
 	constexpr int ID_DURATION = 106;
 	constexpr int ID_DOWNLOAD = 114;
@@ -34,8 +33,26 @@ namespace {
 	constexpr int ID_SETTINGS_SAVE = 201;
 	constexpr int ID_SETTINGS_CANCEL = 202;
 	constexpr int ID_SETTINGS_KEEP = 203;
+	constexpr int ID_SETTINGS_FULL_PRECISION = 205;
 	constexpr int CLIENT_WIDTH = 760;
-	constexpr int CLIENT_HEIGHT = 600;
+	constexpr int CLIENT_HEIGHT = 560;
+
+	// The models in the list, in its order, and their names there: medium makes music and
+	// sound effects, the small ones one of the two, each about twice as fast.
+	struct ModelEntry {
+		const wchar_t* id;
+		const wchar_t* name;
+	};
+#if defined(_WIN32) && !defined(_WIN64)
+	const ModelEntry MODELS[] = {
+		{ L"small-music", L"Music — fast" },
+		{ L"small-sfx", L"Sound effects — fast" } };
+#else
+	const ModelEntry MODELS[] = {
+		{ L"medium", L"Music and sounds — high quality" },
+		{ L"small-music", L"Music — fast" },
+		{ L"small-sfx", L"Sound effects — fast" } };
+#endif
 
 	struct GenerationSettings {
 		int steps = 8;
@@ -45,13 +62,16 @@ namespace {
 		float padding = 6.0f;
 		std::wstring shift = L"LogSNR";
 		bool keepModels = false;
+		// f32 weights instead of f16: twice the size, and the model card calls f16
+		// the production path and f32 the one for validation on the CPU
+		bool fullPrecision = false;
 	};
 
 	struct Controls {
 		HWND prompt = nullptr;
 		HWND negativePrompt = nullptr;
 		HWND model = nullptr;
-		HWND encoding = nullptr;
+		HWND modelInfo = nullptr;
 		HWND device = nullptr;
 		HWND duration = nullptr;
 		HWND download = nullptr;
@@ -73,6 +93,7 @@ namespace {
 		HWND padding = nullptr;
 		HWND shift = nullptr;
 		HWND keepModels = nullptr;
+		HWND fullPrecision = nullptr;
 	};
 
 
@@ -156,13 +177,15 @@ namespace {
 	enum class EditKind { Text, Number, Multiline };
 
 	HWND CreateEdit(HWND parent, int x, int y, int width, int height,
-		const std::wstring& value, EditKind kind = EditKind::Text) {
+		const std::wstring& value, EditKind kind = EditKind::Text,
+		const std::wstring& placeholder = L"") {
 		AVS::TextEditSettings settings = AVS::TextEditSettings::Create();
 		settings.IsMultiline = kind == EditKind::Multiline;
 		settings.IsVscroll = kind == EditKind::Multiline;
 		// a single line sits in the middle of its box; numbers on the right
 		settings.IsVCenter = kind != EditKind::Multiline;
 		settings.TextAlign = kind == EditKind::Number ? ES_RIGHT : ES_LEFT;
+		settings.Placeholder = placeholder;
 		HWND edit = AVS::CreateTextEditMultiline(parent, GetModuleHandleW(nullptr), x,
 			y, width, height, settings);
 		SetWindowTextW(edit, value.c_str());
@@ -205,7 +228,6 @@ namespace {
 		const bool enableInputs = !busy || !lockInputs;
 		EnableWindow(controls->licence, !busy);
 		EnableWindow(controls->model, enableInputs);
-		EnableWindow(controls->encoding, enableInputs);
 		EnableWindow(controls->device, enableInputs);
 		EnableWindow(controls->duration, enableInputs);
 		AVS::Button_SetSettings(
@@ -215,6 +237,35 @@ namespace {
 			busy ? Translate(L"Cancel").c_str() : Translate(L"Generate").c_str());
 	}
 
+	std::wstring SelectedModel(const Controls* controls) {
+		const int index = controls ? AVS::ComboBox_GetCurrent(controls->model) : 0;
+		return MODELS[index > 0 && index < static_cast<int>(_countof(MODELS)) ? index : 0].id;
+	}
+
+	// the processor first; the graphics card second, where the GPU backend can run
+	std::wstring SelectedDevice(const Controls* controls) {
+		return AVS::ComboBox_GetCurrent(controls->device) == 1 ? L"gpu" : L"cpu";
+	}
+
+	std::wstring SelectedEncoding(const Controls* controls) {
+		return controls->generation.fullPrecision ? L"f32" : L"f16";
+	}
+
+	// What the selected model takes to download in the chosen precision, and the longest
+	// sound it makes. Sizes from the GGUF repositories: the DiT and the autoencoder - medium
+	// 4399 MB in f16, 8796 MB in f32; small 1084 and 2164 MB - plus 1088 MB of text encoder,
+	// vocabulary and conditioner that stay f32.
+	void UpdateModelInfo(Controls* controls) {
+		const bool medium = SelectedModel(controls) == L"medium";
+		const bool full = controls->generation.fullPrecision;
+		const wchar_t* text = medium
+			? (full ? L"Download 9.7 GB, sound up to 380 seconds."
+				: L"Download 5.4 GB, sound up to 380 seconds.")
+			: (full ? L"Download 3.2 GB, sound up to 120 seconds."
+				: L"Download 2.1 GB, sound up to 120 seconds.");
+		AVS::Label_SetText(controls->modelInfo, Translate(text));
+	}
+
 	bool OpenModelLicenseUrl(HWND owner) {
 		auto* plugin = reinterpret_cast<CStableAudio3Plugin*>(
 			GetWindowLongPtrW(owner, GWLP_USERDATA));
@@ -222,8 +273,7 @@ namespace {
 			return false;
 		auto* controls = reinterpret_cast<Controls*>(
 			GetPropW(owner, L"StableAudio3.Controls"));
-		const std::wstring model =
-			controls ? AVS::ComboBox_GetCurrentText(controls->model) : L"medium";
+		const std::wstring model = SelectedModel(controls);
 		const std::wstring url = L"https://huggingface.co/thepatch/stable-audio-3-" +
 			model + L"-GGUF/blob/main/LICENSE.md";
 		return reinterpret_cast<INT_PTR>(ShellExecuteW(owner, L"open", url.c_str(),
@@ -437,14 +487,19 @@ namespace {
 				hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_SETTINGS_KEEP)), instance,
 				Translate(L"Keep models loaded in memory").c_str(), 220, 105, 300, 28,
 				AVS::CheckBoxSettings::Create(), values.keepModels);
+			state->fullPrecision = AVS::CreateCheckBox(
+				hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_SETTINGS_FULL_PRECISION)),
+				instance,
+				Translate(L"Full model precision (f32): twice the disk space and memory. Usually not needed.").c_str(),
+				15, 142, 620, 28, AVS::CheckBoxSettings::Create(), values.fullPrecision);
 
 			AVS::CreateButton(
 				hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_SETTINGS_CANCEL)),
-				instance, Translate(L"Cancel").c_str(), 425, 157, 100, 30,
+				instance, Translate(L"Cancel").c_str(), 425, 190, 100, 30,
 				AVS::ButtonSettings::Create(AVS::Buttons::Default));
 			AVS::CreateButton(
 				hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_SETTINGS_SAVE)),
-				instance, Translate(L"Save").c_str(), 535, 157, 100, 30,
+				instance, Translate(L"Save").c_str(), 535, 190, 100, 30,
 				AVS::ButtonSettings::Create(AVS::Buttons::Primary));
 			return 0;
 		}
@@ -459,6 +514,10 @@ namespace {
 				values.shift = AVS::ComboBox_GetCurrentText(state->shift);
 				values.keepModels =
 					SendMessageW(state->keepModels, BM_GETCHECK, 0, 0) == BST_CHECKED;
+				values.fullPrecision =
+					SendMessageW(state->fullPrecision, BM_GETCHECK, 0, 0) == BST_CHECKED;
+				// the download size under the model list follows the precision
+				UpdateModelInfo(state->controls);
 				CloseSettings(hwnd);
 				return 0;
 			}
@@ -499,7 +558,7 @@ namespace {
 
 		auto* state = new SettingsWindow{ owner, controls };
 		const DWORD style = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU;
-		RECT rect{ 0, 0, 650, 205 };
+		RECT rect{ 0, 0, 650, 235 };
 		AdjustWindowRectEx(&rect, style, FALSE, 0);
 		const wchar_t* windowTitle = L"StableAudio3 - Settings";
 		HWND window = CreateWindowExW(
@@ -549,83 +608,77 @@ namespace {
 			SetPropW(hwnd, L"StableAudio3.Controls", controls);
 			HINSTANCE instance = GetModuleHandleW(nullptr);
 
-			CreateLabel(hwnd, Translate(L"Prompt").c_str(), 15, 12, 180, 22);
-			controls->prompt = CreateEdit(hwnd, 15, 36, 730, 150, L"", EditKind::Multiline);
-			CreateLabel(hwnd, Translate(L"Negative prompt").c_str(), 15, 198, 145, 28);
-			controls->negativePrompt = CreateEdit(hwnd, 165, 198, 580, 28, L"");
+			// Stable Audio 3 is trained on English descriptions of the sound (the model
+			// cards list only "en") and does not sing words. Each box is captioned with
+			// what to write in it, in the UI's language, and shows an example in English
+			// whatever that language is; an empty negative prompt is simply not sent.
+			CreateLabel(hwnd, Translate(L"Describe the sound in English: genre, instruments, tempo, mood. Instrumental only. The model does not support lyrics.").c_str(),
+				15, 12, 730, 22);
+			controls->prompt = CreateEdit(hwnd, 15, 36, 730, 124, L"", EditKind::Multiline,
+				L"Rock, electric guitars, bass, energetic drums, uplifting mood, 120 BPM");
+			CreateLabel(hwnd, Translate(L"Describe in English what the sound should not have: unwanted instruments, noise, distortion. Can be left empty.").c_str(),
+				15, 176, 730, 22);
+			controls->negativePrompt = CreateEdit(hwnd, 15, 200, 730, 28, L"", EditKind::Text,
+				L"Low quality, noise, distortion");
 
-			CreateLabel(hwnd, Translate(L"Model").c_str(), 15, 245, 190, 20);
-			CreateLabel(hwnd, Translate(L"Duration, sec").c_str(), 220, 245, 100, 20);
-#if defined(_WIN32) && !defined(_WIN64)
+			// model, duration, device and the download in one row; under it what the
+			// model takes to download and the longest sound it makes
+			CreateLabel(hwnd, Translate(L"Model").c_str(), 15, 245, 250, 20);
+			CreateLabel(hwnd, Translate(L"Duration, sec").c_str(), 280, 245, 115, 20);
+			CreateLabel(hwnd, Translate(L"Device").c_str(), 395, 245, 140, 20);
+			std::vector<std::wstring> models;
+			for (const auto& model : MODELS)
+				models.push_back(Translate(model.name));
 			controls->model = AVS::CreateComboBox(
 				hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_MODEL)), instance,
-				15, 267, 190, 28, AVS::ComboBoxSettings::Create(),
-				{ L"small-music", L"small-sfx" });
-#else
-			controls->model = AVS::CreateComboBox(
-				hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_MODEL)), instance,
-				15, 267, 190, 28, AVS::ComboBoxSettings::Create(),
-				{ L"medium", L"small-music", L"small-sfx" });
+				15, 267, 250, 28, AVS::ComboBoxSettings::Create(), models);
+			controls->duration = CreateEdit(hwnd, 280, 267, 100, 28, L"12.0", EditKind::Number);
+			// the graphics card is offered only where it can run, and preselected where
+			// there is a discrete one; elsewhere the plugin works on the processor
+			std::vector<std::wstring> devices{ Translate(L"Processor") };
+#if !(defined(_WIN32) && !defined(_WIN64))
+			const bool gpu = GpuBackendReady(plugin->moduleDirectory);
+			if (gpu)
+				devices.push_back(Translate(L"Graphics card"));
 #endif
-			controls->duration = CreateEdit(hwnd, 220, 267, 100, 28, L"12.0", EditKind::Number);
+			controls->device = AVS::CreateComboBox(
+				hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_DEVICE)),
+				instance, 395, 267, 140, 28, AVS::ComboBoxSettings::Create(), devices);
+#if !(defined(_WIN32) && !defined(_WIN64))
+			if (gpu && GpuBackendPreferred(plugin->moduleDirectory))
+				AVS::ComboBox_SetCurrent(controls->device, 1);
+#endif
 			controls->download = AVS::CreateButton(
 				hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_DOWNLOAD)),
 				instance, Translate(L"Download model").c_str(), 565, 267, 180, 28,
 				AVS::ButtonSettings::Create(AVS::Buttons::Default));
+			controls->modelInfo = CreateLabel(hwnd, L"", 15, 299, 730, 22);
+			UpdateModelInfo(controls);
 
-			CreateLabel(hwnd, Translate(L"Encoding").c_str(), 15, 311, 105, 20);
-			CreateLabel(hwnd, Translate(L"Device").c_str(), 135, 311, 95, 20);
-			controls->encoding = AVS::CreateComboBox(
-				hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_ENCODING)),
-				instance, 15, 333, 105, 28, AVS::ComboBoxSettings::Create(),
-				{ L"f32", L"f16" });
-#if defined(_WIN32) && !defined(_WIN64)
-			controls->device = AVS::CreateComboBox(
-				hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_DEVICE)),
-				instance, 135, 333, 95, 28, AVS::ComboBoxSettings::Create(), { L"cpu" });
-#else
-			// GPU is offered only where it can run, and preselected where there
-			// is a discrete GPU - with f16, the precision the GPU path is made
-			// for: f32 medium alone outgrows a 4 GB card. Elsewhere the plugin
-			// works on the CPU.
-			if (GpuBackendReady(plugin->moduleDirectory)) {
-				controls->device = AVS::CreateComboBox(
-					hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_DEVICE)),
-					instance, 135, 333, 95, 28, AVS::ComboBoxSettings::Create(),
-					{ L"cpu", L"gpu" });
-				if (GpuBackendPreferred(plugin->moduleDirectory)) {
-					AVS::ComboBox_SetCurrent(controls->device, 1);
-					AVS::ComboBox_SetCurrent(controls->encoding, 1);
-				}
-			}
-			else
-				controls->device = AVS::CreateComboBox(
-					hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_DEVICE)),
-					instance, 135, 333, 95, 28, AVS::ComboBoxSettings::Create(), { L"cpu" });
-#endif
-
-			CreateLabel(hwnd, Translate(L"System resources and available acceleration").c_str(), 15, 379,
+			CreateLabel(hwnd, Translate(L"System resources and available acceleration").c_str(), 15, 339,
 				730, 22);
 			CreateLabel(hwnd, GetSystemSummary(plugin->moduleDirectory).c_str(), 15,
-				403, 730, 122, AVS::LabelType::Enabled,
+				363, 730, 122, AVS::LabelType::Enabled,
 				DT_LEFT | DT_TOP | DT_WORDBREAK);
 			controls->progress = AVS::CreateProgressBar(
-				hwnd, instance, 15, 529, 730, 22, AVS::ProgressBarSettings::Create());
+				hwnd, instance, 15, 489, 730, 22, AVS::ProgressBarSettings::Create());
 			AVS::ProgressBar_SetRange(controls->progress, 0, 100);
+			// one line level with the buttons' text (their middle is at 535), two lines
+			// around it
 			controls->status =
-				CreateLabel(hwnd, Translate(L"Ready").c_str(), 15, 562, 365, 28,
-					AVS::LabelType::Enabled, DT_LEFT | DT_TOP | DT_WORDBREAK);
+				CreateLabel(hwnd, Translate(L"Ready").c_str(), 15, 519, 365, 32,
+					AVS::LabelType::Enabled, DT_LEFT | DT_VCENTER | DT_WORDBREAK);
 			controls->licence = AVS::CreateButton(
 				hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_LICENCE)),
-				instance, Translate(L"Licence").c_str(), 395, 560, 105, 30,
+				instance, Translate(L"Licence").c_str(), 395, 520, 105, 30,
 				AVS::ButtonSettings::Create(AVS::Buttons::Default));
 			controls->settingsButton = AVS::CreateButton(
 				hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_SETTINGS)),
-				instance, Translate(L"Settings").c_str(), 515, 560, 105, 30,
+				instance, Translate(L"Settings").c_str(), 515, 520, 105, 30,
 				AVS::ButtonSettings::Create(AVS::Buttons::Default));
 			controls->action = AVS::CreateButton(
 				hwnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_ACTION)),
-				instance, Translate(L"Generate").c_str(), 635, 560, 110, 30,
+				instance, Translate(L"Generate").c_str(), 635, 520, 110, 30,
 				AVS::ButtonSettings::Create(AVS::Buttons::Primary));
 			SetBusy(controls, false);
 			SetFocus(controls->prompt);
@@ -637,6 +690,10 @@ namespace {
 			if (!plugin || !controls)
 				break;
 			switch (LOWORD(wParam)) {
+			case ID_MODEL:
+				if (HIWORD(wParam) == AVS::COMBOBOX_SELECTED_INDEX_CHANDED)
+					UpdateModelInfo(controls);
+				return 0;
 			case ID_SETTINGS:
 				if (!plugin->busy)
 					ShowSettingsWindow(hwnd, controls);
@@ -658,8 +715,7 @@ namespace {
 				SetBusy(controls, true, false);
 				AVS::Label_SetText(controls->status,
 					Translate(L"Preparing model download...").c_str());
-				plugin->StartDownload(AVS::ComboBox_GetCurrentText(controls->model),
-					AVS::ComboBox_GetCurrentText(controls->encoding));
+				plugin->StartDownload(SelectedModel(controls), SelectedEncoding(controls));
 				return 0;
 			case ID_ACTION:
 				if (plugin->busy) {
@@ -679,9 +735,9 @@ namespace {
 						return 0;
 					}
 					options.negativePrompt = GetText(controls->negativePrompt);
-					options.model = AVS::ComboBox_GetCurrentText(controls->model);
-					options.encoding = AVS::ComboBox_GetCurrentText(controls->encoding);
-					options.device = AVS::ComboBox_GetCurrentText(controls->device);
+					options.model = SelectedModel(controls);
+					options.encoding = SelectedEncoding(controls);
+					options.device = SelectedDevice(controls);
 					const float durationSeconds = GetReal(controls->duration, 0.0f);
 					if (!std::isfinite(durationSeconds) || durationSeconds <= 0.0f) {
 				AVS::Label_SetText(
@@ -692,12 +748,12 @@ namespace {
 					const float maximumDuration =
 						options.model == L"medium" ? 380.0f : 120.0f;
 					if (durationSeconds > maximumDuration) {
-						AVS::Label_SetText(
-							controls->status,
-							Translate(L"Maximum duration for ") + options.model +
-							Translate(L" is ") +
-							std::to_wstring(static_cast<int>(maximumDuration)) +
-							Translate(L" seconds."));
+						std::wstring text = Translate(
+							L"The maximum duration for this model is {seconds} seconds.");
+						const size_t at = text.find(L"{seconds}");
+						if (at != std::wstring::npos)
+							text.replace(at, 9, std::to_wstring(static_cast<int>(maximumDuration)));
+						AVS::Label_SetText(controls->status, text);
 						return 0;
 					}
 					constexpr double sampleRate = 44100.0;
@@ -712,8 +768,15 @@ namespace {
 					options.padding = controls->generation.padding;
 					options.distShift = controls->generation.shift;
 					options.keepModels = controls->generation.keepModels;
-					if (!IsModelSetPresent(plugin->workDirectory / L"models", options.model,
-						options.encoding)) {
+					// Up to 1.1.0 a computer without a GPU got the f32 weights by default:
+					// those, where the f16 ones are not there, rather than the same model
+					// downloaded again.
+					const auto modelDirectory = plugin->workDirectory / L"models";
+					if (options.encoding == L"f16" &&
+						!IsModelSetPresent(modelDirectory, options.model, L"f16") &&
+						IsModelSetPresent(modelDirectory, options.model, L"f32"))
+						options.encoding = L"f32";
+					if (!IsModelSetPresent(modelDirectory, options.model, options.encoding)) {
 						AVS::Label_SetText(
 							controls->status,
 							Translate(L"Model files are missing. Click Download model first.")

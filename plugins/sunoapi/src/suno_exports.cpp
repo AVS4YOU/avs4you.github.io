@@ -36,7 +36,7 @@ extern "C"
 
 	wchar_t *__stdcall PluginVersion()
 	{
-		return export_str(L"1.0.2");
+		return export_str(L"1.0.3");
 	}
 
 	wchar_t *__stdcall PluginIcon(PluginHandle p)

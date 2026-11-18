@@ -10,9 +10,9 @@ __declspec(dllexport) void __stdcall DeletePlugin(PluginHandle p) { delete stati
 __declspec(dllexport) Plugins::PluginType __stdcall PluginType() { return Plugins::PluginType::Content; }
 __declspec(dllexport) wchar_t* __stdcall PluginId() { return ExportString(L"Supertonic3.plugin"); }
 __declspec(dllexport) wchar_t* __stdcall PluginName() { return ExportString(CTranslate::GetInstance().GetManager()->Translate(L"Supertonic 3").c_str()); }
-__declspec(dllexport) wchar_t* __stdcall PluginVersion() { return ExportString(L"1.0.2"); }
+__declspec(dllexport) wchar_t* __stdcall PluginVersion() { return ExportString(L"1.0.3"); }
 __declspec(dllexport) wchar_t* __stdcall PluginIcon(PluginHandle p) { auto* plugin = static_cast<SupertonicPlugin*>(p); return plugin ? ExportString((plugin->workDirectory / L"icon.ico").c_str()) : nullptr; }
-__declspec(dllexport) bool __stdcall IsApplicationSupported(int id) { return id == AVS_AUDIO_EDITOR || id == AVS_VIDEO_EDITOR; }
+__declspec(dllexport) bool __stdcall IsApplicationSupported(int id) { return id == AVS_AUDIO_EDITOR || id == AVS_VIDEO_EDITOR || id == AVS_AUDIO_CONVERTER; }
 __declspec(dllexport) void __stdcall ReleasePluginString(wchar_t* p) { ReleaseExportString(p); }
 __declspec(dllexport) void __stdcall SetLanguage(PluginHandle, const wchar_t* name) { if (name) CTranslate::GetInstance().GetManager()->SetLang(NSStringUtils::wstring_to_utf8(name)); }
 __declspec(dllexport) void __stdcall SetParentWindow(PluginHandle p, void* hwnd) { static_cast<SupertonicPlugin*>(p)->parentWindow = static_cast<HWND>(hwnd); }

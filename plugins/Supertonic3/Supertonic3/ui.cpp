@@ -25,7 +25,7 @@ constexpr int ID_GENERATE = 107;
 constexpr int ID_LICENSE = 108;
 constexpr int ID_DOWNLOAD_MODEL_ACCEPTED = 109;
 constexpr int CLIENT_WIDTH = 680;
-constexpr int CLIENT_HEIGHT = 430;
+constexpr int CLIENT_HEIGHT = 420;
 
 struct Controls
 {
@@ -135,12 +135,18 @@ HWND CreateLabel(HWND parent, const wchar_t* text, int x, int y, int width, int 
         AVS::LabelSettings::Create(type, alignment));
 }
 
+enum class EditKind { Number, Multiline };
+
 HWND CreateEdit(HWND parent, int x, int y, int width, int height,
-                const wchar_t* text, bool multiline = false)
+                const wchar_t* text, EditKind kind, const std::wstring& placeholder = L"")
 {
     auto settings = AVS::TextEditSettings::Create();
-    settings.IsMultiline = multiline;
-    settings.IsVscroll = multiline;
+    settings.IsMultiline = kind == EditKind::Multiline;
+    settings.IsVscroll = kind == EditKind::Multiline;
+    // a number sits in the middle of its box, on the right
+    settings.IsVCenter = kind == EditKind::Number;
+    settings.TextAlign = kind == EditKind::Number ? ES_RIGHT : ES_LEFT;
+    settings.Placeholder = placeholder;
     HWND edit = AVS::CreateTextEditMultiline(parent, g_module, x, y, width, height, settings);
     SetWindowTextW(edit, text);
     return edit;
@@ -177,11 +183,18 @@ float GetReal(HWND control, float fallback)
     catch (...) { return fallback; }
 }
 
+// The voice styles come with the model: until it is downloaded the list is empty,
+// so it is off and says so.
+void EnableStyles(Controls* controls, bool enable)
+{
+    EnableWindow(controls->style, enable && !AVS::ComboBox_GetItems(controls->style).empty());
+}
+
 void SetBusy(Controls* controls, bool busy)
 {
     EnableWindow(controls->text, !busy);
     EnableWindow(controls->language, !busy);
-    EnableWindow(controls->style, !busy);
+    EnableStyles(controls, !busy);
     EnableWindow(controls->steps, !busy);
     EnableWindow(controls->speed, !busy);
     EnableWindow(controls->download, !busy);
@@ -338,13 +351,15 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lPa
         SetPropW(window, L"Supertonic3.Controls", controls);
 
         CreateLabel(window, Tr(L"Text to synthesize").c_str(), 15, 12, 250, 22);
-        controls->text = CreateEdit(window, 15, 36, 650, 170,
-            Tr(L"Enter the text you want to synthesize.").c_str(), true);
+        // the hint in grey while the box is empty, not as text to delete first
+        controls->text = CreateEdit(window, 15, 36, 650, 170, L"", EditKind::Multiline,
+            Tr(L"Enter the text you want to synthesize."));
 
         CreateLabel(window, Tr(L"Language").c_str(), 15, 222, 120, 20);
         CreateLabel(window, Tr(L"Voice style").c_str(), 155, 222, 220, 20);
         CreateLabel(window, Tr(L"Steps").c_str(), 400, 222, 80, 20);
-        CreateLabel(window, Tr(L"Speed").c_str(), 500, 222, 80, 20);
+        // wider than its box: "Geschwindigkeit" takes 87 px
+        CreateLabel(window, Tr(L"Speed").c_str(), 500, 222, 165, 20);
 
         const std::vector<std::wstring> languages{
             L"EN", L"RU", L"UK", L"DE", L"FR", L"ES", L"IT",
@@ -358,11 +373,14 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lPa
         styles.reserve(plugin->voiceStyles.size());
         for (const auto& style : plugin->voiceStyles)
             styles.push_back(VoiceStyleDisplayName(style));
+        auto styleSettings = AVS::ComboBoxSettings::Create();
+        styleSettings.Placeholder = Tr(L"Download the model first");
         controls->style = AVS::CreateComboBox(window,
             reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_STYLE)), g_module,
-            155, 246, 220, 28, AVS::ComboBoxSettings::Create(), styles);
-        controls->steps = CreateEdit(window, 400, 246, 80, 28, L"8");
-        controls->speed = CreateEdit(window, 500, 246, 80, 28, L"1.05");
+            155, 246, 220, 28, styleSettings, styles);
+        EnableStyles(controls, true);
+        controls->steps = CreateEdit(window, 400, 246, 80, 28, L"8", EditKind::Number);
+        controls->speed = CreateEdit(window, 500, 246, 80, 28, L"1.05", EditKind::Number);
 
         controls->progress = AVS::CreateProgressBar(window, g_module, 15, 300, 650, 20,
             AVS::ProgressBarSettings::Create());
@@ -373,23 +391,25 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lPa
         const std::wstring initialStatus = plugin->modelDirectory.empty()
             ? Tr(L"Press Download Model.")
             : (plugin->voiceStyles.empty() ? Tr(L"No voice styles were found.") : Tr(L"Ready"));
-        controls->status = CreateLabel(window, initialStatus.c_str(), 15, 338, 320, 34,
-            AVS::LabelType::Enabled, DT_LEFT | DT_TOP | DT_WORDBREAK);
+        // Buttons 30 px high, as in the other plugins' windows. The status in the middle
+        // of the buttons beside it (one line level with their text, two around it).
+        controls->status = CreateLabel(window, initialStatus.c_str(), 15, 337, 320, 32,
+            AVS::LabelType::Enabled, DT_LEFT | DT_VCENTER | DT_WORDBREAK);
         controls->download = AVS::CreateButton(window,
             reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_DOWNLOAD_MODEL)), g_module,
-            Tr(L"Download Model").c_str(), 350, 338, 170, 34,
+            Tr(L"Download Model").c_str(), 350, 338, 170, 30,
             AVS::ButtonSettings::Create(AVS::Buttons::Default));
         controls->license = AVS::CreateButton(window,
             reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_LICENSE)), g_module,
-            Tr(L"License").c_str(), 535, 338, 130, 34,
+            Tr(L"License").c_str(), 535, 338, 130, 30,
             AVS::ButtonSettings::Create(AVS::Buttons::Default));
         controls->generate = AVS::CreateButton(window,
             reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_GENERATE)), g_module,
-            Tr(L"Generate").c_str(), 535, 382, 130, 34,
+            Tr(L"Generate").c_str(), 535, 376, 130, 30,
             AVS::ButtonSettings::Create(AVS::Buttons::Primary));
         CreateLabel(window,
             Tr(L"Powered by the Supertonic 3 model. Generated audio is AI-generated.").c_str(),
-            15, 382, 500, 34, AVS::LabelType::Enabled,
+            15, 376, 500, 30, AVS::LabelType::Enabled,
             DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 
         SetFocus(controls->text);
@@ -492,6 +512,7 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lPa
                         styles.push_back(VoiceStyleDisplayName(style));
                     AVS::ComboBox_SetItems(controls->style, styles,
                         styles.empty() ? -1 : 0);
+                    EnableStyles(controls, true);
                 }
                 RedrawWindow(controls->language, nullptr, nullptr,
                     RDW_INVALIDATE | RDW_ERASE | RDW_FRAME | RDW_UPDATENOW);

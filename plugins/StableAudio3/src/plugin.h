@@ -15,7 +15,7 @@ struct GenerationOptions {
 #else
 	std::wstring model = L"medium";
 #endif
-	std::wstring encoding = L"f32", device = L"cpu";
+	std::wstring encoding = L"f16", device = L"cpu";
 	std::wstring distShift = L"LogSNR";
 	int frames = 128, steps = 8, threads = 0;
 	long long seed = -1;

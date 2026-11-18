@@ -182,6 +182,13 @@ namespace AVS
 			InvalidateRect(hwnd, NULL, FALSE);
 			break;
 		}
+		case WM_ENABLE:
+		{
+			// a disabled window gets no WM_MOUSELEAVE: drop the hover it had
+			info->IsHovered = false;
+			InvalidateRect(hwnd, NULL, FALSE);
+			break;
+		}
 		case WM_PAINT:
 		{
 			PAINTSTRUCT ps;
@@ -193,15 +200,29 @@ namespace AVS
 			LRESULT state = SendMessage(hwnd, BM_GETSTATE, 0, 0);
 			bool isPressed = (state & BST_PUSHED) != 0;
 
-			Color& backColor = isPressed ? info->Settings.BackgroundPressed : (info->IsHovered ? info->Settings.BackgroundHover : info->Settings.Background);
+			// Disabled: the button's colours halfway to the window's background, the
+			// text halfway to the button's own - as a disabled combo box shows.
+			const bool isEnabled = IsWindowEnabled(hwnd) != FALSE;
+			const Color window = Color::GetDefaultWindowBackground();
+			const auto fade = [](const Color& c, const Color& to) {
+				return Color::MakeRGBA(static_cast<unsigned char>((c.R + to.R) / 2),
+					static_cast<unsigned char>((c.G + to.G) / 2),
+					static_cast<unsigned char>((c.B + to.B) / 2), c.A);
+			};
+
+			Color backColor = isPressed ? info->Settings.BackgroundPressed : (info->IsHovered ? info->Settings.BackgroundHover : info->Settings.Background);
+			if (!isEnabled)
+				backColor = fade(info->Settings.Background, window);
 			COLORREF bgColor = RGB(backColor.R, backColor.G, backColor.B);
-			
+
 			HBRUSH hBrush = CreateSolidBrush(bgColor);
 			FillRect(hdc, &rc, hBrush);
 			DeleteObject(hBrush);
 
 			Color borderColor = isPressed ? info->Settings.BorderPressed : (info->IsHovered ? info->Settings.BorderHover : info->Settings.Border);
-			
+			if (!isEnabled)
+				borderColor = fade(info->Settings.Border, window);
+
 			bool isFocus = (GetFocus() == hwnd);
 			int borderW = 1;
 			if (isFocus && !isPressed && info->Settings.FocusColor.A != 0)
@@ -234,7 +255,9 @@ namespace AVS
 			GetWindowText(hwnd, text, 256);
 
 			SetBkMode(hdc, TRANSPARENT);
-			Color& textColor = isPressed ? info->Settings.TextColorPressed : info->Settings.TextColor;
+			Color textColor = isPressed ? info->Settings.TextColorPressed : info->Settings.TextColor;
+			if (!isEnabled)
+				textColor = fade(info->Settings.TextColor, backColor);
 			SetTextColor(hdc, RGB(textColor.R, textColor.G, textColor.B));
 
 			HFONT hFont = (HFONT)SendMessage(hwnd, WM_GETFONT, 0, 0);
@@ -326,6 +349,7 @@ namespace AVS
 	public:
 		TextEditSettings Settings;
 		bool IsHovered;
+		bool IsEmpty = true;   // for the placeholder: repaint when this changes
 		HFONT hFont;
 
 		TextEditInfo(const TextEditSettings& settings)
@@ -356,7 +380,42 @@ namespace AVS
 		}
 	};
 
-	LRESULT CALLBACK _EditSubclassProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
+	LRESULT CALLBACK _EditSubclassProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
+
+	// The placeholder in the edit's own font and the disabled-label grey, where its text would start.
+	// Only over the part the edit has just repainted, and over its background first: an empty
+	// single-line edit does not erase what it repaints, and text drawn over itself turns bold.
+	static void _DrawEditPlaceholder(HWND hwnd, const TextEditSettings& settings, HFONT font, HRGN update)
+	{
+		RECT rc;
+		SendMessage(hwnd, EM_GETRECT, 0, (LPARAM)&rc);
+		const BOOL caretHidden = HideCaret(hwnd);
+		HDC hdc = GetDC(hwnd);
+		SelectClipRgn(hdc, update);
+		// the brush the edit itself paints with
+		const bool editable = IsWindowEnabled(hwnd) &&
+			!(GetWindowLongPtrW(hwnd, GWL_STYLE) & ES_READONLY);
+		HBRUSH background = (HBRUSH)SendMessage(GetParent(hwnd),
+			editable ? WM_CTLCOLOREDIT : WM_CTLCOLORSTATIC, (WPARAM)hdc, (LPARAM)hwnd);
+		if (!background)
+			background = GetSysColorBrush(editable ? COLOR_WINDOW : COLOR_3DFACE);
+		FillRgn(hdc, update, background);
+		HFONT oldFont = (HFONT)SelectObject(hdc, font);
+		SetBkMode(hdc, TRANSPARENT);
+		SetTextColor(hdc, RGB(130, 130, 130));
+		UINT format = DT_NOPREFIX | DT_EDITCONTROL | (settings.IsMultiline ? DT_WORDBREAK : DT_SINGLELINE);
+		if (settings.TextAlign & ES_RIGHT)
+			format |= DT_RIGHT;
+		else if (settings.TextAlign & ES_CENTER)
+			format |= DT_CENTER;
+		DrawTextW(hdc, settings.Placeholder.c_str(), -1, &rc, format);
+		SelectObject(hdc, oldFont);
+		ReleaseDC(hwnd, hdc);
+		if (caretHidden)
+			ShowCaret(hwnd);
+	}
+
+	static LRESULT _EditSubclassImpl(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
 	{
 		TextEditInfo* info = (TextEditInfo*)dwRefData;
 
@@ -442,9 +501,14 @@ namespace AVS
 				InflateRect(&inner, -GetSystemMetrics(SM_CXEDGE), -GetSystemMetrics(SM_CYEDGE));
 				const bool editable = IsWindowEnabled(hwnd) &&
 					!(GetWindowLongPtrW(hwnd, GWL_STYLE) & ES_READONLY);
+				// the brush the edit paints its text line with: the parent's, if it sets one
+				HBRUSH field = (HBRUSH)SendMessage(GetParent(hwnd),
+					editable ? WM_CTLCOLOREDIT : WM_CTLCOLORSTATIC, (WPARAM)hdc, (LPARAM)hwnd);
+				if (!field)
+					field = GetSysColorBrush(editable ? COLOR_WINDOW : COLOR_3DFACE);
 				int saved = SaveDC(hdc);
 				ExcludeClipRect(hdc, client.left, client.top, client.right, client.bottom);
-				FillRect(hdc, &inner, GetSysColorBrush(editable ? COLOR_WINDOW : COLOR_3DFACE));
+				FillRect(hdc, &inner, field);
 				RestoreDC(hdc, saved);
 			}
 
@@ -538,6 +602,45 @@ namespace AVS
 		return DefSubclassProc(hwnd, msg, wParam, lParam);
 	}
 
+	LRESULT CALLBACK _EditSubclassProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
+	{
+		TextEditInfo* info = (TextEditInfo*)dwRefData;
+		if (msg == WM_NCDESTROY || info->Settings.Placeholder.empty())
+			return _EditSubclassImpl(hwnd, msg, wParam, lParam, uIdSubclass, dwRefData);
+
+		if (msg == WM_PAINT)
+		{
+			// after the edit has painted itself: the placeholder over an empty field, in what
+			// was to be repainted (BeginPaint in the edit validates it, so it is taken first)
+			HRGN update = CreateRectRgn(0, 0, 0, 0);
+			const int region = GetUpdateRgn(hwnd, update, FALSE);
+			LRESULT result = _EditSubclassImpl(hwnd, msg, wParam, lParam, uIdSubclass, dwRefData);
+			if (region != NULLREGION && region != ERROR && GetWindowTextLengthW(hwnd) == 0)
+				_DrawEditPlaceholder(hwnd, info->Settings, info->hFont, update);
+			DeleteObject(update);
+			return result;
+		}
+
+		LRESULT result = _EditSubclassImpl(hwnd, msg, wParam, lParam, uIdSubclass, dwRefData);
+		switch (msg)
+		{
+		// what can empty the field or fill it: the edit repaints only what it changed,
+		// so the placeholder needs a whole repaint to come or go
+		case WM_CHAR: case WM_KEYDOWN: case WM_SETTEXT: case WM_PASTE: case WM_CUT: case WM_CLEAR:
+		case WM_UNDO: case EM_UNDO: case EM_REPLACESEL: case WM_IME_CHAR: case WM_IME_ENDCOMPOSITION:
+		{
+			const bool empty = GetWindowTextLengthW(hwnd) == 0;
+			if (empty != info->IsEmpty)
+			{
+				info->IsEmpty = empty;
+				InvalidateRect(hwnd, NULL, TRUE);
+			}
+			break;
+		}
+		}
+		return result;
+	}
+
 	HWND CreateTextEditMultiline(HWND hParent, HINSTANCE hInstance,
 		const int& x, const int& y, const int& w, const int& h,
 		const TextEditSettings& settings)
@@ -568,6 +671,17 @@ namespace AVS
 				SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
 
 		return hwnd;
+	}
+
+	void TextEdit_SetPlaceholder(HWND hwnd, const std::wstring& placeholder)
+	{
+		TextEditInfo* info = nullptr;
+		if (!GetWindowSubclass(hwnd, _EditSubclassProc, 0, (DWORD_PTR*)&info) || !info)
+			return;
+		info->Settings.Placeholder = placeholder;
+		// tracked only while there is a placeholder: bring it up to date
+		info->IsEmpty = GetWindowTextLengthW(hwnd) == 0;
+		InvalidateRect(hwnd, NULL, TRUE);
 	}
 
 	ProgressBarSettings ProgressBarSettings::Create()
@@ -1298,6 +1412,19 @@ namespace AVS
 
 				SelectObject(hdc, hOldFont);
 			}
+			// nothing selected: the placeholder, in the grey of the edits' one
+			else if (!info->Settings.Placeholder.empty())
+			{
+				SetBkMode(hdc, TRANSPARENT);
+				SetTextColor(hdc, RGB(130, 130, 130));
+				HFONT hOldFont = (HFONT)SelectObject(hdc, info->hFont);
+				RECT textRect = mainRect;
+				textRect.left += 5;
+				textRect.right -= 5;
+				DrawText(hdc, info->Settings.Placeholder.c_str(), -1, &textRect,
+					DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS | DT_NOPREFIX);
+				SelectObject(hdc, hOldFont);
+			}
 
 			EndPaint(hwnd, &ps);
 			return 0;
@@ -1597,7 +1724,18 @@ namespace AVS
 
 			HFONT hOldFont = (HFONT)SelectObject(hdc, info->hFont);
 
-			DrawText(hdc, text.c_str(), -1, &rc, info->Settings.Alignment);
+			// DrawText centres a single line only: wrapping text asked for in the middle is
+			// measured and moved there, and starts at the top when it is taller than the label
+			const UINT format = info->Settings.Alignment;
+			if ((format & DT_VCENTER) && !(format & DT_SINGLELINE))
+			{
+				RECT measured = rc;
+				DrawText(hdc, text.c_str(), -1, &measured, (format & ~DT_VCENTER) | DT_CALCRECT);
+				const int room = (rc.bottom - rc.top) - (measured.bottom - measured.top);
+				if (room > 0)
+					rc.top += room / 2;
+			}
+			DrawText(hdc, text.c_str(), -1, &rc, format);
 
 			SelectObject(hdc, hOldFont);
 			EndPaint(hwnd, &ps);

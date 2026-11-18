@@ -129,8 +129,11 @@ never updated, so treat the file like an API. Format and full rules:
   every installer in the field then stops offering plugins.
 - Publish order: run `release.py` **before** pushing a version bump. Pages
   serves the new URLs at once, and until the release exists they are a 404.
-- Never remove or rename a slug that a shipped default list names: today
-  `effect-vhs` and `veo3` (build_tools `defaults`, `<module>-plugins`).
+- Never remove or rename a slug that a default list names (build_tools
+  `defaults`, `<module>-plugins`): installers already shipped have
+  `effect-vhs` and `veo3`, the ones built from November 2026 also `youtube`,
+  `ai-subtitles`, `stem-splitter`, `supertonic3`, `sunoapi` and
+  `stableaudio3`.
 - Installers download the packages over https with urlmon, which follows
   GitHub's redirect to the signed asset URL (isxdl cannot: a ~930-character
   redirect target corrupts its memory). They only accept release URLs under

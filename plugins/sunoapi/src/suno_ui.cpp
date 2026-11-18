@@ -30,18 +30,27 @@ using json = nlohmann::json;
 #define SUNO_DOWNLOAD_RETRY_INTERVAL_MS 750
 #define SUNO_HELP_URL L"https://docs.sunoapi.org/#-music-generation-apis"
 #define SUNO_CALLBACK_URL "https://api.example.com/callback"
-#define SUNO_PROMPT_LABEL_X 16
-#define SUNO_PROMPT_X 130
-#define SUNO_PROMPT_COUNTER_X 550
-#define SUNO_PROMPT_WIDTH 520
-#define SUNO_PROMPT_DEFAULT_COUNTER_Y 133
-#define SUNO_PROMPT_DEFAULT_LABEL_Y 159
-#define SUNO_PROMPT_DEFAULT_Y 155
-#define SUNO_PROMPT_DEFAULT_HEIGHT 120
-#define SUNO_PROMPT_EXPANDED_COUNTER_Y 81
-#define SUNO_PROMPT_EXPANDED_LABEL_Y 106
-#define SUNO_PROMPT_EXPANDED_Y 102
-#define SUNO_PROMPT_EXPANDED_HEIGHT 266
+// Each field under its label, as in the other plugins' windows: the label says in a few words what
+// goes in, the field 20 px below the label's top; a length counter on the label's line, right.
+#define SUNO_LEFT 16
+#define SUNO_FIELD_WIDTH 634
+#define SUNO_LABEL_WIDTH 520
+#define SUNO_COUNTER_X 550
+#define SUNO_PROMPT_DEFAULT_LABEL_Y 155
+#define SUNO_PROMPT_DEFAULT_Y 175
+#define SUNO_PROMPT_DEFAULT_HEIGHT 100
+// lyrics and sounds have no title and style: the prompt takes their place
+#define SUNO_PROMPT_EXPANDED_LABEL_Y 102
+#define SUNO_PROMPT_EXPANDED_Y 122
+#define SUNO_PROMPT_EXPANDED_HEIGHT 260
+// voice, what to avoid, or the source track
+#define SUNO_ROW3_LABEL_Y 336
+#define SUNO_ROW3_Y 356
+// the source track under "what to avoid" (Add vocals)
+#define SUNO_ROW4_LABEL_Y 389
+#define SUNO_ROW4_Y 409
+#define SUNO_BUTTONS_Y 450
+#define SUNO_URL_EXAMPLE L"https://..."
 
 namespace
 {
@@ -96,7 +105,7 @@ enum
 struct State
 {
 	CSunoApiPlugin *p = nullptr;
-	HWND mode{}, model{}, promptLabel{}, prompt{}, styleLabel{}, style{}, negativeTagsLabel{}, negativeTags{}, vocalGenderLabel{}, vocalGender{}, titleLabel{}, title{}, sourceLabel{}, source{}, titleCounter{}, promptCounter{}, styleCounter{}, custom{}, instrumental{}, help{}, file{}, settings{}, run{}, status{};
+	HWND modeLabel{}, mode{}, model{}, promptLabel{}, prompt{}, styleLabel{}, style{}, negativeTagsLabel{}, negativeTags{}, vocalGenderLabel{}, vocalGender{}, titleLabel{}, title{}, sourceLabel{}, source{}, titleCounter{}, promptCounter{}, styleCounter{}, custom{}, instrumental{}, help{}, file{}, settings{}, run{}, status{};
 	std::atomic<bool> busy{false};
 	bool customEnabled = false;
 	bool instrumentalEnabled = false;
@@ -146,6 +155,8 @@ HWND Edit(HWND w, int id, int x, int y, int width, int height, bool multi = fals
 	AVS::TextEditSettings settings = AVS::TextEditSettings::Create();
 	settings.IsMultiline = multi;
 	settings.IsVscroll = multi;
+	// one line sits in the middle of its box
+	settings.IsVCenter = !multi;
 	return AVS::CreateTextEditMultiline(w, g_hInst, x, y, width, height, settings);
 }
 
@@ -363,38 +374,86 @@ void UpdateSourceField(State *state)
 	int mode = AVS::ComboBox_GetCurrent(state->mode);
 	const bool generateMusicMode = mode == SUNO_MODE_GENERATE_MUSIC;
 	const bool generationSwitchesEnabled = generateMusicMode || mode == SUNO_MODE_COVER_AUDIO;
-	AVS::Label_SetText(state->promptLabel, generateMusicMode ? (state->customEnabled ? Tr(L"Lyrics") : Tr(L"Prompt")) : Tr(L"Prompt / lyrics"));
+	const bool addVocalsMode = mode == SUNO_MODE_ADD_VOCALS;
+	const bool lyricsMode = mode == SUNO_MODE_GENERATE_LYRICS;
+	const bool soundMode = mode == SUNO_MODE_GENERATE_SOUNDS;
+	const bool fileMode = mode == SUNO_MODE_EXTEND_MUSIC || mode == SUNO_MODE_COVER_AUDIO || addVocalsMode;
+	const bool showTitleAndStyle = !lyricsMode && !soundMode;
+
+	// over the list: what the chosen mode makes
+	static const wchar_t *const modeTexts[] = {
+		L"Mode: a new song from a description or your own lyrics",
+		L"Mode: continue a track made with this plugin",
+		L"Mode: lyrics only, no music",
+		L"Mode: a sound effect from a description",
+		L"Mode: a new version of a track in another style",
+		L"Mode: add vocals to an instrumental track"};
+	AVS::Label_SetText(state->modeLabel, Tr(modeTexts[mode >= 0 && mode < static_cast<int>(_countof(modeTexts)) ? mode : 0]));
+
+	// over the prompt: what to write in it; in it, while empty, an example
+	const wchar_t *const lyricsLabel = L"Song lyrics: mark the parts with [Verse] and [Chorus]";
+	const wchar_t *const lyricsExample = L"[Verse]\nLines of the verse\n\n[Chorus]\nLines of the chorus";
+	const wchar_t *promptLabel = L"Song description: what it is about, genre, mood";
+	const wchar_t *promptExample = L"A cheerful pop song about summer with female vocals";
+	if (mode == SUNO_MODE_EXTEND_MUSIC)
+	{
+		promptLabel = L"What comes next: lyrics or a description";
+		promptExample = L"A big final chorus with stronger drums";
+	}
+	else if (lyricsMode)
+	{
+		promptLabel = L"Song topic: what the lyrics should be about";
+		promptExample = L"A song about the road home";
+	}
+	else if (soundMode)
+	{
+		promptLabel = L"Sound description";
+		promptExample = L"Rain on the roof and distant thunder";
+	}
+	else if (addVocalsMode || (generationSwitchesEnabled && state->customEnabled))
+	{
+		promptLabel = lyricsLabel;
+		promptExample = lyricsExample;
+	}
+	else if (mode == SUNO_MODE_COVER_AUDIO)
+	{
+		promptLabel = L"Description of the new version";
+		promptExample = L"The same song as calm acoustic jazz";
+	}
+	AVS::Label_SetText(state->promptLabel, Tr(promptLabel));
+	AVS::TextEdit_SetPlaceholder(state->prompt, Tr(promptExample));
+
 	ShowWindow(state->custom, generationSwitchesEnabled ? SW_SHOW : SW_HIDE);
 	ShowWindow(state->instrumental, generationSwitchesEnabled ? SW_SHOW : SW_HIDE);
 	ShowWindow(state->vocalGenderLabel, generateMusicMode ? SW_SHOW : SW_HIDE);
 	ShowWindow(state->vocalGender, generateMusicMode ? SW_SHOW : SW_HIDE);
-	const bool addVocalsMode = mode == SUNO_MODE_ADD_VOCALS;
-	const bool lyricsMode = mode == SUNO_MODE_GENERATE_LYRICS;
-	const bool soundMode = mode == SUNO_MODE_GENERATE_SOUNDS;
-	const bool showTitleAndStyle = !lyricsMode && !soundMode;
 	ShowWindow(state->titleLabel, showTitleAndStyle ? SW_SHOW : SW_HIDE);
 	ShowWindow(state->title, showTitleAndStyle ? SW_SHOW : SW_HIDE);
 	ShowWindow(state->titleCounter, showTitleAndStyle ? SW_SHOW : SW_HIDE);
 	ShowWindow(state->styleLabel, showTitleAndStyle ? SW_SHOW : SW_HIDE);
 	ShowWindow(state->style, showTitleAndStyle ? SW_SHOW : SW_HIDE);
 	ShowWindow(state->styleCounter, showTitleAndStyle ? SW_SHOW : SW_HIDE);
-	SetWindowPos(state->promptCounter, nullptr, SUNO_PROMPT_COUNTER_X, showTitleAndStyle ? SUNO_PROMPT_DEFAULT_COUNTER_Y : SUNO_PROMPT_EXPANDED_COUNTER_Y, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
-	SetWindowPos(state->promptLabel, nullptr, SUNO_PROMPT_LABEL_X, showTitleAndStyle ? SUNO_PROMPT_DEFAULT_LABEL_Y : SUNO_PROMPT_EXPANDED_LABEL_Y, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
-	SetWindowPos(state->prompt, nullptr, SUNO_PROMPT_X, showTitleAndStyle ? SUNO_PROMPT_DEFAULT_Y : SUNO_PROMPT_EXPANDED_Y, SUNO_PROMPT_WIDTH, showTitleAndStyle ? SUNO_PROMPT_DEFAULT_HEIGHT : SUNO_PROMPT_EXPANDED_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
-	bool visible = mode == SUNO_MODE_EXTEND_MUSIC || mode == SUNO_MODE_COVER_AUDIO || mode == SUNO_MODE_ADD_VOCALS;
-	if (mode == SUNO_MODE_COVER_AUDIO || mode == SUNO_MODE_ADD_VOCALS)
-		AVS::Label_SetText(state->sourceLabel, Tr(L"URL"));
+	const int promptLabelY = showTitleAndStyle ? SUNO_PROMPT_DEFAULT_LABEL_Y : SUNO_PROMPT_EXPANDED_LABEL_Y;
+	SetWindowPos(state->promptLabel, nullptr, SUNO_LEFT, promptLabelY, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+	SetWindowPos(state->promptCounter, nullptr, SUNO_COUNTER_X, promptLabelY + 2, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+	SetWindowPos(state->prompt, nullptr, SUNO_LEFT, showTitleAndStyle ? SUNO_PROMPT_DEFAULT_Y : SUNO_PROMPT_EXPANDED_Y, SUNO_FIELD_WIDTH, showTitleAndStyle ? SUNO_PROMPT_DEFAULT_HEIGHT : SUNO_PROMPT_EXPANDED_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
-	const bool fileMode = mode == SUNO_MODE_EXTEND_MUSIC || mode == SUNO_MODE_COVER_AUDIO || mode == SUNO_MODE_ADD_VOCALS;
-	ShowWindow(state->sourceLabel, visible && !fileMode ? SW_SHOW : SW_HIDE);
-	ShowWindow(state->source, visible ? SW_SHOW : SW_HIDE);
+	// the source track: a file made with this plugin fills in its ID (Extend) or its link
 	ShowWindow(state->negativeTagsLabel, addVocalsMode ? SW_SHOW : SW_HIDE);
 	ShowWindow(state->negativeTags, addVocalsMode ? SW_SHOW : SW_HIDE);
-	SetWindowPos(state->source, nullptr, 130, addVocalsMode ? 381 : 343, 520, 25, SWP_NOZORDER | SWP_NOACTIVATE);
-
+	AVS::Label_SetText(state->sourceLabel, mode == SUNO_MODE_EXTEND_MUSIC
+		? Tr(L"Track to continue: a file made with this plugin or its ID")
+		: Tr(L"Source track: a file made with this plugin or a link to audio"));
+	AVS::TextEdit_SetPlaceholder(state->source, mode == SUNO_MODE_EXTEND_MUSIC ? Tr(L"Track ID") : std::wstring(SUNO_URL_EXAMPLE));
+	const int sourceLabelY = addVocalsMode ? SUNO_ROW4_LABEL_Y : SUNO_ROW3_LABEL_Y;
+	const int sourceY = addVocalsMode ? SUNO_ROW4_Y : SUNO_ROW3_Y;
+	ShowWindow(state->sourceLabel, fileMode ? SW_SHOW : SW_HIDE);
+	ShowWindow(state->source, fileMode ? SW_SHOW : SW_HIDE);
 	ShowWindow(state->file, fileMode ? SW_SHOW : SW_HIDE);
-	SetWindowPos(state->file, nullptr, 16, addVocalsMode ? 381 : 343, 100, 25, SWP_NOZORDER | SWP_NOACTIVATE);
-	if (!visible)
+	SetWindowPos(state->sourceLabel, nullptr, SUNO_LEFT, sourceLabelY, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+	SetWindowPos(state->file, nullptr, SUNO_LEFT, sourceY, 100, 25, SWP_NOZORDER | SWP_NOACTIVATE);
+	SetWindowPos(state->source, nullptr, SUNO_LEFT + 110, sourceY, SUNO_FIELD_WIDTH - 110, 25, SWP_NOZORDER | SWP_NOACTIVATE);
+	if (!fileMode)
 		Set(state->source, L"");
 	if (!addVocalsMode)
 		Set(state->negativeTags, L"");
@@ -448,7 +507,7 @@ void ApplyLyricsVariant(LyricsSelectionState *selection, size_t index)
 	AVS::ComboBox_SetCurrent(state->mode, SUNO_MODE_GENERATE_MUSIC);
 	state->customEnabled = true;
 	state->instrumentalEnabled = false;
-	AVS::Button_SetSettings(state->custom, AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupEnable), Tr(L"Custom mode"));
+	AVS::Button_SetSettings(state->custom, AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupEnable), Tr(L"Own lyrics and style"));
 	AVS::Button_SetSettings(state->instrumental, AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupDisable), Tr(L"Instrumental"));
 	UpdateSourceField(state);
 	UpdateCounters(state);
@@ -971,39 +1030,46 @@ LRESULT CALLBACK Proc(HWND w, UINT m, WPARAM wp, LPARAM lp)
 		const std::vector<std::wstring> models = {L"V5", L"V5_5", L"V4_5ALL", L"V4_5PLUS", L"V4_5", L"V4"};
 		const std::vector<std::wstring> vocalGenders = {Tr(L"Male"), Tr(L"Female")};
 
-		Label(w, Tr(L"Mode").c_str(), 16, 16);
-		s->mode = AVS::CreateComboBox(w, (HMENU)ID_MODE, g_hInst, 130, 12, 275, 25, AVS::ComboBoxSettings::Create(), modes);
-		
-		Label(w, Tr(L"Model").c_str(), 465, 16, 50);
-		s->model = AVS::CreateComboBox(w, (HMENU)ID_MODEL, g_hInst, 530, 12, 120, 25, AVS::ComboBoxSettings::Create(), models);
+		// the mode list says what the mode makes, over it (UpdateSourceField)
+		s->modeLabel = Label(w, L"", SUNO_LEFT, 12, 500);
+		Label(w, Tr(L"Model").c_str(), 530, 12, 120);
+		s->mode = AVS::CreateComboBox(w, (HMENU)ID_MODE, g_hInst, SUNO_LEFT, 32, 390, 25, AVS::ComboBoxSettings::Create(), modes);
+		s->model = AVS::CreateComboBox(w, (HMENU)ID_MODEL, g_hInst, 530, 32, 120, 25, AVS::ComboBoxSettings::Create(), models);
 
-		s->custom = AVS::CreateButton(w, (HMENU)ID_CUSTOM, g_hInst, Tr(L"Custom mode").c_str(), 130, 50, 130, 25, AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupDisable));
-		s->instrumental = AVS::CreateButton(w, (HMENU)ID_INSTRUMENTAL, g_hInst, Tr(L"Instrumental").c_str(), 275, 50, 130, 25, AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupDisable));
-		s->help = AVS::CreateButton(w, (HMENU)ID_HELP, g_hInst, Tr(L"Help").c_str(), 560, 50, 90, 25, AVS::ButtonSettings::Create(AVS::Buttons::Default));
+		s->custom = AVS::CreateButton(w, (HMENU)ID_CUSTOM, g_hInst, Tr(L"Own lyrics and style").c_str(), SUNO_LEFT, 67, 180, 25, AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupDisable));
+		s->instrumental = AVS::CreateButton(w, (HMENU)ID_INSTRUMENTAL, g_hInst, Tr(L"Instrumental").c_str(), SUNO_LEFT + 190, 67, 150, 25, AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupDisable));
+		s->help = AVS::CreateButton(w, (HMENU)ID_HELP, g_hInst, Tr(L"Help").c_str(), 560, 67, 90, 25, AVS::ButtonSettings::Create(AVS::Buttons::Default));
 
-		s->titleCounter = AVS::CreateLabel(w, g_hInst, L"0/0", 550, 81, 100, 18, AVS::LabelSettings::Create(AVS::LabelType::Disabled, DT_RIGHT));
-		s->titleLabel = Label(w, Tr(L"Title").c_str(), 16, 106);
-		s->title = Edit(w, ID_TITLE, 130, 102, 520, 25);
+		s->titleLabel = Label(w, Tr(L"Track title").c_str(), SUNO_LEFT, 102, SUNO_LABEL_WIDTH);
+		s->titleCounter = AVS::CreateLabel(w, g_hInst, L"0/0", SUNO_COUNTER_X, 104, 100, 18, AVS::LabelSettings::Create(AVS::LabelType::Disabled, DT_RIGHT));
+		s->title = Edit(w, ID_TITLE, SUNO_LEFT, 122, SUNO_FIELD_WIDTH, 25);
+		AVS::TextEdit_SetPlaceholder(s->title, Tr(L"Summer evening"));
 
-		s->promptCounter = AVS::CreateLabel(w, g_hInst, L"0/0", 550, 133, 100, 18, AVS::LabelSettings::Create(AVS::LabelType::Disabled, DT_RIGHT));
-		s->promptLabel = Label(w, Tr(L"Prompt").c_str(), 16, 159);
-		s->prompt = Edit(w, ID_PROMPT, 130, 155, 520, 120, true);
+		// label and example set by UpdateSourceField, by the mode
+		s->promptLabel = Label(w, L"", SUNO_LEFT, SUNO_PROMPT_DEFAULT_LABEL_Y, SUNO_LABEL_WIDTH);
+		s->promptCounter = AVS::CreateLabel(w, g_hInst, L"0/0", SUNO_COUNTER_X, SUNO_PROMPT_DEFAULT_LABEL_Y + 2, 100, 18, AVS::LabelSettings::Create(AVS::LabelType::Disabled, DT_RIGHT));
+		s->prompt = Edit(w, ID_PROMPT, SUNO_LEFT, SUNO_PROMPT_DEFAULT_Y, SUNO_FIELD_WIDTH, SUNO_PROMPT_DEFAULT_HEIGHT, true);
 
-		s->styleCounter = AVS::CreateLabel(w, g_hInst, L"0/0", 550, 281, 100, 18, AVS::LabelSettings::Create(AVS::LabelType::Disabled, DT_RIGHT));
-		s->styleLabel = Label(w, Tr(L"Style").c_str(), 16, 309);
-		s->style = Edit(w, ID_STYLE, 130, 305, 520, 25);
-		s->vocalGenderLabel = Label(w, Tr(L"Voice").c_str(), 16, 347);
-		s->vocalGender = AVS::CreateComboBox(w, (HMENU)ID_VOCAL_GENDER, g_hInst, 130, 343, 120, 25, AVS::ComboBoxSettings::Create(), vocalGenders);
-		s->negativeTagsLabel = AVS::CreateLabel(w, g_hInst, Tr(L"Negative Tags").c_str(), 16, 347, 110, 20, AVS::LabelSettings::Create(AVS::LabelType::Disabled));
-		s->negativeTags = Edit(w, ID_NEGATIVE_TAGS, 130, 343, 520, 25);
-		s->sourceLabel = AVS::CreateLabel(w, g_hInst, Tr(L"Audio ID").c_str(), 16, 347, 110, 20, AVS::LabelSettings::Create(AVS::LabelType::Disabled));
-		s->source = Edit(w, ID_SOURCE, 130, 343, 520, 25);
-		s->file = AVS::CreateButton(w, (HMENU)ID_FILE, g_hInst, Tr(L"File").c_str(), 16, 343, 100, 25, AVS::ButtonSettings::Create(AVS::Buttons::Default));
+		s->styleLabel = Label(w, Tr(L"Style: genre, mood, instruments").c_str(), SUNO_LEFT, 283, SUNO_LABEL_WIDTH);
+		s->styleCounter = AVS::CreateLabel(w, g_hInst, L"0/0", SUNO_COUNTER_X, 285, 100, 18, AVS::LabelSettings::Create(AVS::LabelType::Disabled, DT_RIGHT));
+		s->style = Edit(w, ID_STYLE, SUNO_LEFT, 303, SUNO_FIELD_WIDTH, 25);
+		AVS::TextEdit_SetPlaceholder(s->style, Tr(L"Pop, synthesizers, upbeat"));
+
+		s->vocalGenderLabel = Label(w, Tr(L"Voice: for your own lyrics").c_str(), SUNO_LEFT, SUNO_ROW3_LABEL_Y, 300);
+		s->vocalGender = AVS::CreateComboBox(w, (HMENU)ID_VOCAL_GENDER, g_hInst, SUNO_LEFT, SUNO_ROW3_Y, 150, 25, AVS::ComboBoxSettings::Create(), vocalGenders);
+		s->negativeTagsLabel = Label(w, Tr(L"What to avoid").c_str(), SUNO_LEFT, SUNO_ROW3_LABEL_Y, 300);
+		s->negativeTags = Edit(w, ID_NEGATIVE_TAGS, SUNO_LEFT, SUNO_ROW3_Y, SUNO_FIELD_WIDTH, 25);
+		AVS::TextEdit_SetPlaceholder(s->negativeTags, Tr(L"Screaming, autotune"));
+		// the file button left of the ID or link it fills in (UpdateSourceField places both)
+		s->sourceLabel = Label(w, L"", SUNO_LEFT, SUNO_ROW3_LABEL_Y, SUNO_FIELD_WIDTH);
+		s->file = AVS::CreateButton(w, (HMENU)ID_FILE, g_hInst, Tr(L"File").c_str(), SUNO_LEFT, SUNO_ROW3_Y, 100, 25, AVS::ButtonSettings::Create(AVS::Buttons::Default));
+		s->source = Edit(w, ID_SOURCE, SUNO_LEFT + 110, SUNO_ROW3_Y, SUNO_FIELD_WIDTH - 110, 25);
 		UpdateSourceField(s);
 		UpdateCounters(s);
-		s->settings = AVS::CreateButton(w, (HMENU)ID_SETTINGS, g_hInst, Tr(L"Settings").c_str(), 465, 428, 85, 30, AVS::ButtonSettings::Create(AVS::Buttons::Default));
-		s->run = AVS::CreateButton(w, (HMENU)ID_RUN, g_hInst, Tr(L"Generate").c_str(), 560, 428, 90, 30, AVS::ButtonSettings::Create(AVS::Buttons::Primary));
-		s->status = AVS::CreateLabel(w, g_hInst, Tr(L"Ready (Credits left: loading...)").c_str(), 16, 432, 440, 30, AVS::LabelSettings::Create(AVS::LabelType::Enabled));
+		// "Configurações" takes 77 px
+		s->settings = AVS::CreateButton(w, (HMENU)ID_SETTINGS, g_hInst, Tr(L"Settings").c_str(), 450, SUNO_BUTTONS_Y, 100, 30, AVS::ButtonSettings::Create(AVS::Buttons::Default));
+		s->run = AVS::CreateButton(w, (HMENU)ID_RUN, g_hInst, Tr(L"Generate").c_str(), 560, SUNO_BUTTONS_Y, 90, 30, AVS::ButtonSettings::Create(AVS::Buttons::Primary));
+		s->status = AVS::CreateLabel(w, g_hInst, Tr(L"Ready (Credits left: loading...)").c_str(), SUNO_LEFT, SUNO_BUTTONS_Y, 425, 30, AVS::LabelSettings::Create(AVS::LabelType::Enabled));
 		std::thread(LoadCredits, w, s->p).detach();
 		
 		return 0;
@@ -1027,7 +1093,7 @@ LRESULT CALLBACK Proc(HWND w, UINT m, WPARAM wp, LPARAM lp)
 	if (m == WM_COMMAND && LOWORD(wp) == ID_CUSTOM)
 	{
 		s->customEnabled = !s->customEnabled;
-		AVS::Button_SetSettings(s->custom, AVS::ButtonSettings::Create(s->customEnabled ? AVS::Buttons::ToggleGroupEnable : AVS::Buttons::ToggleGroupDisable), Tr(L"Custom mode"));
+		AVS::Button_SetSettings(s->custom, AVS::ButtonSettings::Create(s->customEnabled ? AVS::Buttons::ToggleGroupEnable : AVS::Buttons::ToggleGroupDisable), Tr(L"Own lyrics and style"));
 		UpdateSourceField(s);
 		UpdateCounters(s);
 		return 0;
@@ -1236,7 +1302,7 @@ void SunoUI::Show(CSunoApiPlugin *p)
 	
 	HWND w = CreateWindowExW(0, cls, (L"Suno API " + Tr(L"Music Generator")).c_str(),
 							WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX, CW_USEDEFAULT, CW_USEDEFAULT,
-							690, 514, p->parentWindow,
+							690, 534, p->parentWindow,
 							nullptr, g_hInst, p);
 	if (!w)
 	{

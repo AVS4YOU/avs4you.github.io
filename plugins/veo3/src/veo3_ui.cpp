@@ -113,7 +113,10 @@ namespace NSUI
 		{
 		case WM_CREATE:
 		{
-			hEdit = AVS::CreateTextEditMultiline(hwnd, GetModuleHandle(NULL), 15, 15, 530, 25, AVS::TextEditSettings::Create());
+			// the key in the middle of its box
+			AVS::TextEditSettings keySettings = AVS::TextEditSettings::Create();
+			keySettings.IsVCenter = true;
+			hEdit = AVS::CreateTextEditMultiline(hwnd, GetModuleHandle(NULL), 15, 15, 530, 25, keySettings);
 
 			std::wstring keyValue = NSSystemUtils::ReadWStringFromUtf8File(plugin->m_workDirectory + L"\\app.key");
 			if (!keyValue.empty())
@@ -248,9 +251,23 @@ namespace NSUI
 	}
 	int activeNow = static_cast<int>(WmMainWindowCommands::ButtonTextToVideo);
 
+	// Under the prompt: what the mode makes and what it takes.
+	static std::wstring GetModeDescription(int mode)
+	{
+		CTranslateManager* tr = CTranslate::GetInstance().GetManager();
+		if (mode == static_cast<int>(WmMainWindowCommands::ButtonImageToVideo))
+			return tr->Translate(L"Up to three pictures of the people, objects or style to show in the video, plus a description of what happens.");
+		if (mode == static_cast<int>(WmMainWindowCommands::ButtonFirstAndLastFrame))
+			return tr->Translate(L"The video starts with the first picture and ends with the second. Describe what happens in between.");
+		if (mode == static_cast<int>(WmMainWindowCommands::ButtonExtendVideo))
+			return tr->Translate(L"Continues a video made with this plugin in the last 48 hours (720p only). Describe what happens next.");
+		return tr->Translate(L"Video from a text description. Describe the scene, the action, the camera and the sounds.");
+	}
+
 	// ====================================== MAIN WINDOW ======================================
 	LRESULT CALLBACK MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	{
+		static HWND hModeDescription;
 		static HWND hMainEdit,
 			hModel, hOrientation, hSize, hDuration,
 			hProgress,
@@ -312,8 +329,15 @@ namespace NSUI
 		{
 		case WM_CREATE:
 		{
-			int SettingsButtonsW = 100;
-			int WindowW = 500;
+			// The mode tabs across the whole window, each as wide as its longest translation
+			// needs ("Primo + ultimo fotogramma" takes 151 px, "Изображение в видео" 120): 534 px
+			// together, so the window is 600 wide and the settings column starts under the tabs.
+			int SettingsButtonsW = 120;
+			int WindowW = 600;
+			const int tabWidth[] = { 116, 149, 180, 125 };
+			int tabX[4];
+			for (int i = 0, x = 15; i < 4; x += tabWidth[i], i++)
+				tabX[i] = x;
 
 			// Prompt edit
 			AVS::TextEditSettings mainEditSettings = AVS::TextEditSettings::Create();
@@ -327,45 +351,53 @@ namespace NSUI
 			// Toggle Group
 			hTextToVideo = AVS::CreateButton(hwnd, (HMENU)WmMainWindowCommands::ButtonTextToVideo, hInstance,
 				tr->Translate(L"Text to Video").c_str(),
-				15, 15, 80, 25,
+				tabX[0], 15, tabWidth[0], 25,
 				AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupEnable));
 
 			hImageToVideo = AVS::CreateButton(hwnd, (HMENU)WmMainWindowCommands::ButtonImageToVideo, hInstance,
 				tr->Translate(L"Image to Video").c_str(),
-				15 + (80 * 1), 15, 100, 25,
+				tabX[1], 15, tabWidth[1], 25,
 				AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupDisable));
 
 			hFirstAndLastFrame = AVS::CreateButton(hwnd, (HMENU)WmMainWindowCommands::ButtonFirstAndLastFrame, hInstance,
 				tr->Translate(L"First + Last Frame").c_str(),
-				15 + (80 * 2) + 20, 15, 100, 25,
+				tabX[2], 15, tabWidth[2], 25,
 				AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupDisable));
 
 			hExtendVideo = AVS::CreateButton(hwnd, (HMENU)WmMainWindowCommands::ButtonExtendVideo, hInstance,
 				tr->Translate(L"Extend Video").c_str(),
-				15 + (80 * 3) + 20 + 20, 15, 80, 25,
+				tabX[3], 15, tabWidth[3], 25,
 				AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupDisable));
 
-			// File Buttons
-			int file1h = 250;
-			int file2h = 250 + 25 + 8;
-			int file3h = 250 + 50 + 16;
+			// The window opens on Text to Video, as the tabs above show.
+			activeNow = static_cast<int>(WmMainWindowCommands::ButtonTextToVideo);
 
+			// What the mode makes, under the prompt (two lines at most in every language)
+			hModeDescription = AVS::CreateLabel(hwnd, hInstance, GetModeDescription(activeNow).c_str(),
+				15, 250, WindowW - 30, 34, AVS::LabelSettings::Create(AVS::LabelType::Enabled, DT_LEFT | DT_TOP | DT_WORDBREAK));
+
+			// File Buttons, under the description
+			int file1h = 290;
+			int file2h = 290 + 25 + 8;
+			int file3h = 290 + 50 + 16;
+
+			// "Adicionar arquivo" takes 94 px
 			hFile1 = AVS::CreateButton(hwnd, (HMENU)WmMainWindowCommands::ButtonFile1, hInstance,
 				tr->Translate(L"Add File").c_str(),
-				15, 250, 80, 25,
+				15, file1h, 120, 25,
 				AVS::ButtonSettings::Create(AVS::Buttons::Default));
 			hFile2 = AVS::CreateButton(hwnd, (HMENU)WmMainWindowCommands::ButtonFile2, hInstance,
 				tr->Translate(L"Add File").c_str(),
-				15, 250 + 25 + 8, 80, 25,
+				15, file2h, 120, 25,
 				AVS::ButtonSettings::Create(AVS::Buttons::Default));
 			hFile3 = AVS::CreateButton(hwnd, (HMENU)WmMainWindowCommands::ButtonFile3, hInstance,
 				tr->Translate(L"Add File").c_str(),
-				15, 250 + 50 + 16, 80, 25,
+				15, file3h, 120, 25,
 				AVS::ButtonSettings::Create(AVS::Buttons::Default));
 
-			hPathFile1 = AVS::CreateLabel(hwnd, hInstance, tr->Translate(L"Add file #1").c_str(), 100, file1h, 380, 25, AVS::LabelSettings::Create(AVS::LabelType::Enabled));
-			hPathFile2 = AVS::CreateLabel(hwnd, hInstance, tr->Translate(L"Add file #2").c_str(), 100, file2h, 380, 25, AVS::LabelSettings::Create(AVS::LabelType::Enabled));
-			hPathFile3 = AVS::CreateLabel(hwnd, hInstance, tr->Translate(L"Add file #3").c_str(), 100, file3h, 380, 25, AVS::LabelSettings::Create(AVS::LabelType::Enabled));
+			hPathFile1 = AVS::CreateLabel(hwnd, hInstance, tr->Translate(L"Add file #1").c_str(), 145, file1h, WindowW - 160, 25, AVS::LabelSettings::Create(AVS::LabelType::Enabled));
+			hPathFile2 = AVS::CreateLabel(hwnd, hInstance, tr->Translate(L"Add file #2").c_str(), 145, file2h, WindowW - 160, 25, AVS::LabelSettings::Create(AVS::LabelType::Enabled));
+			hPathFile3 = AVS::CreateLabel(hwnd, hInstance, tr->Translate(L"Add file #3").c_str(), 145, file3h, WindowW - 160, 25, AVS::LabelSettings::Create(AVS::LabelType::Enabled));
 			
 			ShowWindow(hFile1, SW_HIDE);
 			ShowWindow(hFile2, SW_HIDE);
@@ -375,8 +407,9 @@ namespace NSUI
 			ShowWindow(hPathFile2, SW_HIDE);
 			ShowWindow(hPathFile3, SW_HIDE);
 
+			// the settings column beside the prompt, under the tabs
 			int left = WindowW - 15 - SettingsButtonsW;
-			int top = 15;
+			int top = 45;
 			int labelH = 25;
 			int distance = 0;
 
@@ -427,20 +460,21 @@ namespace NSUI
 				{ L"4", L"6", L"8" });
 			top += (distance + 25);
 
-			hProgress = AVS::CreateProgressBar(hwnd, GetModuleHandle(NULL), 15, 345, WindowW - 30, 25, AVS::ProgressBarSettings::Create());
+			hProgress = AVS::CreateProgressBar(hwnd, GetModuleHandle(NULL), 15, 385, WindowW - 30, 25, AVS::ProgressBarSettings::Create());
 			ShowWindow(hProgress, SW_HIDE);
 
 			hStatus = AVS::CreateLabel(hwnd, hInstance, L"",
-				15, 375, WindowW - 215, 25, AVS::LabelSettings::Create(AVS::LabelType::Enabled));
+				15, 415, WindowW - 270, 25, AVS::LabelSettings::Create(AVS::LabelType::Enabled));
 
+			// "Configurações" takes 77 px, "Генерировать" 76
 			hSettings = AVS::CreateButton(hwnd, (HMENU)WmMainWindowCommands::ButtonSettings, hInstance,
 				tr->Translate(L"Settings").c_str(),
-				320, 375, 80, 25,
+				WindowW - 245, 415, 105, 25,
 				AVS::ButtonSettings::Create(AVS::Buttons::Default));
 
 			hGenerate = AVS::CreateButton(hwnd, (HMENU)WmMainWindowCommands::ButtonGenerate, hInstance,
 				tr->Translate(L"Generate").c_str(),
-				410, 375, 80, 25,
+				WindowW - 130, 415, 115, 25,
 				AVS::ButtonSettings::Create(AVS::Buttons::Primary));
 
 			// Tabs
@@ -740,6 +774,7 @@ namespace NSUI
 				AVS::ComboBox_SetItems(hSize, { RES_HD, RES_FULLHD, RES_4K}, 0);
 				AVS::ComboBox_SetItems(hDuration, { L"4", L"6", L"8" }, 0);
 
+				AVS::Label_SetText(hModeDescription, GetModeDescription(static_cast<int>(LOWORD(wParam))));
 				activeNow = static_cast<int>(LOWORD(wParam));
 				break;
 			}
@@ -773,6 +808,7 @@ namespace NSUI
 				AVS::ComboBox_SetItems(hSize, { RES_HD, RES_FULLHD, RES_4K }, 0);
 				AVS::ComboBox_SetItems(hDuration, { L"8" }, 0);
 
+				AVS::Label_SetText(hModeDescription, GetModeDescription(static_cast<int>(LOWORD(wParam))));
 				activeNow = static_cast<int>(LOWORD(wParam));
 				break;
 			}
@@ -806,6 +842,7 @@ namespace NSUI
 				AVS::ComboBox_SetItems(hSize, { RES_HD, RES_FULLHD, RES_4K }, 0);
 				AVS::ComboBox_SetItems(hDuration, { L"8" }, 0);
 
+				AVS::Label_SetText(hModeDescription, GetModeDescription(static_cast<int>(LOWORD(wParam))));
 				activeNow = static_cast<int>(LOWORD(wParam));
 				break;
 			}
@@ -837,6 +874,7 @@ namespace NSUI
 				AVS::ComboBox_SetItems(hSize, { RES_HD }, 0);
 				AVS::ComboBox_SetItems(hDuration, { L"4", L"6", L"8" }, 0);
 
+				AVS::Label_SetText(hModeDescription, GetModeDescription(static_cast<int>(LOWORD(wParam))));
 				activeNow = static_cast<int>(LOWORD(wParam));
 				break;
 			}
@@ -1156,7 +1194,7 @@ namespace NSUI
 		DWORD dwStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX;
 		std::wstring titleWindow = CTranslate::GetInstance().GetManager()->Translate(L"Veo3");
 
-		RECT rc = { 0, 0, 500, 410 };
+		RECT rc = { 0, 0, 600, 455 };
 		AdjustWindowRectEx(&rc, dwStyle, FALSE, 0);
 
 		DWORD dwExStyle = WS_EX_APPWINDOW; // 0

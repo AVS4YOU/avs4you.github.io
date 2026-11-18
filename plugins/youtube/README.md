@@ -9,7 +9,9 @@ For Video Editor and Video Converter, `IsApplicationSupported` requires
 `AVSMatroskaFile3.dll` version 6.0.0.1061 or later and `AVSQuickTimeFile3.dll`
 version 6.0.0.343 or later in the matching architecture's Common Files/AVSMedia/ActiveX
 directory. Missing or unreadable version information also means unsupported.
-Audio Editor does not use this compatibility check.
+Audio Editor and Audio Converter do not use this compatibility check: there the
+plugin downloads the audio track only (no quality, codec or stream choice),
+recognising the host by its process name.
 
 Despite the name it is not limited to YouTube - the bundled yt-dlp supports 1752
 sites. See [Which services this can download from](#which-services-this-can-download-from).

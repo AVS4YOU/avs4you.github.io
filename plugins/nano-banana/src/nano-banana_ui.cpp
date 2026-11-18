@@ -84,15 +84,17 @@ namespace NSUI
 		{
 		case WM_CREATE:
 		{
-			hEdit = AVS::CreateTextEditMultiline(hwnd, GetModuleHandle(NULL), 15, 15, 530, 25, AVS::TextEditSettings::Create());
+			AVS::TextEditSettings keySettings = AVS::TextEditSettings::Create();
+			keySettings.IsVCenter = true;
+			hEdit = AVS::CreateTextEditMultiline(hwnd, GetModuleHandle(NULL), 15, 15, 530, 25, keySettings);
 
 			std::wstring keyValue = NSSystemUtils::ReadWStringFromUtf8File(plugin->m_workDirectory + L"\\app.key");
 			if (!keyValue.empty())
 				SetWindowText(hEdit, keyValue.c_str());
 
 			CTranslateManager* tr = CTranslate::GetInstance().GetManager();
-			hBtnGetApiKey = AVS::CreateButton(hwnd, (HMENU)0x8004, GetModuleHandle(NULL), tr->Translate(L"Get API-key").c_str(), 15, 55, 115, 25, AVS::ButtonSettings::Create(AVS::Buttons::Default));
-			hBtnDelete = AVS::CreateButton(hwnd, (HMENU)0x8003, GetModuleHandle(NULL), tr->Translate(L"Delete API-key").c_str(), 135, 55, 150, 25, AVS::ButtonSettings::Create(AVS::Buttons::Default));
+			hBtnGetApiKey = AVS::CreateButton(hwnd, (HMENU)0x8004, GetModuleHandle(NULL), tr->Translate(L"Get API-key").c_str(), 15, 55, 140, 25, AVS::ButtonSettings::Create(AVS::Buttons::Default));
+			hBtnDelete = AVS::CreateButton(hwnd, (HMENU)0x8003, GetModuleHandle(NULL), tr->Translate(L"Delete API-key").c_str(), 160, 55, 150, 25, AVS::ButtonSettings::Create(AVS::Buttons::Default));
 			hBtnCancel = AVS::CreateButton(hwnd, (HMENU)0x8002, GetModuleHandle(NULL), tr->Translate(L"Cancel").c_str(), 330, 55, 100, 25, AVS::ButtonSettings::Create(AVS::Buttons::Default));
 			hBtnOK = AVS::CreateButton(hwnd, (HMENU)0x8001, GetModuleHandle(NULL), tr->Translate(L"Save").c_str(), 445, 55, 100, 25, AVS::ButtonSettings::Create(AVS::Buttons::Primary));
 
@@ -221,48 +223,7 @@ namespace NSUI
 			return tr->Translate(L"Grounding with Google Image Search allows models to use web images retrieved via Google Image Search as visual context for image generation.");
 		if (mode == static_cast<int>(WmMainWindowCommands::ButtonVideoToImage))
 			return tr->Translate(L"Video-to-image generation allows you to generate new images using a video's context as a multimodal reference. This is useful for creating video thumbnails, cinematic posters, summary infographics, or artwork inspired by a video scene.");
-		return tr->Translate(L"Image generation (text-to-image)");
-	}
-
-	static std::vector<std::wstring> WrapModeDescription(const std::wstring& text)
-	{
-		const size_t maxLineLength = 76;
-		const size_t maxLines = 4;
-		std::vector<std::wstring> lines;
-		std::wstring current;
-		size_t start = 0;
-
-		while (start < text.size() && lines.size() < maxLines)
-		{
-			size_t end = text.find(L' ', start);
-			std::wstring word = text.substr(start, end == std::wstring::npos ? std::wstring::npos : end - start);
-			if (!current.empty() && current.size() + 1 + word.size() > maxLineLength)
-			{
-				lines.push_back(current);
-				current.clear();
-				if (lines.size() == maxLines)
-					break;
-			}
-			if (!current.empty())
-				current += L' ';
-			current += word;
-			if (end == std::wstring::npos)
-				break;
-			start = end + 1;
-		}
-
-		if (!current.empty() && lines.size() < maxLines)
-			lines.push_back(current);
-		while (lines.size() < maxLines)
-			lines.push_back(L"");
-		return lines;
-	}
-
-	static void UpdateModeDescriptionLabels(HWND labels[4], const std::wstring& text)
-	{
-		std::vector<std::wstring> lines = WrapModeDescription(text);
-		for (int i = 0; i < 4; i++)
-			AVS::Label_SetText(labels[i], lines[i]);
+		return tr->Translate(L"Creates a new image from a text description. Describe what should be in it, the style, the composition and the lighting.");
 	}
 
 	static bool IsReferenceMode()
@@ -359,7 +320,7 @@ namespace NSUI
 		static HWND hModel, hAspectRatio, hImageSize;
 		static HWND hProgress, hStatus, hSettings, hGenerate;
 		static HWND hTextToImage, hImageEdit, hMultiTurn, hGoogleSearch, hImageSearch, hVideoToImage;
-		static HWND hFile[6], hPathFile[6], hModeDescription[4];
+		static HWND hFile[6], hPathFile[6], hModeDescription;
 		static int progressValue = 0;
 		static std::wstring editPathText[6];
 		static std::wstring multiTurnPathText;
@@ -383,20 +344,29 @@ namespace NSUI
 			CTranslateManager* tr = CTranslate::GetInstance().GetManager();
 			HINSTANCE hInstance = GetModuleHandle(NULL);
 
-			hTextToImage = AVS::CreateButton(hwnd, (HMENU)WmMainWindowCommands::ButtonTextToImage, hInstance, tr->Translate(L"Text").c_str(), 15, 15, 70, 25, AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupEnable));
-			hImageEdit = AVS::CreateButton(hwnd, (HMENU)WmMainWindowCommands::ButtonImageEdit, hInstance, tr->Translate(L"Edit").c_str(), 85, 15, 70, 25, AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupDisable));
-			hMultiTurn = AVS::CreateButton(hwnd, (HMENU)WmMainWindowCommands::ButtonMultiTurn, hInstance, tr->Translate(L"Multi-turn").c_str(), 155, 15, 90, 25, AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupDisable));
-			hGoogleSearch = AVS::CreateButton(hwnd, (HMENU)WmMainWindowCommands::ButtonGoogleSearch, hInstance, tr->Translate(L"Search").c_str(), 245, 15, 70, 25, AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupDisable));
-			hImageSearch = AVS::CreateButton(hwnd, (HMENU)WmMainWindowCommands::ButtonImageSearch, hInstance, tr->Translate(L"Image Search").c_str(), 315, 15, 110, 25, AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupDisable));
-			hVideoToImage = AVS::CreateButton(hwnd, (HMENU)WmMainWindowCommands::ButtonVideoToImage, hInstance, tr->Translate(L"Video").c_str(), 425, 15, 90, 25, AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupDisable));
+			// The mode tabs across the whole window: each as wide as its longest
+			// translation needs plus an even share of the rest ("Wyszukiwanie obrazów"
+			// takes 122 px, "Múltiplos turnos" 87; together they outgrow the prompt's 500).
+			const int tabWidth[] = { 78, 94, 125, 112, 160, 76 };
+			int tabX[6];
+			for (int i = 0, x = 15; i < 6; x += tabWidth[i], i++)
+				tabX[i] = x;
+			hTextToImage = AVS::CreateButton(hwnd, (HMENU)WmMainWindowCommands::ButtonTextToImage, hInstance, tr->Translate(L"Text").c_str(), tabX[0], 15, tabWidth[0], 25, AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupEnable));
+			hImageEdit = AVS::CreateButton(hwnd, (HMENU)WmMainWindowCommands::ButtonImageEdit, hInstance, tr->Translate(L"Edit").c_str(), tabX[1], 15, tabWidth[1], 25, AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupDisable));
+			hMultiTurn = AVS::CreateButton(hwnd, (HMENU)WmMainWindowCommands::ButtonMultiTurn, hInstance, tr->Translate(L"Multi-turn").c_str(), tabX[2], 15, tabWidth[2], 25, AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupDisable));
+			hGoogleSearch = AVS::CreateButton(hwnd, (HMENU)WmMainWindowCommands::ButtonGoogleSearch, hInstance, tr->Translate(L"Search").c_str(), tabX[3], 15, tabWidth[3], 25, AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupDisable));
+			hImageSearch = AVS::CreateButton(hwnd, (HMENU)WmMainWindowCommands::ButtonImageSearch, hInstance, tr->Translate(L"Image Search").c_str(), tabX[4], 15, tabWidth[4], 25, AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupDisable));
+			hVideoToImage = AVS::CreateButton(hwnd, (HMENU)WmMainWindowCommands::ButtonVideoToImage, hInstance, tr->Translate(L"Video").c_str(), tabX[5], 15, tabWidth[5], 25, AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupDisable));
 
 			AVS::TextEditSettings mainEditSettings = AVS::TextEditSettings::Create();
 			mainEditSettings.IsMultiline = true;
 			mainEditSettings.IsVscroll = true;
 			hMainEdit = AVS::CreateTextEditMultiline(hwnd, hInstance, 15, 45, promptW, 190, mainEditSettings);
-			for (int i = 0; i < 4; i++)
-				hModeDescription[i] = AVS::CreateLabel(hwnd, hInstance, L"", 15, 240 + i * 18, promptW, 18, AVS::LabelSettings::Create(AVS::LabelType::Enabled, DT_LEFT));
-			UpdateModeDescriptionLabels(hModeDescription, GetModeDescription(activeNow));
+			// The mode's description under the prompt: wrapped to the prompt's width, up to
+			// four lines before the reference files start at 315 (it used to be cut at 76
+			// characters a line, which overran the box or dropped the end of long translations).
+			hModeDescription = AVS::CreateLabel(hwnd, hInstance, GetModeDescription(activeNow).c_str(), 15, 240, promptW, 72,
+				AVS::LabelSettings::Create(AVS::LabelType::Enabled, DT_LEFT | DT_TOP | DT_WORDBREAK));
 
 			int left = windowW - 15 - settingsW;
 			int top = 45;
@@ -417,8 +387,11 @@ namespace NSUI
 			hImageSize = AVS::CreateComboBox(hwnd, (HMENU)WmMainWindowCommands::ComboImageSize, hInstance, left, top, settingsW, 25, AVS::ComboBoxSettings::Create(), { L"1K", L"2K", L"4K", L"512", L"Default" });
 			top += 30;
 
-			hVideoUrlLabel = AVS::CreateLabel(hwnd, hInstance, tr->Translate(L"YouTube URL").c_str(), 15, 315, 90, 25, AVS::LabelSettings::Create(AVS::LabelType::Disabled));
-			hVideoUrlEdit = AVS::CreateTextEditMultiline(hwnd, hInstance, 100, 315, windowW - 115, 25, AVS::TextEditSettings::Create());
+			// in the columns of the reference file rows below: "Adres URL YouTube" takes 104 px
+			hVideoUrlLabel = AVS::CreateLabel(hwnd, hInstance, tr->Translate(L"YouTube URL").c_str(), 15, 315, 125, 25, AVS::LabelSettings::Create(AVS::LabelType::Disabled));
+			AVS::TextEditSettings urlSettings = AVS::TextEditSettings::Create();
+			urlSettings.IsVCenter = true;
+			hVideoUrlEdit = AVS::CreateTextEditMultiline(hwnd, hInstance, 150, 315, windowW - 165, 25, urlSettings);
 			ShowWindow(hVideoUrlLabel, SW_HIDE);
 			ShowWindow(hVideoUrlEdit, SW_HIDE);
 
@@ -427,8 +400,9 @@ namespace NSUI
 				int y = 315 + i * 30;
 				std::wstring referenceText = tr->Translate(L"Reference image") + L" #" + std::to_wstring(i + 1);
 				editPathText[i] = referenceText;
-				hFile[i] = AVS::CreateButton(hwnd, (HMENU)(static_cast<int>(WmMainWindowCommands::ButtonFile1) + i), hInstance, tr->Translate(L"Add File").c_str(), 15, y, 80, 25, AVS::ButtonSettings::Create(AVS::Buttons::Default));
-				hPathFile[i] = AVS::CreateLabel(hwnd, hInstance, referenceText.c_str(), 100, y, windowW - 115, 25, AVS::LabelSettings::Create(AVS::LabelType::Enabled));
+				// "Bestand toevoegen" takes 101 px
+				hFile[i] = AVS::CreateButton(hwnd, (HMENU)(INT_PTR)(static_cast<int>(WmMainWindowCommands::ButtonFile1) + i), hInstance, tr->Translate(L"Add File").c_str(), 15, y, 125, 25, AVS::ButtonSettings::Create(AVS::Buttons::Default));
+				hPathFile[i] = AVS::CreateLabel(hwnd, hInstance, referenceText.c_str(), 150, y, windowW - 165, 25, AVS::LabelSettings::Create(AVS::LabelType::Enabled));
 				ShowWindow(hFile[i], SW_HIDE);
 				ShowWindow(hPathFile[i], SW_HIDE);
 			}
@@ -436,9 +410,10 @@ namespace NSUI
 
 			hProgress = AVS::CreateProgressBar(hwnd, hInstance, 15, 505, windowW - 30, 25, AVS::ProgressBarSettings::Create());
 			ShowWindow(hProgress, SW_HIDE);
-			hStatus = AVS::CreateLabel(hwnd, hInstance, L"", 15, 535, windowW - 215, 25, AVS::LabelSettings::Create(AVS::LabelType::Enabled));
-			hSettings = AVS::CreateButton(hwnd, (HMENU)WmMainWindowCommands::ButtonSettings, hInstance, tr->Translate(L"Settings").c_str(), windowW - 180, 535, 80, 25, AVS::ButtonSettings::Create(AVS::Buttons::Default));
-			hGenerate = AVS::CreateButton(hwnd, (HMENU)WmMainWindowCommands::ButtonGenerate, hInstance, tr->Translate(L"Generate").c_str(), windowW - 90, 535, 75, 25, AVS::ButtonSettings::Create(AVS::Buttons::Primary));
+			// "Configurações" takes 77 px, "Генерировать" 76
+			hStatus = AVS::CreateLabel(hwnd, hInstance, L"", 15, 535, windowW - 270, 25, AVS::LabelSettings::Create(AVS::LabelType::Enabled));
+			hSettings = AVS::CreateButton(hwnd, (HMENU)WmMainWindowCommands::ButtonSettings, hInstance, tr->Translate(L"Settings").c_str(), windowW - 245, 535, 105, 25, AVS::ButtonSettings::Create(AVS::Buttons::Default));
+			hGenerate = AVS::CreateButton(hwnd, (HMENU)WmMainWindowCommands::ButtonGenerate, hInstance, tr->Translate(L"Generate").c_str(), windowW - 130, 535, 115, 25, AVS::ButtonSettings::Create(AVS::Buttons::Primary));
 
 			plugin->m_hWindow = hwnd;
 			break;
@@ -450,7 +425,7 @@ namespace NSUI
 			{
 				activeNow = command;
 				SetModeButtons({ hTextToImage, hImageEdit, hMultiTurn, hGoogleSearch, hImageSearch, hVideoToImage }, activeNow);
-			UpdateModeDescriptionLabels(hModeDescription, GetModeDescription(activeNow));
+				AVS::Label_SetText(hModeDescription, GetModeDescription(activeNow));
 
 				bool showEditRefs = activeNow == static_cast<int>(WmMainWindowCommands::ButtonImageEdit);
 				bool showMultiTurnRef = activeNow == static_cast<int>(WmMainWindowCommands::ButtonMultiTurn);

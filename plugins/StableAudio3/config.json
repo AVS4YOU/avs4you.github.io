@@ -4,7 +4,7 @@
   "name": "Stable Audio 3 Generator",
   "desc": "Generate audio locally with Stable Audio 3 on the processor or the graphics card (NVIDIA, AMD or Intel, through Vulkan).",
   "apps": [ "Audio Editor", "Video Editor" ],
-  "version": "v1.1.0",
+  "version": "v1.1.1",
   "type": "content",
   "typeLabel": "Content Plugin",
   "aiPowered": true,

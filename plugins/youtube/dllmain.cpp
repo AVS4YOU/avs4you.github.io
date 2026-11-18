@@ -8,6 +8,7 @@
 #include "../../sdk/translate/translate.h"
 #include "../../sdk/common/HostProcess.h"
 #include "../../sdk/common/utils.h"
+#include "../../sdk/ui/winapi/ui.h"
 
 #include "./src/yt_downloader.h"
 #include "./src/failure_reason.h"
@@ -112,7 +113,7 @@ public:
 
     HWND m_hWnd = NULL;
     HWND m_parentWindow = NULL;
-    bool m_isAvsAudioEditor = false;
+    bool m_isAudioHost = false;      // Audio Editor or Audio Converter: audio only
 
     AsyncCallback m_callback = nullptr;
     void* m_callback_context = nullptr;
@@ -477,12 +478,17 @@ public:
     void SetHostWindow(HWND hwnd)
     {
         m_parentWindow = hwnd && IsWindow(hwnd) ? GetAncestor(hwnd, GA_ROOT) : NULL;
-        m_isAvsAudioEditor = m_parentWindow && (NSHostProcess::GetHostProcess().find(L"avsaudioeditor") != std::wstring::npos);
+        // The audio products take the audio track only: no picture, so no
+        // quality, codec or stream choice, and no AVS video DLLs needed.
+        const std::wstring host = NSHostProcess::GetHostProcess();
+        m_isAudioHost = m_parentWindow &&
+            (host.find(L"avsaudioeditor") != std::wstring::npos ||
+             host.find(L"avsaudioconverter") != std::wstring::npos);
     }
 
-    bool IsAvsAudioEditor() const
+    bool IsAudioHost() const
     {
-        return m_isAvsAudioEditor;
+        return m_isAudioHost;
     }
 
     void InvalidateCheckedFormats()
@@ -958,6 +964,55 @@ namespace NSUI
     // flushed to disk.
     // ======================================================================
 
+    // ----------------------------------------------------------------------
+    // The AVS widgets every plugin window is made of (sdk/ui/winapi): flat
+    // buttons, edits, labels and combo boxes on the AVS window background.
+    // ----------------------------------------------------------------------
+
+    HBRUSH WindowBackground()
+    {
+        static HBRUSH brush = NULL;
+        if (!brush)
+        {
+            const AVS::Color color = AVS::Color::GetDefaultWindowBackground();
+            brush = CreateSolidBrush(RGB(color.R, color.G, color.B));
+        }
+        return brush;
+    }
+
+    HWND Button(HWND parent, int id, const std::wstring& text, int x, int y, int width, int height,
+                AVS::Buttons type = AVS::Buttons::Default)
+    {
+        return AVS::CreateButton(parent, (HMENU)(INT_PTR)id, GetModuleHandle(NULL), text.c_str(),
+                                 x, y, width, height, AVS::ButtonSettings::Create(type));
+    }
+
+    HWND Label(HWND parent, const std::wstring& text, int x, int y, int width, int height,
+               AVS::LabelType type = AVS::LabelType::Disabled,
+               DWORD alignment = DT_LEFT | DT_VCENTER | DT_SINGLELINE)
+    {
+        return AVS::CreateLabel(parent, GetModuleHandle(NULL), text.c_str(), x, y, width, height,
+                                AVS::LabelSettings::Create(type, alignment));
+    }
+
+    /** One line of text in the middle of its box; notifies its parent as control 0. */
+    HWND LineEdit(HWND parent, const std::wstring& text, int x, int y, int width, int height,
+                  const std::wstring& placeholder = L"")
+    {
+        AVS::TextEditSettings settings = AVS::TextEditSettings::Create();
+        settings.IsVCenter = true;
+        settings.Placeholder = placeholder;
+        HWND edit = AVS::CreateTextEditMultiline(parent, GetModuleHandle(NULL), x, y, width, height, settings);
+        SetWindowTextW(edit, text.c_str());
+        return edit;
+    }
+
+    HWND Combo(HWND parent, int id, int x, int y, int width, int height)
+    {
+        return AVS::CreateComboBox(parent, (HMENU)(INT_PTR)id, GetModuleHandle(NULL),
+                                   x, y, width, height, AVS::ComboBoxSettings::Create());
+    }
+
     struct LoginContext
     {
         std::wstring workDirectory;
@@ -968,7 +1023,6 @@ namespace NSUI
         HWND   hIcon = NULL;
         HWND   hOk = NULL;
         HWND   hCancel = NULL;
-        HFONT  font = NULL;
         HANDLE process = NULL;
         bool   signedIn = false;
     };
@@ -1004,44 +1058,17 @@ namespace NSUI
             SendMessageW(ctx->hIcon, STM_SETICON,
                          (WPARAM)LoadIconW(NULL, IDI_INFORMATION), 0);
 
-            ctx->hText = CreateWindowW(L"STATIC", message.c_str(),
-                WS_CHILD | WS_VISIBLE,
-                64, 16, 360, 72, hwnd, NULL, GetModuleHandle(NULL), NULL);
-
-            ctx->hOk = CreateWindowW(L"BUTTON", tr(L"OK").c_str(),
-                WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON,
-                266, 100, 76, 26, hwnd, (HMENU)1, GetModuleHandle(NULL), NULL);
-
-            ctx->hCancel = CreateWindowW(L"BUTTON", tr(L"Cancel").c_str(),
-                WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-                350, 100, 76, 26, hwnd, (HMENU)2, GetModuleHandle(NULL), NULL);
-
-            // The shell's own message font, not DEFAULT_GUI_FONT - that one is
-            // still the 1990s bitmap face and looks dead next to the host app.
-            NONCLIENTMETRICSW metrics;
-            memset(&metrics, 0, sizeof(metrics));
-            metrics.cbSize = sizeof(metrics);
-
-            HFONT font = NULL;
-            if (SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, sizeof(metrics), &metrics, 0))
-                font = CreateFontIndirectW(&metrics.lfMessageFont);
-
-            if (!font)
-                font = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
-            else
-                ctx->font = font;          // ours to destroy
-
-            SendMessage(ctx->hText, WM_SETFONT, (WPARAM)font, TRUE);
-            SendMessage(ctx->hOk, WM_SETFONT, (WPARAM)font, TRUE);
-            SendMessage(ctx->hCancel, WM_SETFONT, (WPARAM)font, TRUE);
+            ctx->hText = Label(hwnd, message, 64, 16, 360, 72, AVS::LabelType::Enabled,
+                               DT_LEFT | DT_TOP | DT_WORDBREAK);
+            ctx->hOk = Button(hwnd, 1, tr(L"OK"), 235, 96, 90, 26, AVS::Buttons::Primary);
+            ctx->hCancel = Button(hwnd, 2, tr(L"Cancel"), 335, 96, 90, 26);
             break;
         }
 
         case WM_CTLCOLORSTATIC:
-            // Without this a STATIC paints itself with COLOR_BTNFACE, which
-            // shows up as a dull grey slab on the window's white background.
+            // The icon on the window's own background, not COLOR_BTNFACE.
             SetBkMode((HDC)wParam, TRANSPARENT);
-            return (LRESULT)GetSysColorBrush(COLOR_WINDOW);
+            return (LRESULT)WindowBackground();
         case WM_COMMAND:
             switch (LOWORD(wParam))
             {
@@ -1061,9 +1088,9 @@ namespace NSUI
                 EnableWindow(ctx->hOk, FALSE);
                 EnableWindow(ctx->hCancel, FALSE);
 
-                SetWindowTextW(ctx->hText,
+                AVS::Label_SetText(ctx->hText,
                     tr(L"Waiting for the sign-in. Sign in in the browser window that just "
-                       L"opened, then close it. This window will close by itself.").c_str());
+                       L"opened, then close it. This window will close by itself."));
 
                 SetTimer(hwnd, YT_LOGIN_TIMER_ID, YT_LOGIN_POLL_MS, NULL);
                 break;
@@ -1111,12 +1138,6 @@ namespace NSUI
                 ctx->process = NULL;
             }
 
-            if (ctx->font)
-            {
-                DeleteObject(ctx->font);
-                ctx->font = NULL;
-            }
-
             // Wake the modal loop below so it notices the window is gone. Not
             // PostQuitMessage: that WM_QUIT would also end the main window's
             // loop and close the whole plugin.
@@ -1144,7 +1165,7 @@ namespace NSUI
         wc.hInstance = GetModuleHandle(NULL);
         wc.lpszClassName = L"YoutubeLoginWindowClass";
         wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-        wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+        wc.hbrBackground = WindowBackground();
 
         // Same icon as the main plugin window; without this the title bar gets
         // the blank default.
@@ -1157,7 +1178,7 @@ namespace NSUI
         RegisterClassExW(&wc);
 
         const DWORD style = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU;
-        RECT rc = { 0, 0, 440, 140 };
+        RECT rc = { 0, 0, 440, 137 };
         AdjustWindowRectEx(&rc, style, FALSE, 0);
 
         HWND hwnd = CreateWindowExW(0, wc.lpszClassName, tr(L"Sign in required").c_str(), style,
@@ -1217,8 +1238,6 @@ namespace NSUI
 
         HWND  hFolder = NULL;
         HWND  hSignOut = NULL;
-        HWND  hSignOutNote = NULL;
-        HFONT font = NULL;
     };
 
     /** Folder picker starting at current, or at the nearest folder above it that exists. Empty if cancelled. */
@@ -1285,67 +1304,33 @@ namespace NSUI
         {
         case WM_CREATE:
         {
-            const HINSTANCE instance = GetModuleHandle(NULL);
+            Label(hwnd, tr(L"Save downloaded files to:"), 15, 15, 430, 20);
 
-            HWND hLabel = CreateWindowW(L"STATIC", tr(L"Save downloaded files to:").c_str(),
-                WS_CHILD | WS_VISIBLE, 16, 14, 428, 18, hwnd, NULL, instance, NULL);
+            // Read-only: the folder is chosen with Browse, so it always exists.
+            ctx->hFolder = LineEdit(hwnd, ctx->folder, 15, 37, 320, 28);
+            SendMessageW(ctx->hFolder, EM_SETREADONLY, TRUE, 0);
+            Button(hwnd, 3, tr(L"Browse..."), 345, 37, 100, 28);
 
-            ctx->hFolder = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", ctx->folder.c_str(),
-                WS_CHILD | WS_VISIBLE | WS_TABSTOP | ES_AUTOHSCROLL | ES_READONLY,
-                16, 34, 330, 24, hwnd, NULL, instance, NULL);
+            // Signing out on the left of the OK / Cancel row; off when there is
+            // no account to forget.
+            ctx->hSignOut = Button(hwnd, 4, tr(L"Sign out"), 15, 85, 130, 26);
+            EnableWindow(ctx->hSignOut, ytdl::HasAccounts(ctx->plugin->m_workDirectory) ? TRUE : FALSE);
 
-            HWND hBrowse = CreateWindowW(L"BUTTON", tr(L"Browse...").c_str(),
-                WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
-                354, 34, 90, 24, hwnd, (HMENU)3, instance, NULL);
-
-            HWND hLine = CreateWindowW(L"STATIC", NULL, WS_CHILD | WS_VISIBLE | SS_ETCHEDHORZ,
-                16, 72, 428, 2, hwnd, NULL, instance, NULL);
-
-            ctx->hSignOut = CreateWindowW(L"BUTTON", tr(L"Sign out").c_str(),
-                WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
-                16, 86, 120, 26, hwnd, (HMENU)4, instance, NULL);
-
-            const bool accounts = ytdl::HasAccounts(ctx->plugin->m_workDirectory);
-            ctx->hSignOutNote = CreateWindowW(L"STATIC",
-                (accounts ? tr(L"Forget the accounts the plugin signed in to.")
-                          : tr(L"Not signed in to any account.")).c_str(),
-                WS_CHILD | WS_VISIBLE, 146, 86, 298, 34, hwnd, NULL, instance, NULL);
-            EnableWindow(ctx->hSignOut, accounts ? TRUE : FALSE);
-
-            HWND hOk = CreateWindowW(L"BUTTON", tr(L"OK").c_str(),
-                WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_DEFPUSHBUTTON,
-                276, 132, 80, 26, hwnd, (HMENU)IDOK, instance, NULL);
-
-            HWND hCancel = CreateWindowW(L"BUTTON", tr(L"Cancel").c_str(),
-                WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
-                364, 132, 80, 26, hwnd, (HMENU)IDCANCEL, instance, NULL);
-
-            // The shell's message font, as in the sign-in dialog.
-            NONCLIENTMETRICSW metrics;
-            memset(&metrics, 0, sizeof(metrics));
-            metrics.cbSize = sizeof(metrics);
-
-            HFONT font = NULL;
-            if (SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, sizeof(metrics), &metrics, 0))
-                font = CreateFontIndirectW(&metrics.lfMessageFont);
-
-            if (!font)
-                font = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
-            else
-                ctx->font = font;
-
-            const HWND controls[] = { hLabel, ctx->hFolder, hBrowse, hLine, ctx->hSignOut, ctx->hSignOutNote, hOk, hCancel };
-            for (size_t i = 0; i < sizeof(controls) / sizeof(controls[0]); ++i)
-                SendMessage(controls[i], WM_SETFONT, (WPARAM)font, TRUE);
+            HWND hOk = Button(hwnd, IDOK, tr(L"OK"), 255, 85, 90, 26, AVS::Buttons::Primary);
+            Button(hwnd, IDCANCEL, tr(L"Cancel"), 355, 85, 90, 26);
 
             SetFocus(hOk);
             break;
         }
 
         case WM_CTLCOLORSTATIC:
-            // Labels and the read-only path box on the window's own background.
-            SetBkMode((HDC)wParam, TRANSPARENT);
-            return (LRESULT)GetSysColorBrush(COLOR_WINDOW);
+            // The read-only path box white, as a field, not in COLOR_BTNFACE.
+            if ((HWND)lParam == ctx->hFolder)
+            {
+                SetBkColor((HDC)wParam, GetSysColor(COLOR_WINDOW));
+                return (LRESULT)GetSysColorBrush(COLOR_WINDOW);
+            }
+            return DefWindowProc(hwnd, msg, wParam, lParam);
 
         case WM_COMMAND:
             switch (LOWORD(wParam))
@@ -1367,10 +1352,7 @@ namespace NSUI
                     break;
 
                 if (ytdl::SignOut(ctx->plugin->m_workDirectory))
-                {
-                    SetWindowTextW(ctx->hSignOutNote, tr(L"Signed out.").c_str());
                     EnableWindow(ctx->hSignOut, FALSE);
-                }
                 else
                 {
                     MessageBoxW(hwnd, tr(L"Could not sign out. Close the browser window used for "
@@ -1401,11 +1383,6 @@ namespace NSUI
             break;
 
         case WM_DESTROY:
-            if (ctx->font)
-            {
-                DeleteObject(ctx->font);
-                ctx->font = NULL;
-            }
             // Wakes the modal loop below; not PostQuitMessage, see the sign-in dialog.
             PostThreadMessage(GetCurrentThreadId(), WM_NULL, 0, 0);
             break;
@@ -1430,7 +1407,7 @@ namespace NSUI
         wc.hInstance = GetModuleHandle(NULL);
         wc.lpszClassName = L"YoutubeSettingsWindowClass";
         wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-        wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+        wc.hbrBackground = WindowBackground();
 
         const std::wstring iconPath = plugin->m_workDirectory + L"\\icon_internal.ico";
         wc.hIcon = (HICON)LoadImageW(NULL, iconPath.c_str(), IMAGE_ICON, 32, 32,
@@ -1441,7 +1418,7 @@ namespace NSUI
         RegisterClassExW(&wc);
 
         const DWORD style = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU;
-        RECT rc = { 0, 0, 460, 172 };
+        RECT rc = { 0, 0, 460, 126 };
         AdjustWindowRectEx(&rc, style, FALSE, 0);
 
         HWND hwnd = CreateWindowExW(0, wc.lpszClassName, tr(L"Settings").c_str(), style,
@@ -1508,21 +1485,29 @@ namespace NSUI
         static HWND hEdit;
         static HWND hAction, hAbout, hSettings, hQuality, hStream, hCodec, hAudio;
 
+        // The link on top; under it, once checked, the format lists and - with
+        // more than one audio track - the track list; the buttons last. Rows of
+        // 28 px 10 apart, 15 px from the window's edges.
+        const auto placeButtons = [&](int buttonY)
+        {
+            MoveWindow(hAbout, 15, buttonY, 110, 26, TRUE);
+            MoveWindow(hSettings, 135, buttonY, 120, 26, TRUE);
+            MoveWindow(hAction, 455, buttonY, 130, 26, TRUE);
+            RECT rc = { 0, 0, 600, buttonY + 26 + 15 };
+            AdjustWindowRectEx(&rc, WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX, FALSE, 0);
+            SetWindowPos(hwnd, NULL, 0, 0, rc.right - rc.left, rc.bottom - rc.top,
+                         SWP_NOMOVE | SWP_NOZORDER);
+        };
+
         const auto showFormatSelectors = [&]()
         {
             ShowWindow(hQuality, SW_SHOW);
             ShowWindow(hStream, SW_SHOW);
             ShowWindow(hCodec, SW_SHOW);
-            const bool multipleAudio = SendMessageW(hAudio, CB_GETCOUNT, 0, 0) > 2;
+            // "Default audio track" and one track are no choice
+            const bool multipleAudio = AVS::ComboBox_GetItems(hAudio).size() > 2;
             ShowWindow(hAudio, multipleAudio ? SW_SHOW : SW_HIDE);
-            const int buttonY = multipleAudio ? 125 : 90;
-            MoveWindow(hAbout, 10, buttonY, 80, 25, TRUE);
-            MoveWindow(hSettings, 95, buttonY, 100, 25, TRUE);
-            MoveWindow(hAction, 490, buttonY, 100, 25, TRUE);
-            RECT rc = { 0, 0, 600, buttonY + 35 };
-            AdjustWindowRectEx(&rc, WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX, FALSE, 0);
-            SetWindowPos(hwnd, NULL, 0, 0, rc.right - rc.left, rc.bottom - rc.top,
-                         SWP_NOMOVE | SWP_NOZORDER);
+            placeButtons(multipleAudio ? 129 : 91);
         };
 
         const auto hideFormatSelectors = [&]()
@@ -1531,13 +1516,7 @@ namespace NSUI
             ShowWindow(hStream, SW_HIDE);
             ShowWindow(hCodec, SW_HIDE);
             ShowWindow(hAudio, SW_HIDE);
-            MoveWindow(hAbout, 10, 55, 80, 25, TRUE);
-            MoveWindow(hSettings, 95, 55, 100, 25, TRUE);
-            MoveWindow(hAction, 490, 55, 100, 25, TRUE);
-            RECT rc = { 0, 0, 600, 90 };
-            AdjustWindowRectEx(&rc, WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX, FALSE, 0);
-            SetWindowPos(hwnd, NULL, 0, 0, rc.right - rc.left, rc.bottom - rc.top,
-                         SWP_NOMOVE | SWP_NOZORDER);
+            placeButtons(53);
         };
 
         if (msg == WM_NCCREATE)
@@ -1553,51 +1532,32 @@ namespace NSUI
         {
         case WM_CREATE:
         {
-            hEdit = CreateWindowEx(WS_EX_CLIENTEDGE, L"EDIT", L"",
-                WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL,
-                10, 10, 580, 25, hwnd, NULL, GetModuleHandle(NULL), NULL);
+            // Control 0: its EN_CHANGE drops the formats of the previous link.
+            // The example is a link, the same in every language.
+            hEdit = LineEdit(hwnd, L"", 15, 15, 570, 28, L"https://www.youtube.com/watch?v=...");
 
-            hAction = CreateWindow(L"BUTTON", tr(L"Check").c_str(),
-                WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-                490, 55, 100, 25, hwnd, (HMENU)1, GetModuleHandle(NULL), NULL);
-
-            hQuality = CreateWindow(L"COMBOBOX", NULL,
-                WS_CHILD | CBS_DROPDOWNLIST | WS_VSCROLL,
-                10, 45, 140, 250, hwnd, (HMENU)6, GetModuleHandle(NULL), NULL);
-            hStream = CreateWindow(L"COMBOBOX", NULL,
-                WS_CHILD | CBS_DROPDOWNLIST | WS_VSCROLL,
-                160, 45, 140, 250, hwnd, (HMENU)7, GetModuleHandle(NULL), NULL);
-            hCodec = CreateWindow(L"COMBOBOX", NULL,
-                WS_CHILD | CBS_DROPDOWNLIST | WS_VSCROLL,
-                310, 45, 280, 250, hwnd, (HMENU)8, GetModuleHandle(NULL), NULL);
-
-            hAudio = CreateWindow(L"COMBOBOX", NULL,
-                WS_CHILD | CBS_DROPDOWNLIST | WS_VSCROLL,
-                10, 80, 580, 350, hwnd, (HMENU)10, GetModuleHandle(NULL), NULL);
+            // In the tab order as on the screen; shown once the link is checked.
+            hQuality = Combo(hwnd, 6, 15, 53, 180, 28);
+            hStream = Combo(hwnd, 7, 205, 53, 150, 28);
+            hCodec = Combo(hwnd, 8, 365, 53, 220, 28);
+            hAudio = Combo(hwnd, 10, 15, 91, 570, 28);
+            ShowWindow(hQuality, SW_HIDE);
+            ShowWindow(hStream, SW_HIDE);
+            ShowWindow(hCodec, SW_HIDE);
+            ShowWindow(hAudio, SW_HIDE);
 
             // There is deliberately no sign-in button: signing in is offered by
             // the download when a video actually turns out to need an account.
-            hAbout = CreateWindow(L"BUTTON", tr(L"About").c_str(),
-                WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-                10, 55, 80, 25, hwnd, (HMENU)5, GetModuleHandle(NULL), NULL);
+            hAbout = Button(hwnd, 5, tr(L"About"), 15, 53, 110, 26);
 
             // The output folder and signing out. Disabled while a check or a
             // download runs: the folder is read when the file is saved, and
             // signing out would delete the profile yt-dlp is reading.
-            hSettings = CreateWindow(L"BUTTON", tr(L"Settings").c_str(),
-                WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-                95, 55, 100, 25, hwnd, (HMENU)9, GetModuleHandle(NULL), NULL);
+            hSettings = Button(hwnd, 9, tr(L"Settings"), 135, 53, 120, 26);
 
-            HFONT font = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
-            SendMessage(hEdit, WM_SETFONT, (WPARAM)font, TRUE);
-            SendMessage(hAction, WM_SETFONT, (WPARAM)font, TRUE);
-            SendMessage(hAbout, WM_SETFONT, (WPARAM)font, TRUE);
-            SendMessage(hSettings, WM_SETFONT, (WPARAM)font, TRUE);
-            SendMessage(hQuality, WM_SETFONT, (WPARAM)font, TRUE);
-            SendMessage(hStream, WM_SETFONT, (WPARAM)font, TRUE);
-            SendMessage(hCodec, WM_SETFONT, (WPARAM)font, TRUE);
-            SendMessage(hAudio, WM_SETFONT, (WPARAM)font, TRUE);
+            hAction = Button(hwnd, 1, tr(L"Check"), 455, 53, 130, 26, AVS::Buttons::Primary);
 
+            SetFocus(hEdit);
             plugin->m_hWnd = hwnd;
             break;
         }
@@ -1613,9 +1573,10 @@ namespace NSUI
                 }
                 break;
             case 7:
-                if (HIWORD(wParam) == CBN_SELCHANGE)
+                if (HIWORD(wParam) == AVS::COMBOBOX_SELECTED_INDEX_CHANDED)
                 {
-                    const int mode = (int)SendMessageW(hStream, CB_GETCURSEL, 0, 0);
+                    // "Video only" has no audio track to choose
+                    const int mode = AVS::ComboBox_GetCurrent(hStream);
                     EnableWindow(hAudio, !plugin->IsYouTubeUrl() || mode != 1);
                 }
                 break;
@@ -1647,21 +1608,21 @@ namespace NSUI
                     }
                     else
                     {
-                        const int qualityIndex = (int)SendMessageW(hQuality, CB_GETCURSEL, 0, 0);
+                        const int qualityIndex = AVS::ComboBox_GetCurrent(hQuality);
                         const std::vector<int>& qualities = plugin->AvailableQualities();
                         const int quality = qualityIndex > 0 && (size_t)(qualityIndex - 1) < qualities.size()
                             ? qualities[qualityIndex - 1] : 0;
-                        const int streamIndex = (int)SendMessageW(hStream, CB_GETCURSEL, 0, 0);
-                        const int streamMode = plugin->IsAvsAudioEditor()
+                        const int streamIndex = AVS::ComboBox_GetCurrent(hStream);
+                        const int streamMode = plugin->IsAudioHost()
                             ? 2
                             : plugin->IsYouTubeUrl()
                             ? (streamIndex == 1 ? 1 : (streamIndex == 2 ? 2 : 0))
                             : (streamIndex == 0 ? 0 : 3);
-                        const int codecIndex = (int)SendMessageW(hCodec, CB_GETCURSEL, 0, 0);
+                        const int codecIndex = AVS::ComboBox_GetCurrent(hCodec);
                         const std::vector<std::wstring>& codecs = plugin->AvailableVideoCodecs();
                         const std::wstring codec = codecIndex > 0 && (size_t)(codecIndex - 1) < codecs.size()
                             ? codecs[codecIndex - 1] : L"";
-                        const int audioIndex = (int)SendMessageW(hAudio, CB_GETCURSEL, 0, 0);
+                        const int audioIndex = AVS::ComboBox_GetCurrent(hAudio);
                         const auto& tracks = plugin->m_audioTracks;
                         const std::wstring language = audioIndex > 0 && (size_t)(audioIndex - 1) < tracks.size()
                             ? tracks[audioIndex - 1].first : L"";
@@ -1724,52 +1685,46 @@ namespace NSUI
                 break;
             }
 
-            SendMessageW(hQuality, CB_RESETCONTENT, 0, 0);
-            SendMessageW(hQuality, CB_ADDSTRING, 0, (LPARAM)tr(L"Best available").c_str());
+            std::vector<std::wstring> qualities{ tr(L"Best available") };
             for (int quality : plugin->AvailableQualities())
-            {
-                const std::wstring item = std::to_wstring(quality) + L"p";
-                SendMessageW(hQuality, CB_ADDSTRING, 0, (LPARAM)item.c_str());
-            }
-            SendMessageW(hQuality, CB_SETCURSEL, 0, 0);
+                qualities.push_back(std::to_wstring(quality) + L"p");
+            AVS::ComboBox_SetItems(hQuality, qualities, 0);
 
-            SendMessageW(hStream, CB_RESETCONTENT, 0, 0);
-            if (plugin->IsAvsAudioEditor())
+            std::vector<std::wstring> streams;
+            if (plugin->IsAudioHost())
             {
-                SendMessageW(hStream, CB_ADDSTRING, 0, (LPARAM)tr(L"Audio only").c_str());
+                streams.push_back(tr(L"Audio only"));
                 EnableWindow(hQuality, FALSE);
                 EnableWindow(hCodec, FALSE);
             }
             else
             {
-                SendMessageW(hStream, CB_ADDSTRING, 0, (LPARAM)tr(L"Video + audio").c_str());
+                streams.push_back(tr(L"Video + audio"));
                 if (plugin->IsYouTubeUrl())
                 {
-                    SendMessageW(hStream, CB_ADDSTRING, 0, (LPARAM)tr(L"Video only").c_str());
-                    SendMessageW(hStream, CB_ADDSTRING, 0, (LPARAM)tr(L"Audio only").c_str());
+                    streams.push_back(tr(L"Video only"));
+                    streams.push_back(tr(L"Audio only"));
                 }
                 // Twitch, Instagram and similar services often publish only an
                 // already-muxed MP4. There is no genuine stream choice there, so
                 // avoid presenting a misleading second option.
                 else if (plugin->CanChooseStreamType())
-                    SendMessageW(hStream, CB_ADDSTRING, 0, (LPARAM)tr(L"Single stream").c_str());
+                    streams.push_back(tr(L"Single stream"));
             }
-            SendMessageW(hStream, CB_SETCURSEL, 0, 0);
+            AVS::ComboBox_SetItems(hStream, streams, 0);
 
-            SendMessageW(hCodec, CB_RESETCONTENT, 0, 0);
             // Twitch and some other services publish ready-made MP4 streams
             // but do not report codec metadata. "Any video codec" must still
             // remain selectable, just like the always-present stream choice.
-            SendMessageW(hCodec, CB_ADDSTRING, 0, (LPARAM)tr(L"Any video codec").c_str());
+            std::vector<std::wstring> codecs{ tr(L"Any video codec") };
             for (const std::wstring& codec : plugin->AvailableVideoCodecs())
-                SendMessageW(hCodec, CB_ADDSTRING, 0, (LPARAM)codec.c_str());
-            SendMessageW(hCodec, CB_SETCURSEL, 0, 0);
+                codecs.push_back(codec);
+            AVS::ComboBox_SetItems(hCodec, codecs, 0);
 
-            SendMessageW(hAudio, CB_RESETCONTENT, 0, 0);
-            SendMessageW(hAudio, CB_ADDSTRING, 0, (LPARAM)tr(L"Default audio track").c_str());
+            std::vector<std::wstring> tracks{ tr(L"Default audio track") };
             for (const auto& track : plugin->m_audioTracks)
-                SendMessageW(hAudio, CB_ADDSTRING, 0, (LPARAM)track.second.c_str());
-            SendMessageW(hAudio, CB_SETCURSEL, 0, 0);
+                tracks.push_back(track.second);
+            AVS::ComboBox_SetItems(hAudio, tracks, 0);
             EnableWindow(hAudio, TRUE);
             showFormatSelectors();
             SetWindowTextW(hAction, tr(L"Download").c_str());
@@ -1823,7 +1778,7 @@ namespace NSUI
         wc.hInstance = GetModuleHandle(NULL);
         wc.lpszClassName = L"YoutubeMainWindowClass";
         wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-        wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+        wc.hbrBackground = WindowBackground();
 
         std::wstring iconPath = plugin->m_workDirectory + L"\\icon_internal.ico";
 
@@ -1834,9 +1789,9 @@ namespace NSUI
         RegisterClassEx(&wc);
 
         DWORD dwStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX;
-        std::wstring titleWindow = CTranslate::GetInstance().GetManager()->Translate(L"Youtube");
+        std::wstring titleWindow = CTranslate::GetInstance().GetManager()->Translate(L"YouTube");
 
-        RECT rc = { 0, 0, 600, 90 };
+        RECT rc = { 0, 0, 600, 94 };
         AdjustWindowRectEx(&rc, dwStyle, FALSE, 0);
 
         HWND hostWindow = plugin->m_parentWindow;
@@ -1931,12 +1886,12 @@ extern "C" {
 
     PLUGIN_API wchar_t* __stdcall PluginName()
     {
-        return TR(L"Youtube");
+        return TR(L"YouTube");
     }
 
     PLUGIN_API wchar_t* __stdcall PluginVersion()
     {
-        return export_str(L"1.0.4");
+        return export_str(L"1.0.5");
     }
 
     PLUGIN_API wchar_t* __stdcall PluginIcon(PluginHandle plugin)
@@ -1954,6 +1909,7 @@ extern "C" {
         case AVS_VIDEO_EDITOR:
             return NSYoutube::HasMediaToolkitLibraries();
         case AVS_AUDIO_EDITOR:
+        case AVS_AUDIO_CONVERTER:
             return true;
         default:break;
         }
@@ -1984,7 +1940,7 @@ extern "C" {
         if (Plugins::ContextType::MediaLibrary == type) 
         {
             nlohmann::json obj;
-            obj["text"] = NSStringUtils::wstring_to_utf8(CTranslate::GetInstance().GetManager()->Translate(L"Youtube"));
+            obj["text"] = NSStringUtils::wstring_to_utf8(CTranslate::GetInstance().GetManager()->Translate(L"YouTube"));
             obj["icon"] = 0;
             obj["action"] = 0;
 

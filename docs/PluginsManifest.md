@@ -14,7 +14,7 @@ field, removing a plugin or changing how packages are published.
 - **AVS4YOU installers** - every product installer and Install Pack. During
   setup they download the manifest, look up the preinstalled plugins
   build_tools configured for the product (`<module>-plugins` in build_tools
-  `defaults`, e.g. `effect-vhs, veo3`; a product without a list offers none;
+  `defaults`, e.g. `youtube, ai-subtitles`; a product without a list offers none;
   Install Pack offers the lists of the products selected in it that get
   PluginManager there - not Media Player) and download the package for their
   own architecture. They parse the file with a
@@ -143,10 +143,19 @@ The installer side lives in app-main-2010,
   then `python package.py`, then push - otherwise installers and the storefront
   get a 404 until the release is created.
 - **Never remove or rename a slug that a shipped default list names**, and
-  never drop one of its architectures. Today that is `effect-vhs` and `veo3`
-  (build_tools `defaults`: `effect-vhs, veo3` for Video Converter, Video
-  Editor and Media Player, `effect-vhs` for Image Converter; Install Pack offers
-  the lists of the products selected in it that get PluginManager there).
+  never drop one of its architectures. Installers already shipped name
+  `effect-vhs` and `veo3` (`effect-vhs, veo3` for Video Converter, Video Editor
+  and Media Player, `effect-vhs` for Image Converter). build_tools `defaults`
+  since November 2026:
+  - Video Converter: `youtube, ai-subtitles`
+  - Video Editor: `youtube, ai-subtitles, veo3, stem-splitter, supertonic3, sunoapi, stableaudio3`
+  - Audio Editor: `youtube, stem-splitter, supertonic3, sunoapi, stableaudio3`
+  - Audio Converter: `youtube, stem-splitter, supertonic3`
+  - Video ReMaker: `ai-subtitles`
+  - Media Player and Image Converter: none
+
+  Install Pack offers the lists of the products selected in it that get
+  PluginManager there.
 - **Keep `pluginId` equal to `PluginId()`.** `tools/plugin-tools/new_effect.py`
   writes both from one value and `check_effect.py` compares them for effect
   plugins. Content plugins have no scaffolder, so their `pluginId` is added to

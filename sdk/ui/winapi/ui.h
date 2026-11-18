@@ -95,6 +95,9 @@ namespace AVS
 		bool IsVCenter = false;
 		// ES_LEFT, ES_CENTER or ES_RIGHT (numbers read best on the right)
 		int TextAlign = ES_LEFT;
+		// grey text shown while the edit is empty, single-line or multiline
+		// (EM_SETCUEBANNER only works on single-line edits)
+		std::wstring Placeholder;
 
 		std::wstring FontName = L"Segoe UI";
 		bool FontItalic = false;
@@ -107,6 +110,9 @@ namespace AVS
 	HWND CreateTextEditMultiline(HWND hParent, HINSTANCE hInstance,
 		const int& x, const int& y, const int& w, const int& h,
 		const TextEditSettings& settings);
+
+	// the grey hint of an empty edit made by CreateTextEditMultiline; empty: none
+	void TextEdit_SetPlaceholder(HWND hwnd, const std::wstring& placeholder);
 
 	class ProgressBarSettings
 	{
@@ -171,6 +177,9 @@ namespace AVS
 
 		int DropDownItemSize = 0; // 0 = comboHeight
 		int StartSelectedIndex = 0;
+
+		// shown in grey while nothing is selected, e.g. while the list is empty
+		std::wstring Placeholder;
 
 		static ComboBoxSettings Create();
 	};
