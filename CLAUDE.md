@@ -172,4 +172,5 @@ the `.rc`, and editing `translation.json` requires a rebuild.
 - Existing sources are CRLF, mostly UTF-8 with BOM. Match the file you edit.
 - Do not commit or push unless asked.
 - Do not add a plugin to `index.html` by hand; add `config.json` and run
-  `package.py`.
+  `package.py`. To take one off the storefront, set `"hidden": true` in its
+  `config.json` instead of deleting it (sora2 since OpenAI shut down Sora 2).

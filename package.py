@@ -101,6 +101,9 @@ def load_plugins() -> list[dict]:
                 )
             owners[owned] = to_url(config_path)
 
+        if not isinstance(config.get("hidden", False), bool):
+            sys.exit(f"error: {to_url(config_path)}: 'hidden' must be true or false")
+
         base_path = to_url(plugin_dir)
         config["basePath"] = base_path
         config["media"] = join_plugin_path(base_path, config.get("media"))
@@ -193,11 +196,16 @@ def main() -> None:
     plugins = load_plugins()
     # checked before anything is written, so a refused manifest leaves both files alone
     manifest = make_manifest(plugins)
-    write_index(make_script(plugins))
+    # "hidden": true takes a plugin off the storefront - its service is gone, say -
+    # while plugins.json keeps the record, so installers and old links still resolve it
+    shown = [plugin for plugin in plugins if not plugin.get("hidden")]
+    write_index(make_script(shown))
     PLUGINS_JSON.write_text(manifest, encoding="utf-8", newline="")
+    hidden = [plugin["slug"] for plugin in plugins if plugin.get("hidden")]
     print(
-        f"packed {len(plugins)} plugins into "
-        f"{to_url(INDEX_HTML)} and {to_url(PLUGINS_JSON)}"
+        f"packed {len(shown)} plugins into {to_url(INDEX_HTML)} and "
+        f"{len(plugins)} into {to_url(PLUGINS_JSON)}"
+        + (f" (hidden from the storefront: {', '.join(hidden)})" if hidden else "")
     )
 
 

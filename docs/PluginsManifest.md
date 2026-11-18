@@ -77,6 +77,11 @@ field, removing a plugin or changing how packages are published.
   any other. The id cannot be derived from the slug
   (`effect-restoration-gaterv3` is `EffectGaterv3.plugin`), and its case is
   whatever the code uses (`heygen.plugin`, `Youtube.plugin`).
+- **`hidden`** - optional, `true` or `false` in `config.json` - takes a plugin
+  off the storefront: `package.py` leaves it out of `index.html` but keeps its
+  record here, so installers and links that resolve it keep working. Use it for
+  a plugin whose service is gone (`sora2`: OpenAI shut down the Sora 2 API on
+  24 September 2026) rather than deleting the plugin.
 - **Encoding**: pure ASCII - `package.py` writes it with `ensure_ascii=True`,
   so non-ASCII text in `name` or `desc` arrives as `\uXXXX`. UTF-8 without a
   BOM, LF line ends. `\"`, `\\` and `\n` can still appear in any string, so a

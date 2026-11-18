@@ -16,6 +16,9 @@
 **/Debug
 *.vcxproj.user
 *.bak
+# ObjectFileName $(IntDir)%(RelativeDir) puts the objects of ../../sdk sources
+# outside the build folders (plugins/sdk, plugins/sora2/sdk)
+*.obj
 **/build
 # Two exceptions are force-tracked (git add -f): plugins/effect-vhs/build/x86/
 # effect-vhs.avsp and plugins/sora2/build/x86/Sora2.avsp - see CLAUDE.md.
