@@ -8,12 +8,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800;900&family=Mulish:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <title>AVS4YOU Plugins Marketplace</title>
   <style>
     :root {
+      /* Windows fonts: the store is opened on Windows, in a browser or inside an AVS app,
+         so nothing is fetched and nothing changes once the page is drawn. Segoe UI has
+         400, 600 (Semibold), 700 (Bold) and 900 (Black) - no 800: a weight of 800 would
+         come out as Black. */
+      --font-ui: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+      --font-mono: Consolas, "Cascadia Mono", "Courier New", monospace;
       --accent: #1577e0;
       --accent-dark: #1463c4;
       --bg: #f4f7fb;
@@ -38,7 +41,7 @@
 
     body {
       margin: 0;
-      font-family: Mulish, "Segoe UI", Roboto, Arial, sans-serif;
+      font-family: var(--font-ui);
       color: var(--text);
       background: var(--bg);
     }
@@ -79,17 +82,17 @@
     }
 
     .brand-title {
-      font-family: Manrope, Mulish, sans-serif;
+      font-family: var(--font-ui);
       font-size: 14.5px;
-      font-weight: 900;
+      font-weight: 700;
     }
 
     .brand-subtitle {
       margin-top: 3px;
       color: var(--accent);
-      font-family: Manrope, Mulish, sans-serif;
+      font-family: var(--font-ui);
       font-size: 10px;
-      font-weight: 800;
+      font-weight: 700;
       letter-spacing: 1.2px;
       text-transform: uppercase;
     }
@@ -109,7 +112,7 @@
       background: linear-gradient(135deg, #2b9bf4, #1577e0);
       box-shadow: 0 3px 8px rgba(21, 119, 224, 0.28);
       font-size: 12.5px;
-      font-weight: 800;
+      font-weight: 600;
       cursor: pointer;
     }
 
@@ -129,7 +132,7 @@
       padding: 0 8px 8px;
       color: #9aa8bc;
       font-size: 10.5px;
-      font-weight: 800;
+      font-weight: 700;
       letter-spacing: 1px;
       text-transform: uppercase;
     }
@@ -146,7 +149,7 @@
       color: #46566b;
       background: transparent;
       font-size: 13.5px;
-      font-weight: 600;
+      font-weight: 400;
       cursor: pointer;
       text-align: left;
     }
@@ -154,7 +157,7 @@
     .rail-button.active {
       color: var(--accent-dark);
       background: #eef4fc;
-      font-weight: 800;
+      font-weight: 600;
     }
 
     .rail-button .rail-icon {
@@ -182,7 +185,7 @@
 
     .rail-count {
       color: #a6b3c4;
-      font-family: "JetBrains Mono", "Courier New", monospace;
+      font-family: var(--font-mono);
       font-size: 10.5px;
       font-weight: 700;
     }
@@ -200,9 +203,9 @@
       justify-content: center;
       border-radius: 6px;
       color: #fff;
-      font-family: Mulish, sans-serif;
+      font-family: var(--font-ui);
       font-size: 8.5px;
-      font-weight: 900;
+      font-weight: 700;
       letter-spacing: 0.3px;
     }
     .app-badge.app-icon {
@@ -238,14 +241,14 @@
 
     .heading-title {
       font-size: 16px;
-      font-weight: 800;
+      font-weight: 700;
     }
 
     .heading-subtitle {
       margin-top: 5px;
       color: var(--faint);
       font-size: 11.5px;
-      font-weight: 600;
+      font-weight: 400;
     }
 
     .toolbar-spacer {
@@ -537,7 +540,7 @@
       background: rgba(255, 255, 255, 0.92);
       color: var(--accent-dark);
       font-size: 10px;
-      font-weight: 800;
+      font-weight: 600;
       letter-spacing: 0.2px;
       white-space: nowrap;
       backdrop-filter: blur(4px);
@@ -572,7 +575,7 @@
       overflow: hidden;
       color: var(--text);
       font-size: 15.5px;
-      font-weight: 800;
+      font-weight: 700;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
@@ -609,9 +612,9 @@
 
     .meta-text {
       color: #9aa8bc;
-      font-family: "JetBrains Mono", "Courier New", monospace;
+      font-family: var(--font-mono);
       font-size: 10.5px;
-      font-weight: 600;
+      font-weight: 400;
       white-space: nowrap;
     }
 
@@ -629,7 +632,7 @@
       border-radius: 5px;
       background: transparent;
       color: var(--faint);
-      font-family: "JetBrains Mono", "Courier New", monospace;
+      font-family: var(--font-mono);
       font-size: 10px;
       font-weight: 700;
       cursor: pointer;
@@ -652,7 +655,7 @@
       background: linear-gradient(135deg, #2b9bf4, #1577e0);
       box-shadow: 0 3px 8px rgba(21, 119, 224, 0.28);
       font-size: 12.5px;
-      font-weight: 800;
+      font-weight: 600;
       text-decoration: none;
       white-space: nowrap;
       cursor: pointer;
@@ -732,7 +735,7 @@
       margin: 0;
       color: var(--text);
       font-size: 16px;
-      font-weight: 800;
+      font-weight: 700;
     }
 
     .empty p {
@@ -748,7 +751,7 @@
       background: var(--accent);
       color: #fff;
       font-size: 13px;
-      font-weight: 700;
+      font-weight: 600;
       cursor: pointer;
     }
 
@@ -774,7 +777,7 @@
     .footer-note {
       color: var(--faint);
       font-size: 12px;
-      font-weight: 600;
+      font-weight: 400;
     }
 
     .footer-links {
@@ -782,7 +785,7 @@
       align-items: center;
       gap: 16px;
       font-size: 12.5px;
-      font-weight: 700;
+      font-weight: 600;
     }
 
     .footer-links a {
@@ -808,7 +811,7 @@
       color: #fff;
       box-shadow: 0 12px 30px rgba(15, 23, 42, 0.22);
       font-size: 13px;
-      font-weight: 700;
+      font-weight: 600;
       opacity: 0;
       transform: translateY(8px);
       pointer-events: none;
