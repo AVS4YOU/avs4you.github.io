@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 project(AiSubtitlesPlugin LANGUAGES C CXX)
 
 # The plugin DLL only. whisper-cli is third-party: fetch.py builds it into
-# build/<arch>/, and build.py packs it with ffmpeg.exe next to this DLL.
+# build/<arch>/, and build.py packs it with AVSMediaToolkit.exe next to this DLL.
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

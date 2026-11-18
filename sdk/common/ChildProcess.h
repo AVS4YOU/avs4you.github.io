@@ -4,7 +4,7 @@
 #include <functional>
 #include <string>
 
-// Runs a bundled command line tool (ffmpeg, whisper-cli, ...) for a plugin:
+// Runs a bundled command line tool (AVSMediaToolkit, whisper-cli, ...) for a plugin:
 // no console window, output read line by line, and cancellable - cancelling
 // kills the process and everything it started.
 namespace NSChildProcess

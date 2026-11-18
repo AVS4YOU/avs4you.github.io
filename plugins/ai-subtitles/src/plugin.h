@@ -15,7 +15,7 @@ public:
 	~CSubtitlesPlugin();
 	CSubtitlesPlugin(const CSubtitlesPlugin&) = delete;
 
-	std::filesystem::path moduleDirectory;  // the DLL, ffmpeg.exe, whisper-cli*.exe
+	std::filesystem::path moduleDirectory;  // the DLL, AVSMediaToolkit.exe, whisper-cli*.exe
 	std::filesystem::path workDirectory;    // %LOCALAPPDATA%\avs_plugin_aisubtitles
 	HWND window = nullptr;
 	AsyncCallback callback = nullptr;

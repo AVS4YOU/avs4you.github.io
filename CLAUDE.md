@@ -28,6 +28,7 @@ docs/                      plugin developer documentation
 sdk/                       shared code for all plugins (see below)
 plugins/<slug>/            one folder per plugin, each with config.json
 plugins/<slug>/fetch.py    third-party code git does not hold (NuGet, sa3.cpp)
+tools/AVSMediaToolkit/     AVSMediaToolkit.exe x86/x64: media decode/encode/merge for the plugins
 tools/PreviewGenerator/    plugin DLL + PNG -> animated preview GIF
 tools/plugin-tools/        scaffold / build / verify scripts for effect plugins
 tests/effect/              minimal host that loads an effect DLL and applies it

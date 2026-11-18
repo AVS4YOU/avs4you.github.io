@@ -41,6 +41,9 @@ from release import (ARCHS, PLUGINS_DIR, ReleaseError, all_plugin_names, load_pl
                      package_has_plugin_id, package_is_plain_zip)
 
 ROOT = Path(__file__).resolve().parent
+# AVSMediaToolkit (activex Sources/AVSTools/AVSMediaToolkit), shared by the plugins
+# that read or write media: one Release build per architecture.
+MEDIA_TOOLKIT = ROOT / "tools" / "AVSMediaToolkit" / "{arch}" / "AVSMediaToolkit.exe"
 
 VSWHERE = Path(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")) \
     / "Microsoft Visual Studio" / "Installer" / "vswhere.exe"
@@ -185,15 +188,15 @@ def cmake(binary_dir: str, output: str, dll: str, defines: dict[str, str] | None
 
 
 def youtube(plugin_dir: Path, arch: str, tools: Tools, clean: bool) -> Content:
-    """Package common resources plus the selected architecture at the ZIP root."""
+    """Package resources/common and the media toolkit at the ZIP root."""
     resources: Content = {}
-    for folder in ("common", arch):
-        directory = plugin_dir / "resources" / folder
-        if not directory.is_dir():
-            raise BuildError(f"resource directory not found: {directory}")
-        for path in sorted(directory.rglob("*")):
-            if path.is_file():
-                resources[path.relative_to(directory).as_posix()] = path
+    directory = plugin_dir / "resources" / "common"
+    if not directory.is_dir():
+        raise BuildError(f"resource directory not found: {directory}")
+    for path in sorted(directory.rglob("*")):
+        if path.is_file():
+            resources[path.relative_to(directory).as_posix()] = path
+    resources["AVSMediaToolkit.exe"] = Path(str(MEDIA_TOOLKIT).format(arch=arch))
 
     content = msbuild("Youtube.vcxproj", "Youtube.dll")(plugin_dir, arch, tools, clean)
     resources.update(content)
@@ -206,11 +209,11 @@ def youtube(plugin_dir: Path, arch: str, tools: Tools, clean: bool) -> Content:
 # reported, not skipped.
 
 PLUGINS: dict[str, Builder] = {
-    # fetch.py builds whisper-cli for AVX2 CPUs and a compat one; ffmpeg pulls
-    # the audio out of video and is the one the YouTube plugin ships
+    # fetch.py builds whisper-cli for AVX2 CPUs and a compat one;
+    # AVSMediaToolkit pulls the audio out of video
     "ai-subtitles": cmake(
         "build/cmake-{arch}", "build/{arch}/AiSubtitles.dll", "AiSubtitles.dll",
-        extras={"ffmpeg.exe": "../youtube/resources/x86/ffmpeg.exe",
+        extras={"AVSMediaToolkit.exe": str(MEDIA_TOOLKIT),
                 "whisper-cli.exe": "build/{arch}/whisper-cli.exe",
                 "whisper-cli-compat.exe": "build/{arch}/whisper-cli-compat.exe",
                 "whisper-cli-vulkan.exe": {"x64": "build/x64/whisper-cli-vulkan.exe"}}),
@@ -230,12 +233,12 @@ PLUGINS: dict[str, Builder] = {
     # AVSMediaToolkit decodes the input and writes the tracks
     "stem-splitter": cmake(
         "build/cmake-{arch}", "build/{arch}/StemSplitter.dll", "StemSplitter.dll",
-        extras={"AVSMediaToolkit.exe": "resources/{arch}/AVSMediaToolkit.exe",
+        extras={"AVSMediaToolkit.exe": str(MEDIA_TOOLKIT),
                 "stems.exe": "build/x64/stems.exe",
                 "onnxruntime.dll": "build/x64/onnxruntime.dll"}),
     "voice-clone": cmake(
         "build/cmake-{arch}", "build/{arch}/VoiceClone.dll", "VoiceClone.dll",
-        extras={"AVSMediaToolkit.exe": "resources/{arch}/AVSMediaToolkit.exe",
+        extras={"AVSMediaToolkit.exe": str(MEDIA_TOOLKIT),
                 "seedvc": "build/x64/seedvc",
                 "licenses": "licenses"}),
     "StableAudio3": cmake(
