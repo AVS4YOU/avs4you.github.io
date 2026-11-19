@@ -92,8 +92,7 @@ enum
 	ID_TITLE,
 	ID_SOURCE,
 	ID_FILE,
-	ID_CUSTOM,
-	ID_INSTRUMENTAL,
+	ID_VARIANT,
 	ID_HELP,
 	ID_RUN,
 	ID_SETTINGS,
@@ -105,11 +104,24 @@ enum
 struct State
 {
 	CSunoApiPlugin *p = nullptr;
-	HWND modeLabel{}, mode{}, model{}, promptLabel{}, prompt{}, styleLabel{}, style{}, negativeTagsLabel{}, negativeTags{}, vocalGenderLabel{}, vocalGender{}, titleLabel{}, title{}, sourceLabel{}, source{}, titleCounter{}, promptCounter{}, styleCounter{}, custom{}, instrumental{}, help{}, file{}, settings{}, run{}, status{};
+	HWND modeLabel{}, mode{}, model{}, promptLabel{}, prompt{}, styleLabel{}, style{}, negativeTagsLabel{}, negativeTags{}, vocalGenderLabel{}, vocalGender{}, titleLabel{}, title{}, sourceLabel{}, source{}, titleCounter{}, promptCounter{}, styleCounter{}, variant{}, help{}, file{}, settings{}, run{}, status{};
 	std::atomic<bool> busy{false};
+	// what the Generate music / Cover list asks for (SUNO_VARIANT_*): Suno API's customMode and instrumental
 	bool customEnabled = false;
 	bool instrumentalEnabled = false;
 };
+
+// The three useful combinations of customMode and instrumental. The fourth, own lyrics for an instrumental,
+// has nothing to sing (the API does not say which wins), and its style is what Instrumental takes anyway.
+#define SUNO_VARIANT_DESCRIPTION 0
+#define SUNO_VARIANT_LYRICS 1
+#define SUNO_VARIANT_INSTRUMENTAL 2
+
+void ApplyVariant(State *state, int variant)
+{
+	state->customEnabled = variant == SUNO_VARIANT_LYRICS;
+	state->instrumentalEnabled = variant == SUNO_VARIANT_INSTRUMENTAL;
+}
 
 std::wstring Text(HWND h)
 {
@@ -415,6 +427,11 @@ void UpdateSourceField(State *state)
 		promptLabel = lyricsLabel;
 		promptExample = lyricsExample;
 	}
+	else if (generateMusicMode && state->instrumentalEnabled)
+	{
+		promptLabel = L"Music description: genre, mood, instruments";
+		promptExample = L"Calm lo-fi with soft piano and the sound of rain";
+	}
 	else if (mode == SUNO_MODE_COVER_AUDIO)
 	{
 		promptLabel = L"Description of the new version";
@@ -423,10 +440,12 @@ void UpdateSourceField(State *state)
 	AVS::Label_SetText(state->promptLabel, Tr(promptLabel));
 	AVS::TextEdit_SetPlaceholder(state->prompt, Tr(promptExample));
 
-	ShowWindow(state->custom, generationSwitchesEnabled ? SW_SHOW : SW_HIDE);
-	ShowWindow(state->instrumental, generationSwitchesEnabled ? SW_SHOW : SW_HIDE);
+	ShowWindow(state->variant, generationSwitchesEnabled ? SW_SHOW : SW_HIDE);
 	ShowWindow(state->vocalGenderLabel, generateMusicMode ? SW_SHOW : SW_HIDE);
 	ShowWindow(state->vocalGender, generateMusicMode ? SW_SHOW : SW_HIDE);
+	// Suno API takes the voice only with own lyrics ("Do not pass this field when customMode is false"),
+	// and an instrumental has none: the list is grey otherwise, so it does not look like it is applied
+	EnableWindow(state->vocalGender, state->customEnabled && !state->instrumentalEnabled);
 	ShowWindow(state->titleLabel, showTitleAndStyle ? SW_SHOW : SW_HIDE);
 	ShowWindow(state->title, showTitleAndStyle ? SW_SHOW : SW_HIDE);
 	ShowWindow(state->titleCounter, showTitleAndStyle ? SW_SHOW : SW_HIDE);
@@ -505,10 +524,8 @@ void ApplyLyricsVariant(LyricsSelectionState *selection, size_t index)
 	const std::wstring normalizedLyrics = NormalizeLineEndings(variant.text);
 
 	AVS::ComboBox_SetCurrent(state->mode, SUNO_MODE_GENERATE_MUSIC);
-	state->customEnabled = true;
-	state->instrumentalEnabled = false;
-	AVS::Button_SetSettings(state->custom, AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupEnable), Tr(L"Own lyrics and style"));
-	AVS::Button_SetSettings(state->instrumental, AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupDisable), Tr(L"Instrumental"));
+	AVS::ComboBox_SetCurrent(state->variant, SUNO_VARIANT_LYRICS);
+	ApplyVariant(state, SUNO_VARIANT_LYRICS);
 	UpdateSourceField(state);
 	UpdateCounters(state);
 
@@ -516,7 +533,7 @@ void ApplyLyricsVariant(LyricsSelectionState *selection, size_t index)
 	Set(state->prompt, normalizedLyrics);
 	Set(state->title, variant.title);
 	UpdateCounters(state);
-	AVS::Label_SetText(state->status, Tr(L"Lyrics selected. Generate music Custom mode enabled."));
+	AVS::Label_SetText(state->status, Tr(L"Lyrics selected: song with your own lyrics."));
 	SetFocus(state->prompt);
 }
 
@@ -804,10 +821,13 @@ void Worker(State *s)
 		b["instrumental"] = s->instrumentalEnabled;
 		if (!style.empty())
 			b["style"] = Suno::WideToUtf8(style);
-		if (!title.empty())
+		// the title only with own lyrics, as the API says; it still names the files
+		if (!title.empty() && s->customEnabled)
 			b["title"] = Suno::WideToUtf8(title);
-		if (s->customEnabled && !s->instrumentalEnabled)
-			b["vocalGender"] = AVS::ComboBox_GetCurrent(s->vocalGender) == 1 ? "f" : "m";
+		// Any (0) leaves the voice to Suno
+		const int voice = AVS::ComboBox_GetCurrent(s->vocalGender);
+		if (s->customEnabled && !s->instrumentalEnabled && voice > 0)
+			b["vocalGender"] = voice == 2 ? "f" : "m";
 	}
 	else if (mode == SUNO_MODE_EXTEND_MUSIC)
 	{
@@ -1028,7 +1048,7 @@ LRESULT CALLBACK Proc(HWND w, UINT m, WPARAM wp, LPARAM lp)
 								Tr(L"Cover audio"), Tr(L"Add vocals")};
 
 		const std::vector<std::wstring> models = {L"V5", L"V5_5", L"V4_5ALL", L"V4_5PLUS", L"V4_5", L"V4"};
-		const std::vector<std::wstring> vocalGenders = {Tr(L"Male"), Tr(L"Female")};
+		const std::vector<std::wstring> vocalGenders = {Tr(L"Any"), Tr(L"Male"), Tr(L"Female")};
 
 		// the mode list says what the mode makes, over it (UpdateSourceField)
 		s->modeLabel = Label(w, L"", SUNO_LEFT, 12, 500);
@@ -1036,9 +1056,13 @@ LRESULT CALLBACK Proc(HWND w, UINT m, WPARAM wp, LPARAM lp)
 		s->mode = AVS::CreateComboBox(w, (HMENU)ID_MODE, g_hInst, SUNO_LEFT, 32, 390, 25, AVS::ComboBoxSettings::Create(), modes);
 		s->model = AVS::CreateComboBox(w, (HMENU)ID_MODEL, g_hInst, 530, 32, 120, 25, AVS::ComboBoxSettings::Create(), models);
 
-		s->custom = AVS::CreateButton(w, (HMENU)ID_CUSTOM, g_hInst, Tr(L"Own lyrics and style").c_str(), SUNO_LEFT, 67, 180, 25, AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupDisable));
-		s->instrumental = AVS::CreateButton(w, (HMENU)ID_INSTRUMENTAL, g_hInst, Tr(L"Instrumental").c_str(), SUNO_LEFT + 190, 67, 150, 25, AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupDisable));
-		s->help = AVS::CreateButton(w, (HMENU)ID_HELP, g_hInst, Tr(L"Help").c_str(), 560, 67, 90, 25, AVS::ButtonSettings::Create(AVS::Buttons::Default));
+		// what to make, level with Help (Generate music and Cover); the fields below follow it
+		const std::vector<std::wstring> variants = {Tr(L"Song from a description"), Tr(L"Song with your own lyrics"),
+									  Tr(L"Instrumental, no vocals")};
+		// two columns: the mode and this list one under the other, Model and Help the same
+		s->variant = AVS::CreateComboBox(w, (HMENU)ID_VARIANT, g_hInst, SUNO_LEFT, 67, 390, 25, AVS::ComboBoxSettings::Create(), variants);
+		ApplyVariant(s, SUNO_VARIANT_DESCRIPTION);
+		s->help = AVS::CreateButton(w, (HMENU)ID_HELP, g_hInst, Tr(L"Help").c_str(), 530, 67, 120, 25, AVS::ButtonSettings::Create(AVS::Buttons::Default));
 
 		s->titleLabel = Label(w, Tr(L"Track title").c_str(), SUNO_LEFT, 102, SUNO_LABEL_WIDTH);
 		s->titleCounter = AVS::CreateLabel(w, g_hInst, L"0/0", SUNO_COUNTER_X, 104, 100, 18, AVS::LabelSettings::Create(AVS::LabelType::Disabled, DT_RIGHT));
@@ -1090,18 +1114,11 @@ LRESULT CALLBACK Proc(HWND w, UINT m, WPARAM wp, LPARAM lp)
 		UpdateCounters(s);
 		return 0;
 	}
-	if (m == WM_COMMAND && LOWORD(wp) == ID_CUSTOM)
+	if (m == WM_COMMAND && LOWORD(wp) == ID_VARIANT && HIWORD(wp) == AVS::COMBOBOX_SELECTED_INDEX_CHANDED)
 	{
-		s->customEnabled = !s->customEnabled;
-		AVS::Button_SetSettings(s->custom, AVS::ButtonSettings::Create(s->customEnabled ? AVS::Buttons::ToggleGroupEnable : AVS::Buttons::ToggleGroupDisable), Tr(L"Own lyrics and style"));
+		ApplyVariant(s, AVS::ComboBox_GetCurrent(s->variant));
 		UpdateSourceField(s);
 		UpdateCounters(s);
-		return 0;
-	}
-	if (m == WM_COMMAND && LOWORD(wp) == ID_INSTRUMENTAL)
-	{
-		s->instrumentalEnabled = !s->instrumentalEnabled;
-		AVS::Button_SetSettings(s->instrumental, AVS::ButtonSettings::Create(s->instrumentalEnabled ? AVS::Buttons::ToggleGroupEnable : AVS::Buttons::ToggleGroupDisable), Tr(L"Instrumental"));
 		return 0;
 	}
 	if (m == WM_COMMAND && LOWORD(wp) == ID_FILE)
