@@ -20,7 +20,9 @@ public:
     std::wstring m_durationSeconds = L"4";
     std::wstring m_aspectRatio = L"16:9";
     std::wstring m_resolution = L"720p";
-    std::wstring m_model = L"veo3";
+    std::wstring m_model = L"gemini-omni-1.2-flash";
+    std::wstring m_previousInteractionId = L"";  // Extend, Edit: the interaction that made the input video
+    std::wstring m_inputVideo = L"";             // Edit: a video not made here, uploaded to the Files API
     std::wstring m_file = L"";
     std::wstring m_key = L"";
     DWORD m_start_time;

@@ -259,13 +259,13 @@
     {
       "slug": "veo3",
       "pluginId": "Veo3.plugin",
-      "name": "Veo3 Video Generator",
-      "desc": "AI-powered video creation with Google Veo 3. Turn your ideas into polished, cinematic clips from simple text prompts inside your AVS workflow.",
+      "name": "Google AI Video Generator",
+      "desc": "AI-powered video creation with Google Gemini Omni. Turn your ideas into polished, cinematic clips with sound from text prompts and pictures inside your AVS workflow.",
       "apps": [
         "Video Converter",
         "Video Editor"
       ],
-      "version": "v1.0.3",
+      "version": "v1.1.0",
       "type": "content",
       "typeLabel": "Content Plugin",
       "aiPowered": true,
@@ -274,8 +274,8 @@
       "media": "plugins/veo3/icon.ico",
       "basePath": "plugins/veo3",
       "downloads": {
-        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/veo3-v1.0.3/veo3-v1.0.3-x86.avsp",
-        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/veo3-v1.0.3/veo3-v1.0.3-x64.avsp"
+        "x86": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/veo3-v1.1.0/veo3-v1.1.0-x86.avsp",
+        "x64": "https://github.com/AVS4YOU/avs4you.github.io/releases/download/veo3-v1.1.0/veo3-v1.1.0-x64.avsp"
       }
     },
     {

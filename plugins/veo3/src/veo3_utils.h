@@ -18,7 +18,8 @@ namespace NSGenerationMode
 		TextToVideo,
 		ImageToVideo,
 		FirstAndLastFrame,
-		ExtendVideo
+		ExtendVideo,
+		EditVideo
 	};
 
 } // namespace NSGenerationMode

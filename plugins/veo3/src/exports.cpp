@@ -30,12 +30,14 @@ extern "C" {
 
 	wchar_t* __stdcall PluginName()
 	{
-		return TR(L"Veo3");
+		// The name users see. Not "Veo3" since 1.1.0 (Veo is gone, Omni makes the video) and no model name, so a
+		// new Google model does not rename it again; PluginId stays Veo3.plugin for the installers.
+		return TR(L"Google AI Video Generator");
 	}
 
 	wchar_t* __stdcall PluginVersion()
 	{
-		return export_str(L"1.0.3");
+		return export_str(L"1.1.0");
 	}
 
 	wchar_t* __stdcall PluginIcon(PluginHandle plugin)
@@ -75,7 +77,7 @@ extern "C" {
 		if (Plugins::ContextType::MediaLibrary == type)
 		{
 			nlohmann::json obj;
-			obj["text"] = NSStringUtils::wstring_to_utf8(CTranslate::GetInstance().GetManager()->Translate(L"Veo3"));
+			obj["text"] = NSStringUtils::wstring_to_utf8(CTranslate::GetInstance().GetManager()->Translate(L"Google AI Video Generator"));
 			obj["icon"] = 0;
 			obj["action"] = 0;
 

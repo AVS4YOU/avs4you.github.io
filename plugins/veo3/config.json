@@ -1,10 +1,10 @@
 {
   "slug": "veo3",
   "pluginId": "Veo3.plugin",
-  "name": "Veo3 Video Generator",
-  "desc": "AI-powered video creation with Google Veo 3. Turn your ideas into polished, cinematic clips from simple text prompts inside your AVS workflow.",
+  "name": "Google AI Video Generator",
+  "desc": "AI-powered video creation with Google Gemini Omni. Turn your ideas into polished, cinematic clips with sound from text prompts and pictures inside your AVS workflow.",
   "apps": [ "Video Converter", "Video Editor" ],
-  "version": "v1.0.3",
+  "version": "v1.1.0",
   "type": "content",
   "typeLabel": "Content Plugin",
   "aiPowered": true,

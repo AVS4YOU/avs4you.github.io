@@ -1,6 +1,6 @@
 #include "./src/resource.h"
 #include "windows.h"
-#define COMPONENT_NAME "Veo3 Video Generator"
+#define COMPONENT_NAME "Google AI Video Generator"
 #define DLL_NAME "Veo3"
 #include "FileInfo.h"
 #include "./src/version.h"

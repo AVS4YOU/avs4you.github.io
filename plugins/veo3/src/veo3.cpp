@@ -43,7 +43,8 @@ void CVeo3::Process(NSProcesses::CProcessRunnerCallback* callback, const std::ws
 	}
 
 	std::wstring sCommand;
-	std::wstring sPath = L"Veo3_" + GetCurrentDateTime() + L".mp4";
+	// "ai_<date>_<time>.mp4" (Veo3_ before 1.1.0); Extend finds a video by its content, not its name
+	std::wstring sPath = L"ai_" + GetCurrentDateTime() + L".mp4";
 	std::wstring sWorkDirectory = workDirectory;
 	if (sWorkDirectory.empty()) 
 		sWorkDirectory = CreateWorkDirectory();
@@ -51,44 +52,49 @@ void CVeo3::Process(NSProcesses::CProcessRunnerCallback* callback, const std::ws
 
 	m_manager = new NSProcesses::CProcessManager(callback);
 
+	// One script for all the modes (scripts_bodys.h). Every value goes into a single-quoted PowerShell
+	// string, where only a ' has to be doubled and nothing else is expanded.
+	auto quoted = [](std::wstring value)
+	{
+		NSStringUtils::replace(value, L"'", L"''");
+		return value;
+	};
+
+	std::wstring mode = L"text";
 	switch (m_generation_mode)
 	{
-	case NSGenerationMode::TextToVideo:
-		sCommand = SCRIPT_TEXT_TO_VIDEO;
-		break;
-	case NSGenerationMode::ImageToVideo:
-	{
-		sCommand = SCRIPT_IMAGE_TO_VIDEO;
-		std::vector<std::wstring> fields = { L"${PARAM_IMAGE_1}", L"${PARAM_IMAGE_2}", L"${PARAM_IMAGE_3}" };
-		for (size_t i = 0; i < m_additional_files_paths.size(); i++)
-			NSStringUtils::replace(sCommand, fields[i], m_additional_files_paths[i]);
-		break;
+	case NSGenerationMode::ImageToVideo:		mode = L"image"; break;
+	case NSGenerationMode::FirstAndLastFrame:	mode = L"frames"; break;
+	case NSGenerationMode::ExtendVideo:			mode = L"extend"; break;
+	case NSGenerationMode::EditVideo:			mode = L"edit"; break;
+	default: break;
 	}
-	case NSGenerationMode::FirstAndLastFrame:
-	{
-		sCommand = SCRIPT_FIRST_AND_LAST_FRAME;
-		std::vector<std::wstring> fields = { L"${PARAM_IMAGE_1}", L"${PARAM_IMAGE_2}" };
-		for (size_t i = 0; i < m_additional_files_paths.size(); i++)
-			NSStringUtils::replace(sCommand, fields[i], m_additional_files_paths[i]);
-		break;
-	}
-	case NSGenerationMode::ExtendVideo:
-		sCommand = SCRIPT_EXTEND_VIDEO;
-		NSStringUtils::replace(sCommand, L"${PARAM_INPUT_VIDEO}", m_additional_files_paths[0]);
-		break;
-	default:
-		sCommand = SCRIPT_TEXT_TO_VIDEO;
-		break;
-	}
+	const bool continues = m_generation_mode == NSGenerationMode::ExtendVideo || m_generation_mode == NSGenerationMode::EditVideo;
 
-	NSStringUtils::replace(sCommand, L"${PARAM_KEY}", m_key);
-	NSStringUtils::replace(sCommand, L"${PARAM_SECONDS}", m_durationSeconds);
-	NSStringUtils::replace(sCommand, L"${PARAM_RESOLUTION}", m_resolution);
-	NSStringUtils::replace(sCommand, L"${PARAM_MODEL_NAME}", m_model);
-	NSStringUtils::replace(sCommand, L"${PARAM_ASPECT_RATIO}", m_aspectRatio);
+	sCommand = SCRIPT_OMNI;
+	NSStringUtils::replace(sCommand, L"${PARAM_MODE}", mode);
+	NSStringUtils::replace(sCommand, L"${PARAM_KEY}", quoted(m_key));
+	NSStringUtils::replace(sCommand, L"${PARAM_SECONDS}", quoted(m_durationSeconds));
+	NSStringUtils::replace(sCommand, L"${PARAM_RESOLUTION}", quoted(m_resolution));
+	NSStringUtils::replace(sCommand, L"${PARAM_MODEL_NAME}", quoted(m_model));
+	NSStringUtils::replace(sCommand, L"${PARAM_ASPECT_RATIO}", quoted(m_aspectRatio));
 
-	NSStringUtils::replace(sCommand, L"${PARAM_VIDEO_NAME}", sPath);
+	NSStringUtils::replace(sCommand, L"${PARAM_VIDEO_NAME}", quoted(sPath));
 	NSStringUtils::replace(sCommand, L"${PARAM_VIDEO_LOG_FILE}", L".Veo3.log");
+
+	// the user's paths last, so nothing in them is taken for a placeholder
+	NSStringUtils::replace(sCommand, L"${PARAM_PREVIOUS_ID}", quoted(continues ? m_previousInteractionId : L""));
+	NSStringUtils::replace(sCommand, L"${PARAM_INPUT_VIDEO}",
+		quoted(m_generation_mode == NSGenerationMode::EditVideo ? m_inputVideo : L""));
+	// the pictures: references, the two frames, or the photos to put into an edited video
+	const wchar_t* images[] = { L"${PARAM_IMAGE_1}", L"${PARAM_IMAGE_2}", L"${PARAM_IMAGE_3}" };
+	for (size_t i = 0; i < 3; i++)
+	{
+		std::wstring image;
+		if (m_generation_mode != NSGenerationMode::ExtendVideo && i < m_additional_files_paths.size())
+			image = m_additional_files_paths[i];
+		NSStringUtils::replace(sCommand, images[i], quoted(image));
+	}
 
 	NSSystemUtils::WriteWStringToUtf8File(sCommand, sWorkScript);
 	NSSystemUtils::WriteWStringToUtf8File(m_prompt, sWorkDirectory + L"\\" + L"script.prompt", false);

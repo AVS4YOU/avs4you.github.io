@@ -15,20 +15,31 @@
 #define VEO3_SETTINGS_WINDOW_CLASS	L "Veo3SettingsWindowClass"
 #define VEO3_MAIN_WINDOW_CLASS		L "Veo3MainWindowClass"
 
-// Models Names
-#define VEO_3_1			L"Veo 3.1"
-#define VEO_3_1_FAST	L"Veo 3.1 Fast"
-#define VEO_3_1_LITE	L"Veo 3.1 Lite"
+// Model. Google shut the Veo 3.1 preview models down in the Gemini API on 22 October 2026 and left no
+// Veo there; video comes from Gemini Omni (scripts_bodys.h), with the same API key.
+#define OMNI_1_2_FLASH			L"Omni 1.2 Flash"
+#define OMNI_1_2_FLASH_CODE		L"gemini-omni-1.2-flash"
 
-// Models Codes
-#define VEO_3_1_PREVIEW			L"veo-3.1-generate-preview"
-#define VEO_3_1_FAST_PREVIEW	L"veo-3.1-fast-generate-preview"
-#define VEO_3_1_LITE_PREVIEW	L"veo-3.1-lite-generate-preview"
-
-// Video Resolution
+// Video Resolution: Omni makes 360p and 720p, 1080p and 4k are upscaled (and cost more per second)
+#define RES_SD		L"360p"
 #define RES_HD		L"720p"
 #define RES_FULLHD	L"1080p"
 #define RES_4K		L"4k"
+static const std::vector<std::wstring> RESOLUTIONS = { RES_SD, RES_HD, RES_FULLHD, RES_4K };
+static const int RESOLUTION_DEFAULT = 1;	// 720p, Omni's own default
+
+// Seconds: Omni makes 3-15; from a first and last frame and per extension 3-10
+static const std::vector<std::wstring> DURATIONS_FULL = { L"4", L"6", L"8", L"10", L"12", L"15" };
+static const std::vector<std::wstring> DURATIONS_SHORT = { L"4", L"6", L"8", L"10" };
+
+// An extension continues the interaction that made the video, kept by Google for 55 days on the paid tier
+// (Omni has no free tier); a project set to keep them less gets "not found" from the API.
+static const double EXTEND_WITHIN_SECONDS = 55.0 * 24.0 * 60.0 * 60.0;
+
+// The five mode tabs across the window, each as wide as its longest translation + 20 ("Primo + ultimo
+// fotogramma" 151 px, "Изображение в видео" 120, "Prolonger la vidéo" 96, "Изменить видео" 89): 643 px
+static const int MAIN_WINDOW_W = 680;
+static const int MAIN_WINDOW_H = 455;
 
 // Text (routed through Translate; English literal is the lookup key)
 #define FIRST_IMAGE		CTranslate::GetInstance().GetManager()->Translate(L"First Image").c_str()
@@ -37,6 +48,7 @@
 #define FIRST_FRAME		CTranslate::GetInstance().GetManager()->Translate(L"First Frame").c_str()
 #define LAST_FRAME		CTranslate::GetInstance().GetManager()->Translate(L"Last Frame").c_str()
 #define PREV_VIDEO		CTranslate::GetInstance().GetManager()->Translate(L"Video from a previous generation").c_str()
+#define EDIT_VIDEO		CTranslate::GetInstance().GetManager()->Translate(L"Video to change").c_str()
 
 static bool ParseCacheDateTime(const std::string& text, std::time_t& outTime)
 {
@@ -126,12 +138,13 @@ namespace NSUI
 
 			CTranslateManager* tr = CTranslate::GetInstance().GetManager();
 
+			// as wide as the longest translations + 10: "API-Schlüssel erhalten" 127 px, "API-Schlüssel löschen" 125
 			hBtnGetApiKey = AVS::CreateButton(hwnd, (HMENU)0x8004, GetModuleHandle(NULL), tr->Translate(L"Get API-key").c_str(),
-				15, 55, 115, 25,
+				15, 55, 140, 25,
 				AVS::ButtonSettings::Create(AVS::Buttons::Default));
 
 			hBtnDelete = AVS::CreateButton(hwnd, (HMENU)0x8003, GetModuleHandle(NULL), tr->Translate(L"Delete API-key").c_str(),
-				145, 55, 150, 25,
+				170, 55, 140, 25,
 				AVS::ButtonSettings::Create(AVS::Buttons::Default));
 
 			hBtnCancel = AVS::CreateButton(hwnd, (HMENU)0x8002, GetModuleHandle(NULL), tr->Translate(L"Cancel").c_str(),
@@ -251,16 +264,64 @@ namespace NSUI
 	}
 	int activeNow = static_cast<int>(WmMainWindowCommands::ButtonTextToVideo);
 
+	// The Omni interaction that made this video (by the SHA-256 of the file in cache.json), while Google keeps
+	// it; "" for any other video
+	static std::string FindInteraction(const std::wstring& workDirectory, const std::string& hash)
+	{
+		try
+		{
+			std::ifstream in(workDirectory + L"\\cache.json");
+			if (!in.is_open())
+				return "";
+			nlohmann::json cacheJson;
+			in >> cacheJson;
+			for (const auto& item : cacheJson)
+			{
+				if (!item.is_object() || !item.contains("video_hash") || !item["video_hash"].is_string() ||
+					!item.contains("interaction_id") || !item["interaction_id"].is_string() ||
+					!item.contains("date_time") || !item["date_time"].is_string() ||
+					item["video_hash"].get<std::string>() != hash)
+					continue;
+				std::time_t when = 0;
+				if (!ParseCacheDateTime(item["date_time"].get<std::string>(), when))
+					continue;
+				const double age = std::difftime(std::time(nullptr), when);
+				if (age >= 0 && age <= EXTEND_WITHIN_SECONDS)
+					return item["interaction_id"].get<std::string>();
+			}
+		}
+		catch (...)
+		{
+		}
+		return "";
+	}
+
+	// The lengths a mode allows, keeping the one chosen when the new list has it; orientation and length are
+	// chosen again (Edit Video greys them out: they are the video's own)
+	static void SetDurations(HWND hOrientation, HWND hDuration, const std::vector<std::wstring>& items)
+	{
+		const std::wstring current = AVS::ComboBox_GetCurrentText(hDuration);
+		int selected = 0;
+		for (size_t i = 0; i < items.size(); i++)
+			if (items[i] == current)
+				selected = static_cast<int>(i);
+		AVS::ComboBox_SetItems(hDuration, items, selected);
+		EnableWindow(hOrientation, TRUE);
+		EnableWindow(hDuration, TRUE);
+	}
+
 	// Under the prompt: what the mode makes and what it takes.
 	static std::wstring GetModeDescription(int mode)
 	{
 		CTranslateManager* tr = CTranslate::GetInstance().GetManager();
 		if (mode == static_cast<int>(WmMainWindowCommands::ButtonImageToVideo))
-			return tr->Translate(L"Up to three pictures of the people, objects or style to show in the video, plus a description of what happens.");
+			return tr->Translate(L"Up to three pictures or short videos (up to 3 seconds) of the people, objects, style or movement to show, plus a description of what happens.");
 		if (mode == static_cast<int>(WmMainWindowCommands::ButtonFirstAndLastFrame))
 			return tr->Translate(L"The video starts with the first picture and ends with the second. Describe what happens in between.");
 		if (mode == static_cast<int>(WmMainWindowCommands::ButtonExtendVideo))
-			return tr->Translate(L"Continues a video made with this plugin in the last 48 hours (720p only). Describe what happens next.");
+			return tr->Translate(L"Continues a video made with this plugin, up to 30 seconds in all. Describe what happens next.");
+		if (mode == static_cast<int>(WmMainWindowCommands::ButtonEditVideo))
+			return tr->Translate(L"Changes a video of up to 15 seconds: say what to change. Add photos to put a person or an object from them into the video.");
 		return tr->Translate(L"Video from a text description. Describe the scene, the action, the camera and the sounds.");
 	}
 
@@ -278,6 +339,7 @@ namespace NSUI
 			hImageToVideo,
 			hFirstAndLastFrame,
 			hExtendVideo,
+			hEditVideo,
 			hSettings, hGenerate;
 
 		RECT rcMain;
@@ -304,7 +366,8 @@ namespace NSUI
 			&hTextToVideo,
 			&hImageToVideo,
 			&hFirstAndLastFrame,
-			&hExtendVideo
+			&hExtendVideo,
+			&hEditVideo
 		};
 
 		CTranslateManager* trToggle = CTranslate::GetInstance().GetManager();
@@ -313,7 +376,8 @@ namespace NSUI
 			trToggle->Translate(L"Text to Video"),
 			trToggle->Translate(L"Image to Video"),
 			trToggle->Translate(L"First + Last Frame"),
-			trToggle->Translate(L"Extend Video")
+			trToggle->Translate(L"Extend Video"),
+			trToggle->Translate(L"Edit Video")
 		};
 
 		if (msg == WM_NCCREATE)
@@ -329,14 +393,13 @@ namespace NSUI
 		{
 		case WM_CREATE:
 		{
-			// The mode tabs across the whole window, each as wide as its longest translation
-			// needs ("Primo + ultimo fotogramma" takes 151 px, "Изображение в видео" 120): 534 px
-			// together, so the window is 600 wide and the settings column starts under the tabs.
+			// The mode tabs across the whole window (MAIN_WINDOW_W), each as wide as its longest
+			// translation needs; the settings column starts under the tabs.
 			int SettingsButtonsW = 120;
-			int WindowW = 600;
-			const int tabWidth[] = { 116, 149, 180, 125 };
-			int tabX[4];
-			for (int i = 0, x = 15; i < 4; x += tabWidth[i], i++)
+			int WindowW = MAIN_WINDOW_W;
+			const int tabWidth[] = { 108, 141, 172, 117, 112 };
+			int tabX[5];
+			for (int i = 0, x = 15; i < 5; x += tabWidth[i], i++)
 				tabX[i] = x;
 
 			// Prompt edit
@@ -367,6 +430,11 @@ namespace NSUI
 			hExtendVideo = AVS::CreateButton(hwnd, (HMENU)WmMainWindowCommands::ButtonExtendVideo, hInstance,
 				tr->Translate(L"Extend Video").c_str(),
 				tabX[3], 15, tabWidth[3], 25,
+				AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupDisable));
+
+			hEditVideo = AVS::CreateButton(hwnd, (HMENU)WmMainWindowCommands::ButtonEditVideo, hInstance,
+				tr->Translate(L"Edit Video").c_str(),
+				tabX[4], 15, tabWidth[4], 25,
 				AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupDisable));
 
 			// The window opens on Text to Video, as the tabs above show.
@@ -421,7 +489,7 @@ namespace NSUI
 			// MODEL Combo Box
 			hModel = AVS::CreateComboBox(hwnd, (HMENU)WmMainWindowCommands::ComboModel, hInstance,
 				left, top, SettingsButtonsW, 25, AVS::ComboBoxSettings::Create(),
-				{ VEO_3_1, VEO_3_1_FAST, VEO_3_1_LITE });
+				{ OMNI_1_2_FLASH });
 			top += (distance + 25);
 
 			// Orientation LABLE
@@ -440,15 +508,11 @@ namespace NSUI
 				left, top, SettingsButtonsW, 25, AVS::LabelSettings::Create(AVS::LabelType::Disabled));
 			top += labelH;
 
-			// Resolution Combo Box
-
-			// Veo 3.1 can also directly generate 720p, 1080p or 4k videos (4k not available for Veo 3.1 Lite).
-			// Note that the higher the resolution, the higher the latency will be. 4k videos are also more pricey (cf. pricing).
-			// Video extension is also limited to 720p videos.
-
+			// Resolution Combo Box: the same in every mode, 720p first selected
 			hSize = AVS::CreateComboBox(hwnd, (HMENU)WmMainWindowCommands::ComboSize, hInstance,
 				left, top, SettingsButtonsW, 25, AVS::ComboBoxSettings::Create(),
-				{ RES_HD, RES_FULLHD, RES_4K });
+				RESOLUTIONS);
+			AVS::ComboBox_SetCurrent(hSize, RESOLUTION_DEFAULT);
 			top += (distance + 25);
 
 			HWND hDurationLabel = AVS::CreateLabel(hwnd, hInstance, tr->Translate(L"Duration (s)").c_str(),
@@ -457,7 +521,7 @@ namespace NSUI
 
 			hDuration = AVS::CreateComboBox(hwnd, (HMENU)WmMainWindowCommands::ComboDuration, hInstance,
 				left, top, SettingsButtonsW, 25, AVS::ComboBoxSettings::Create(),
-				{ L"4", L"6", L"8" });
+				DURATIONS_FULL);
 			top += (distance + 25);
 
 			hProgress = AVS::CreateProgressBar(hwnd, GetModuleHandle(NULL), 15, 385, WindowW - 30, 25, AVS::ProgressBarSettings::Create());
@@ -483,6 +547,7 @@ namespace NSUI
 			SetWindowPos(hImageToVideo, hMainEdit, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 			SetWindowPos(hFirstAndLastFrame, hMainEdit, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 			SetWindowPos(hExtendVideo, hMainEdit, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+			SetWindowPos(hEditVideo, hMainEdit, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 			SetWindowPos(hModel, hMainEdit, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 			SetWindowPos(hOrientation, hModel, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 			SetWindowPos(hSize, hOrientation, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
@@ -552,18 +617,14 @@ namespace NSUI
 				plugin->m_engine.m_resolution = AVS::ComboBox_GetCurrentText(hSize);;
 				plugin->m_engine.m_durationSeconds = AVS::ComboBox_GetCurrentText(hDuration);
 
-				// MODEL
-				int model = AVS::ComboBox_GetCurrent(hModel);
-				if (model == 0)			// VEO_3_1
-					plugin->m_engine.m_model = VEO_3_1_PREVIEW;
-				else if (model == 1)	// VEO_3_1_FAST
-					plugin->m_engine.m_model = VEO_3_1_FAST_PREVIEW;
-				else					// VEO_3_1_LITE
-					plugin->m_engine.m_model = VEO_3_1_LITE_PREVIEW;
+				// MODEL: the only one in the list
+				plugin->m_engine.m_model = OMNI_1_2_FLASH_CODE;
 
 				// GENERATION TYPE + INPUT FILES
 				plugin->m_engine.m_generation_mode = NSGenerationMode::TextToVideo;
 				plugin->m_engine.m_additional_files_paths.clear();
+				plugin->m_engine.m_previousInteractionId.clear();
+				plugin->m_engine.m_inputVideo.clear();
 				switch (activeNow)
 				{
 				case static_cast<int>(WmMainWindowCommands::ButtonImageToVideo):
@@ -608,11 +669,9 @@ namespace NSUI
 				}
 				case static_cast<int>(WmMainWindowCommands::ButtonExtendVideo):
 				{
-					// 1 Video
-					/* Each extension adds 7 seconds to the video
-					Can chain up to 20 times (max ~148 seconds total)
-					Videos stored on server for 2 days - must extend within this window
-					aspectRatio and resolution must match the original video */
+					// 1 Video, made by this plugin: cache.json maps the SHA-256 of each video it saved to the
+					// Omni interaction that made it. An extension adds 3-10 seconds, up to 30 in all; the
+					// orientation and size are those of the original.
 					run = false;
 					auto file1 = AVS::Label_GetText(hPathFile1);
 					if (file1 != PREV_VIDEO)
@@ -623,10 +682,10 @@ namespace NSUI
 						std::wstring json_path = plugin->m_workDirectory + L"\\cache.json";
 						std::wstring date_time;
 						std::string video_hash;
-						std::string uri;
+						std::string interactionId;
 
 						bool found = false;
-						bool valid_48h = false;
+						bool stillKept = false;
 
 						DWORD attr = GetFileAttributesW(json_path.c_str());
 
@@ -649,9 +708,10 @@ namespace NSUI
 								for (const auto& item : cacheJson)
 								{
 								
+									// entries of Veo videos (before 1.1.0) have a "uri" and no interaction
 									if (!item.contains("video_hash") || !item["video_hash"].is_string() ||
 										!item.contains("date_time") || !item["date_time"].is_string()	||
-										!item.contains("uri") || !item["uri"].is_string() || 
+										!item.contains("interaction_id") || !item["interaction_id"].is_string() ||
 										!item.contains("aspectRatio") || !item["aspectRatio"].is_string() ||
 										!item.contains("resolution") || !item["resolution"].is_string())
 										continue;
@@ -668,12 +728,12 @@ namespace NSUI
 
 									if (item_ar != plugin->m_engine.m_aspectRatio ||
 										item_res != plugin->m_engine.m_resolution)
-										throw std::runtime_error(NSStringUtils::wstring_to_utf8(CTranslate::GetInstance().GetManager()->Translate(L"aspectRatio and resolution must match the original video")));
+										throw std::runtime_error(NSStringUtils::wstring_to_utf8(CTranslate::GetInstance().GetManager()->Translate(L"Pick the orientation and size of the original video.")));
 
 									found = true;
 
 									std::string date_time_utf8 = item["date_time"].get<std::string>();
-									uri = item["uri"].get<std::string>();
+									interactionId = item["interaction_id"].get<std::string>();
 
 									std::time_t cacheTime = 0;
 									ParseCacheDateTime(date_time_utf8, cacheTime);
@@ -681,9 +741,9 @@ namespace NSUI
 									std::time_t now = std::time(nullptr);
 									double diffSeconds = std::difftime(now, cacheTime);
 
-									if (diffSeconds >= 0 && diffSeconds <= 48.0 * 60.0 * 60.0)
+									if (diffSeconds >= 0 && diffSeconds <= EXTEND_WITHIN_SECONDS)
 									{
-										valid_48h = true;
+										stillKept = true;
 										date_time = NSStringUtils::utf8_to_wstring(date_time_utf8);
 									}
 									break;
@@ -702,27 +762,59 @@ namespace NSUI
 							}
 						}
 
-						if (found && valid_48h)
+						if (found && stillKept)
 						{
-							plugin->m_engine.m_additional_files_paths.push_back(NSStringUtils::utf8_to_wstring(uri));
+							plugin->m_engine.m_previousInteractionId = NSStringUtils::utf8_to_wstring(interactionId);
 							run = true;
-						} 
+						}
 						else if (!found)
 						{
 							AVS::Label_SetTextAndColor(hStatus, CTranslate::GetInstance().GetManager()->Translate(L"Could not find cache for this file."), AVS::Color::MakeRGBA(255, 0, 0));
 						}
-						else if (!valid_48h)
+						else if (!stillKept)
 						{
 							AVS::Label_SetTextAndColor(hStatus, CTranslate::GetInstance().GetManager()->Translate(L"The video is outdated"), AVS::Color::MakeRGBA(255, 0, 0));
 						}
 					}
 					else
 					{
-						AVS::Label_SetTextAndColor(hStatus, CTranslate::GetInstance().GetManager()->Translate(L"The required input video file is generated by Veo3."), AVS::Color::MakeRGBA(255, 0, 0));
+						AVS::Label_SetTextAndColor(hStatus, CTranslate::GetInstance().GetManager()->Translate(L"Choose a video made with this plugin."), AVS::Color::MakeRGBA(255, 0, 0));
 						break;
 					};
 					
 					plugin->m_engine.m_generation_mode = NSGenerationMode::ExtendVideo;
+					break;
+				}
+				case static_cast<int>(WmMainWindowCommands::ButtonEditVideo):
+				{
+					// A video and up to 2 photos. One made here goes on in its interaction (all regions);
+					// any other is uploaded by the script (Google: up to 15 s, not in the EEA, CH, UK).
+					auto video = AVS::Label_GetText(hPathFile1);
+					if (video == EDIT_VIDEO)
+					{
+						run = false;
+						AVS::Label_SetTextAndColor(hStatus, CTranslate::GetInstance().GetManager()->Translate(L"Choose the video to change."), AVS::Color::MakeRGBA(255, 0, 0));
+						break;
+					}
+					auto photo1 = AVS::Label_GetText(hPathFile2);
+					auto photo2 = AVS::Label_GetText(hPathFile3);
+					if (photo1 != FIRST_IMAGE)	plugin->m_engine.m_additional_files_paths.push_back(photo1);
+					if (photo2 != SECOND_IMAGE)	plugin->m_engine.m_additional_files_paths.push_back(photo2);
+
+					std::string interactionId;
+					try
+					{
+						interactionId = FindInteraction(plugin->m_workDirectory, CalcFileSHA256(video));
+					}
+					catch (...)
+					{
+					}
+					if (interactionId.empty())
+						plugin->m_engine.m_inputVideo = video;
+					else
+						plugin->m_engine.m_previousInteractionId = NSStringUtils::utf8_to_wstring(interactionId);
+
+					plugin->m_engine.m_generation_mode = NSGenerationMode::EditVideo;
 					break;
 				}
 				default:
@@ -769,10 +861,8 @@ namespace NSUI
 				ShowWindow(hPathFile1, SW_HIDE);
 				ShowWindow(hPathFile2, SW_HIDE);
 				ShowWindow(hPathFile3, SW_HIDE);
-				
 
-				AVS::ComboBox_SetItems(hSize, { RES_HD, RES_FULLHD, RES_4K}, 0);
-				AVS::ComboBox_SetItems(hDuration, { L"4", L"6", L"8" }, 0);
+				SetDurations(hOrientation, hDuration, DURATIONS_FULL);
 
 				AVS::Label_SetText(hModeDescription, GetModeDescription(static_cast<int>(LOWORD(wParam))));
 				activeNow = static_cast<int>(LOWORD(wParam));
@@ -805,8 +895,7 @@ namespace NSUI
 				ShowWindow(hPathFile2, SW_SHOW);
 				ShowWindow(hPathFile3, SW_SHOW);
 
-				AVS::ComboBox_SetItems(hSize, { RES_HD, RES_FULLHD, RES_4K }, 0);
-				AVS::ComboBox_SetItems(hDuration, { L"8" }, 0);
+				SetDurations(hOrientation, hDuration, DURATIONS_FULL);
 
 				AVS::Label_SetText(hModeDescription, GetModeDescription(static_cast<int>(LOWORD(wParam))));
 				activeNow = static_cast<int>(LOWORD(wParam));
@@ -839,8 +928,7 @@ namespace NSUI
 				ShowWindow(hPathFile2, SW_SHOW);
 				ShowWindow(hPathFile3, SW_HIDE);
 
-				AVS::ComboBox_SetItems(hSize, { RES_HD, RES_FULLHD, RES_4K }, 0);
-				AVS::ComboBox_SetItems(hDuration, { L"8" }, 0);
+				SetDurations(hOrientation, hDuration, DURATIONS_SHORT);
 
 				AVS::Label_SetText(hModeDescription, GetModeDescription(static_cast<int>(LOWORD(wParam))));
 				activeNow = static_cast<int>(LOWORD(wParam));
@@ -871,8 +959,44 @@ namespace NSUI
 				ShowWindow(hPathFile2, SW_HIDE);
 				ShowWindow(hPathFile3, SW_HIDE);
 
-				AVS::ComboBox_SetItems(hSize, { RES_HD }, 0);
-				AVS::ComboBox_SetItems(hDuration, { L"4", L"6", L"8" }, 0);
+				SetDurations(hOrientation, hDuration, DURATIONS_SHORT);
+
+				AVS::Label_SetText(hModeDescription, GetModeDescription(static_cast<int>(LOWORD(wParam))));
+				activeNow = static_cast<int>(LOWORD(wParam));
+				break;
+			}
+			case static_cast<int>(WmMainWindowCommands::ButtonEditVideo):
+			{
+				auto activeBtnHndl =
+					vToggleGroup[activeNow - static_cast<int>(WmMainWindowCommands::ButtonTextToVideo)];
+
+				AVS::Button_SetSettings(
+					*activeBtnHndl,
+					AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupDisable),
+					vToggleGroupNames[activeNow - static_cast<int>(WmMainWindowCommands::ButtonTextToVideo)]);
+
+				AVS::Button_SetSettings(
+					hEditVideo,
+					AVS::ButtonSettings::Create(AVS::Buttons::ToggleGroupEnable),
+					CTranslate::GetInstance().GetManager()->Translate(L"Edit Video"));
+
+				// the video, then up to two photos to put into it
+				ShowWindow(hFile1, SW_SHOW);
+				ShowWindow(hFile2, SW_SHOW);
+				ShowWindow(hFile3, SW_SHOW);
+
+				AVS::Label_SetText(hPathFile1, EDIT_VIDEO);
+				AVS::Label_SetText(hPathFile2, FIRST_IMAGE);
+				AVS::Label_SetText(hPathFile3, SECOND_IMAGE);
+
+				ShowWindow(hPathFile1, SW_SHOW);
+				ShowWindow(hPathFile2, SW_SHOW);
+				ShowWindow(hPathFile3, SW_SHOW);
+
+				// length and orientation are those of the video: greyed out, not sent
+				AVS::ComboBox_SetItems(hDuration, { CTranslate::GetInstance().GetManager()->Translate(L"As the video") }, 0);
+				EnableWindow(hDuration, FALSE);
+				EnableWindow(hOrientation, FALSE);
 
 				AVS::Label_SetText(hModeDescription, GetModeDescription(static_cast<int>(LOWORD(wParam))));
 				activeNow = static_cast<int>(LOWORD(wParam));
@@ -910,6 +1034,29 @@ namespace NSUI
 						L"All files (*.*)\0"
 						L"*.*\0";
 				}
+				// Edit Video: the first button picks the video (any, up to 15 s), the other two photos
+				else if (activeNow == static_cast<int>(WmMainWindowCommands::ButtonEditVideo) &&
+					LOWORD(wParam) == static_cast<int>(WmMainWindowCommands::ButtonFile1))
+				{
+					ofn.lpstrFilter =
+						L"Video files (*.mp4;*.mov;*.webm)\0"
+						L"*.mp4;*.mov;*.webm\0"
+						L"All files (*.*)\0"
+						L"*.*\0";
+				}
+				// Image to Video: pictures, or short videos (up to 3 s) as references, e.g. of a movement
+				else if (activeNow == static_cast<int>(WmMainWindowCommands::ButtonImageToVideo))
+				{
+					ofn.lpstrFilter =
+						L"Images and videos (*.png;*.jpg;*.jpeg;*.webp;*.mp4;*.mov;*.webm)\0"
+						L"*.png;*.jpg;*.jpeg;*.webp;*.mp4;*.mov;*.webm\0"
+						L"Image files (*.png;*.jpg;*.jpeg;*.webp)\0"
+						L"*.png;*.jpg;*.jpeg;*.webp\0"
+						L"Video files (*.mp4;*.mov;*.webm)\0"
+						L"*.mp4;*.mov;*.webm\0"
+						L"All files (*.*)\0"
+						L"*.*\0";
+				}
 
 				int iqwe = static_cast<int>(LOWORD(wParam));
 				int iaqwe = static_cast<int>(WmMainWindowCommands::ButtonFile1);
@@ -922,46 +1069,7 @@ namespace NSUI
 				}
 				break;
 			}
-			case static_cast<int>(WmMainWindowCommands::ComboSize):
-			{
-				int nSize = AVS::ComboBox_GetCurrent(hSize);
-				switch (nSize)
-				{
-				case 1: // 1080p
-				case 2: // 4K
-				{
-					// Must be "8" when using extension, reference images or with 1080p and 4k resolutions
-					AVS::ComboBox_SetItems(hDuration, { L"8" }, 0);
-					break;
-				}
-				default:
-					AVS::ComboBox_SetItems(hDuration, { L"4", L"6", L"8"}, 0);
-					break;
-				}
-				
-				break;
-			}
-			case static_cast<int>(WmMainWindowCommands::ComboModel):
-			{
-				int nModel = AVS::ComboBox_GetCurrent(hModel);
-				switch (nModel)
-				{
-				case 0:
-				case 1:
-				{
-					AVS::ComboBox_SetItems(hSize, { RES_HD, RES_FULLHD, RES_4K }, 0);
-					break;
-				}
-				case 2:
-				{
-					AVS::ComboBox_SetItems(hSize, { RES_HD, }, 0);
-					break;
-				}
-				default:
-					break;
-				}
-				break;
-			}
+			// Omni has no tie between size and length (Veo 3.1 wanted 8 s at 1080p and 4k), and one model
 			case static_cast<int>(WmMainWindowCommands::Output):
 			{
 				MessageOutputData* data = reinterpret_cast<MessageOutputData*>(lParam);
@@ -1029,15 +1137,13 @@ namespace NSUI
 
 						if (!isError)
 						{
-							if (response.value("done", false) && response.contains("response"))
+							// scripts_bodys.h: {"id", "status": "in_progress"} while it is made, then
+							// {"id", "status": "completed", "file"} once the video is saved
+							const std::string status = response.contains("status") && response["status"].is_string() ?
+								response["status"].get<std::string>() : std::string();
+							if (status == "completed" && response.contains("id") && response["id"].is_string())
 							{
-								std::string file_url =
-									response["response"]
-									["generateVideoResponse"]
-									["generatedSamples"][0]
-									["video"]
-									["uri"]
-									.get<std::string>();
+								std::string interactionId = response["id"].get<std::string>();
 
 								std::wstring path = plugin->m_workDirectory + L"\\" + plugin->m_engine.m_file;
 								
@@ -1049,7 +1155,7 @@ namespace NSUI
 									{
 										video_hash = CalcFileSHA256(path);
 									}
-									catch (const std::exception& e)
+									catch (const std::exception&)
 									{
 										throw std::runtime_error("SHA256 failed");
 									}
@@ -1072,10 +1178,30 @@ namespace NSUI
 										}
 									}
 
+									// what can no longer be extended goes: Veo entries (a "uri", no interaction)
+									// and interactions Google no longer keeps
+									{
+										nlohmann::json kept = nlohmann::json::array();
+										const std::time_t now = std::time(nullptr);
+										for (const auto& old : cacheJson)
+										{
+											if (!old.is_object() || !old.contains("interaction_id") || !old.contains("date_time") ||
+												!old["date_time"].is_string())
+												continue;
+											std::time_t when = 0;
+											if (!ParseCacheDateTime(old["date_time"].get<std::string>(), when))
+												continue;
+											const double age = std::difftime(now, when);
+											if (age >= 0 && age <= EXTEND_WITHIN_SECONDS)
+												kept.push_back(old);
+										}
+										cacheJson = kept;
+									}
+
 									nlohmann::json item;
 
 									item["video_hash"] = video_hash;
-									item["uri"] = file_url;
+									item["interaction_id"] = interactionId;
 									item["date_time"] = NSStringUtils::wstring_to_utf8(date_time);
 									item["aspectRatio"] = NSStringUtils::wstring_to_utf8(plugin->m_engine.m_aspectRatio);
 									item["resolution"] = NSStringUtils::wstring_to_utf8(plugin->m_engine.m_resolution);
@@ -1089,7 +1215,7 @@ namespace NSUI
 									}
 								}
 							}
-							else if (response.contains("name"))
+							else if (status == "in_progress")
 							{
 
 								if (AVS::ProgressBar_GetPos(hProgress) == 0)
@@ -1192,9 +1318,9 @@ namespace NSUI
 		}
 
 		DWORD dwStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX;
-		std::wstring titleWindow = CTranslate::GetInstance().GetManager()->Translate(L"Veo3");
+		std::wstring titleWindow = CTranslate::GetInstance().GetManager()->Translate(L"Google AI Video Generator");
 
-		RECT rc = { 0, 0, 600, 455 };
+		RECT rc = { 0, 0, MAIN_WINDOW_W, MAIN_WINDOW_H };
 		AdjustWindowRectEx(&rc, dwStyle, FALSE, 0);
 
 		DWORD dwExStyle = WS_EX_APPWINDOW; // 0
